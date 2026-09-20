@@ -385,7 +385,7 @@ namespace KeePassNatMsg.Protocol
                                 args[0] = search;
                                 for (int i = 1; i < parms.Length; i++)
                                 {
-                                    if (parms[i].ParameterType.IsAssignableFrom(typeof(KeePass.UI.IPluginHost)))
+                                    if (parms[i].ParameterType.IsAssignableFrom(typeof(KeePass.Plugins.IPluginHost)))
                                         args[i] = _host;
                                     else if (parms[i].ParameterType == typeof(KeePassLib.PwDatabase))
                                         args[i] = _host.Database;
