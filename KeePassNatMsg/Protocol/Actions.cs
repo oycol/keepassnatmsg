@@ -7,6 +7,7 @@ namespace KeePassNatMsg.Protocol
         public const string ASSOCIATE = "associate";
         public const string TEST_ASSOCIATE = "test-associate";
         public const string GET_LOGINS = "get-logins";
+        public const string GET_LOGINS_COUNT = "get-logins-count";
         public const string SET_LOGIN = "set-login";
         public const string GENERATE_PASSWORD = "generate-password";
         public const string CHANGE_PUBLIC_KEYS = "change-public-keys";
@@ -16,5 +17,6 @@ namespace KeePassNatMsg.Protocol
         public const string GET_DATABASE_GROUPS = "get-database-groups";
         public const string CREATE_NEW_GROUP = "create-new-group";
         public const string GET_TOTP = "get-totp";
+        public const string REQUEST_AUTOTYPE = "request-autotype";
     }
 }

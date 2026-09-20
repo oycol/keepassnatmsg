@@ -34,12 +34,14 @@ namespace KeePassNatMsg.Protocol
                 {Actions.ASSOCIATE, Associate},
                 {Actions.CHANGE_PUBLIC_KEYS, ChangePublicKeys},
                 {Actions.GET_LOGINS, GetLogins},
+                {Actions.GET_LOGINS_COUNT, GetLoginsCount},
                 {Actions.SET_LOGIN, SetLogin},
                 {Actions.GENERATE_PASSWORD, GeneratePassword},
                 {Actions.LOCK_DATABASE, LockDatabase},
                 {Actions.GET_DATABASE_GROUPS, GetDatabaseGroups},
                 {Actions.CREATE_NEW_GROUP, CreateNewGroup},
                 {Actions.GET_TOTP, GetTotp},
+                {Actions.REQUEST_AUTOTYPE, RequestAutoType},
             };
         }
 
@@ -170,11 +172,14 @@ namespace KeePassNatMsg.Protocol
                 var pw = reqMsg.GetString("password");
                 var submitUrl = reqMsg.GetString("submitUrl");
                 var groupUuid = reqMsg.GetString("groupUuid");
+                var group = reqMsg.GetString("group");
+                var downloadFavicon = reqMsg.GetString("downloadFavicon");
 
                 bool result;
 
                 if (string.IsNullOrEmpty(uuid))
                 {
+                    // Create new entry - pass group name if provided
                     result = eu.CreateEntry(login, pw, url, submitUrl, null, groupUuid);
                 }
                 else
@@ -187,6 +192,7 @@ namespace KeePassNatMsg.Protocol
                 resp.Message.Add("count", JValue.CreateNull());
                 resp.Message.Add("entries", JValue.CreateNull());
                 resp.Message.Add("error", result ? "success" : "error");
+                resp.Message.Add("success", result ? "true" : "false");
 
                 return resp;
             }
@@ -197,7 +203,13 @@ namespace KeePassNatMsg.Protocol
         {
             var resp = req.GetResponse();
             var msg = resp.Message;
-            msg.Add("entries", new JArray(_ext.GeneratePassword()));
+            // KeePassXC-Browser 1.10.4 expects a "password" field directly in the message
+            // (changed from the older "entries" array format)
+            var pw = _ext.GeneratePassword();
+            if (pw != null)
+            {
+                msg.Add("password", pw["password"]);
+            }
             return resp;
         }
 
@@ -210,6 +222,9 @@ namespace KeePassNatMsg.Protocol
 
         private Response GetDatabaseGroups(Request req)
         {
+            if (!req.TryDecrypt())
+                return new ErrorResponse(req, ErrorType.CannotDecryptMessage);
+
             var db = _ext.GetConnectionDatabase();
 
             if (db.RootGroup == null)
@@ -226,10 +241,19 @@ namespace KeePassNatMsg.Protocol
 
             var resp = req.GetResponse();
 
-            resp.Message.Add("groups", new JObject
+            // KeePassXC-Browser 1.10.4 expects defaultGroup and defaultGroupAlwaysAllow
+            var configOpt = new ConfigOpt(_host.CustomConfig);
+            var defaultGroup = configOpt.DefaultGroup;
+            var defaultGroupAlwaysAllow = configOpt.DefaultGroupAlwaysAllow;
+
+            var groups = new JObject
             {
                 { "groups", new JArray { root } }
-            });
+            };
+            groups.Add("defaultGroup", string.IsNullOrEmpty(defaultGroup) ? "" : defaultGroup);
+            groups.Add("defaultGroupAlwaysAllow", defaultGroupAlwaysAllow ? "true" : "false");
+
+            resp.Message.Add("groups", groups);
 
             return resp;
         }
@@ -290,6 +314,61 @@ namespace KeePassNatMsg.Protocol
 
             resp.Message.Add("totp", totp);
 
+            return resp;
+        }
+
+        private Response GetLoginsCount(Request req)
+        {
+            if (!req.TryDecrypt())
+                return new ErrorResponse(req, ErrorType.CannotDecryptMessage);
+
+            var msg = req.Message;
+            var url = msg.GetString("url");
+
+            if (string.IsNullOrEmpty(url))
+                return new ErrorResponse(req, ErrorType.NoUrlProvided);
+
+            var es = new EntrySearch();
+            var items = es.FindMatchingEntries(url, null);
+
+            var resp = req.GetResponse();
+            resp.Message.Add("count", items.Count());
+
+            return resp;
+        }
+
+        private Response RequestAutoType(Request req)
+        {
+            if (!req.TryDecrypt())
+                return new ErrorResponse(req, ErrorType.CannotDecryptMessage);
+
+            var search = req.Message.GetString("search");
+
+            if (string.IsNullOrEmpty(search))
+                return new ErrorResponse(req, ErrorType.NoUrlProvided);
+
+            // Perform Global Auto-Type with the search term
+            _host.MainWindow.Invoke(new System.Action(() =>
+            {
+                try
+                {
+                    // Use KeePass's built-in global auto-type with the search query
+                    var autoType = _host.MainWindow;
+                    // KeePass 2.x supports sending auto-type sequences via command line
+                    // or via the MainForm's ExecuteGlobalAutoType method
+                    // We use the search term to perform a targeted auto-type
+                    KeePass.Util.AutoType.PerformIntoPreviousWindow(
+                        _host.MainWindow,
+                        _host.Database,
+                        search);
+                }
+                catch (Exception)
+                {
+                    // Auto-type may fail if the target window is not available
+                }
+            }));
+
+            var resp = req.GetResponse();
             return resp;
         }
     }

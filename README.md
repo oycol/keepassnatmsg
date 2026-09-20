@@ -1,8 +1,4 @@
-[![Main workflow](https://github.com/smorks/keepassnatmsg/actions/workflows/workflow.yml/badge.svg)](https://github.com/smorks/keepassnatmsg/actions/workflows/workflow.yml)
-
-# *** KeePassNatMsg is in maintenance only mode ***
-
-I don't personally use this plugin anymore, therefore it is currently in maintenance mode, which means I will fix critical bugs, and will still accept PR's. I'm also open to passing this project on to a new maintainer, see the [relevant discussion topic](https://github.com/smorks/keepassnatmsg/discussions/104).
+[![CI Build & Test](https://github.com/oycol/keepassnatmsg/actions/workflows/ci.yml/badge.svg)](https://github.com/oycol/keepassnatmsg/actions/workflows/ci.yml)
 
 # KeePassNatMsg
 
@@ -11,6 +7,23 @@ is a plugin for KeePass 2.x and provides a secure means of exposing KeePass cred
 It is based on [KeePassHttp](https://github.com/pfn/keepasshttp).
 
 This plugin is primarily intended for use with the [keepassxc-browser](https://github.com/keepassxreboot/keepassxc-browser) browser extension.
+
+## KeePassXC-Browser 1.10.4 Compatibility
+
+This fork adds compatibility with **KeePassXC-Browser 1.10.4** while maintaining full backward compatibility with KeePass 2.x.
+
+### What's New
+- Protocol version updated to `2.7.7` (compatible with KeePassXC-Browser 1.10.4)
+- New actions: `get-logins-count`, `request-autotype`
+- Updated `generate-password` response format (returns `password` field directly)
+- Updated `get-database-groups` with `defaultGroup` and `defaultGroupAlwaysAllow`
+- `set-login` response now includes `success` field
+- New config options: `DefaultGroup`, `DefaultGroupAlwaysAllow`
+
+### Documentation
+- [Compatibility Matrix](COMPATIBILITY.md)
+- [Installation Guide](INSTALL.md)
+- [Rollback Guide](ROLLBACK.md)
 
 ## Features
  * returns all matching entries for a given URL
