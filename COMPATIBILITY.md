@@ -20,7 +20,7 @@
 | `get-databasehash` | ✅ | ✅ | ✅ |
 | `get-logins` | ✅ | ✅ | ✅ |
 | `get-logins-count` | ✅ | ✅ NEW | ✅ |
-| `set-login` | ✅ | ✅ | ✅ |
+| `set-login` | ✅ | ✅ (group name support added) | ✅ |
 | `generate-password` | ✅ | ✅ UPDATED | ✅ |
 | `lock-database` | ✅ | ✅ | ✅ |
 | `database-locked` | ✅ (signal) | ✅ | ⚠️ |
