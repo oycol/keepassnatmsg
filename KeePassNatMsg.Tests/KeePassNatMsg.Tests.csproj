@@ -40,17 +40,50 @@
       <HintPath>..\packages\NUnit.3.14.0\lib\net40\nunit.framework.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <!-- Directly compile the source files we need from the main project,
+       instead of referencing the project (which requires KeePass.exe) -->
   <ItemGroup>
     <Compile Include="ProtocolTests.cs" />
     <Compile Include="CryptoTests.cs" />
     <Compile Include="UrlMatchingTests.cs" />
     <Compile Include="NativeMessagingFramingTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\KeePassNatMsg\KeePassNatMsg.csproj">
-      <Project>{9DFAB9D7-6BB5-4C6C-86EC-C67B494008D2}</Project>
-      <Name>KeePassNatMsg</Name>
-    </ProjectReference>
+    <!-- Include only standalone source files that don't depend on KeePass -->
+    <Compile Include="..\KeePassNatMsg\Protocol\Actions.cs">
+      <Link>Protocol\Actions.cs</Link>
+    </Compile>
+    <Compile Include="..\KeePassNatMsg\Protocol\Errors.cs">
+      <Link>Protocol\Errors.cs</Link>
+    </Compile>
+    <Compile Include="..\KeePassNatMsg\Protocol\Action\JsonBase.cs">
+      <Link>Protocol\Action\JsonBase.cs</Link>
+    </Compile>
+    <Compile Include="..\KeePassNatMsg\Protocol\Action\ErrorResponse.cs">
+      <Link>Protocol\Action\ErrorResponse.cs</Link>
+    </Compile>
+    <Compile Include="..\KeePassNatMsg\Protocol\Crypto\Nacl.cs">
+      <Link>Protocol\Crypto\Nacl.cs</Link>
+    </Compile>
+    <Compile Include="..\KeePassNatMsg\Protocol\Crypto\KeyPair.cs">
+      <Link>Protocol\Crypto\KeyPair.cs</Link>
+    </Compile>
+    <Compile Include="..\KeePassNatMsg\Entry\EntryConfig.cs">
+      <Link>Entry\EntryConfig.cs</Link>
+    </Compile>
+    <!-- Stub for KeePassNatMsgExt - provides static members needed by Request/Response -->
+    <Compile Include="Stubs\KeePassNatMsgExtStub.cs">
+      <Link>Stubs\KeePassNatMsgExtStub.cs</Link>
+    </Compile>
+    <!-- Include Request.cs and Response.cs which reference KeePassNatMsgExt (stub satisfies) -->
+    <Compile Include="..\KeePassNatMsg\Protocol\Action\Request.cs">
+      <Link>Protocol\Action\Request.cs</Link>
+    </Compile>
+    <Compile Include="..\KeePassNatMsg\Protocol\Action\Response.cs">
+      <Link>Protocol\Action\Response.cs</Link>
+    </Compile>
+    <!-- Include Helper.cs which references KeePassNatMsgExt (stub satisfies) -->
+    <Compile Include="..\KeePassNatMsg\Protocol\Crypto\Helper.cs">
+      <Link>Protocol\Crypto\Helper.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
