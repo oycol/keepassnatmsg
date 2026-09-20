@@ -1,0 +1,155 @@
+name: CI Build & Test
+
+on:
+  push:
+    branches: [main, 'feat/**']
+    paths-ignore:
+      - '**.md'
+      - 'documentation/**'
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download KeePass
+        id: dlkp
+        uses: smorks/keepass-download-action@v0.0.5
+
+      - name: Extract KeePass
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path build | Out-Null
+          7z x -o"build" ${{ steps.dlkp.outputs.filename }} KeePass.exe
+          if (-not (Test-Path "build\KeePass.exe")) {
+            throw "KeePass.exe not found after extraction"
+          }
+          $kpHash = (Get-FileHash "build\KeePass.exe" -Algorithm SHA256).Hash.ToLower()
+          Write-Host "KeePass.exe SHA256: $kpHash"
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: nuget/setup-nuget@v2
+        with:
+          nuget-version: '6.x'
+
+      - name: Restore NuGet packages
+        shell: pwsh
+        run: |
+          # Restore test project packages
+          if (Test-Path "KeePassNatMsg.Tests\packages.config") {
+            nuget restore KeePassNatMsg.Tests\packages.config -OutputDirectory packages
+          }
+
+      - name: Build plugin (Release)
+        run: msbuild /p:Configuration=Release /verbosity:minimal
+
+      - name: Build test project
+        shell: pwsh
+        run: |
+          if (Test-Path "KeePassNatMsg.Tests\KeePassNatMsg.Tests.csproj") {
+            msbuild KeePassNatMsg.Tests\KeePassNatMsg.Tests.csproj /p:Configuration=Release /verbosity:minimal
+          }
+
+      - name: Run unit tests
+        shell: pwsh
+        run: |
+          # Install NUnit console runner
+          nuget install NUnit.ConsoleRunner -OutputDirectory test-runner -Version 3.16.0 -NoCache
+          $runner = Get-ChildItem -Path test-runner -Filter "nunit3-console.exe" -Recurse | Select-Object -First 1
+
+          # Find test assembly
+          $testDll = Get-ChildItem -Path KeePassNatMsg.Tests\bin -Filter "KeePassNatMsg.Tests.dll" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+
+          if ($testDll -and $runner) {
+            Write-Host "Running tests: $($testDll.FullName)"
+
+            # Copy NUnit framework DLL next to test DLL if not already there
+            $nunitFramework = Get-ChildItem -Path packages -Filter "nunit.framework.dll" -Recurse | Where-Object { $_.FullName -like "*net40*" } | Select-Object -First 1
+            if ($nunitFramework -and -not (Test-Path (Join-Path $testDll.DirectoryName "nunit.framework.dll"))) {
+              Copy-Item $nunitFramework.FullName $testDll.DirectoryName
+            }
+
+            # Copy Newtonsoft.Json next to test DLL
+            $newtonsoft = Get-ChildItem -Path KeePassNatMsg\lib -Filter "Newtonsoft.Json.dll" -Recurse | Select-Object -First 1
+            if ($newtonsoft -and -not (Test-Path (Join-Path $testDll.DirectoryName "Newtonsoft.Json.dll"))) {
+              Copy-Item $newtonsoft.FullName $testDll.DirectoryName
+            }
+
+            & $runner.FullName $testDll.FullName --result=test-results.xml --work=$pwd
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "Tests failed with exit code $LASTEXITCODE"
+              exit 1
+            }
+            Write-Host "All tests passed!"
+          } else {
+            if (-not $testDll) { Write-Host "No test assembly found" }
+            if (-not $runner) { Write-Host "NUnit console runner not found" }
+            Write-Host "Skipping test execution"
+          }
+
+      - name: Build .plgx
+        shell: pwsh
+        run: |
+          $kpPath = Resolve-Path "build\KeePass.exe"
+          $p = Start-Process -FilePath $kpPath -ArgumentList "--plgx-create","$pwd\KeePassNatMsg" -PassThru
+          $p.WaitForExit()
+          if (Test-Path "KeePassNatMsg.plgx") {
+            $hash = (Get-FileHash "KeePassNatMsg.plgx" -Algorithm SHA256).Hash.ToLower()
+            Write-Host "KeePassNatMsg.plgx SHA256: $hash"
+          } else {
+            Write-Host "WARNING: .plgx build failed"
+          }
+
+      - name: Prepare artifacts
+        shell: pwsh
+        run: |
+          $artifactsDir = "artifacts"
+          New-Item -ItemType Directory -Force -Path $artifactsDir | Out-Null
+
+          if (Test-Path "KeePassNatMsg\bin\Release") {
+            Copy-Item -Path "KeePassNatMsg\bin\Release\*" -Destination $artifactsDir -Recurse
+          }
+
+          if (Test-Path "KeePassNatMsg.plgx") {
+            Copy-Item "KeePassNatMsg.plgx" $artifactsDir
+          }
+
+          if (Test-Path "test-results.xml") {
+            Copy-Item "test-results.xml" $artifactsDir
+          }
+
+          $hashes = @()
+          Get-ChildItem -Path $artifactsDir -File | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            $hashes += "$hash  $($_.Name)"
+          }
+          $hashes | Set-Content "$artifactsDir\SHA256SUMS" -Encoding UTF8
+          Write-Host "Artifacts prepared:"
+          Get-ChildItem $artifactsDir | ForEach-Object { Write-Host "  $($_.Name) ($($_.Length) bytes)" }
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeePassNatMsg-build
+          path: artifacts\
+          retention-days: 30
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results.xml
+          if-no-files-found: ignore
+          retention-days: 30

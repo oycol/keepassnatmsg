@@ -163,5 +163,20 @@ namespace KeePassNatMsg
             get { return _config.GetBool(UseLegacyHostMatchingKey, false); }
             set { _config.SetBool(UseLegacyHostMatchingKey, value); }
         }
+
+        private const string DefaultGroupKey = "KeePassNatMsg_DefaultGroup";
+        private const string DefaultGroupAlwaysAllowKey = "KeePassNatMsg_DefaultGroupAlwaysAllow";
+
+        public string DefaultGroup
+        {
+            get { return _config.GetString(DefaultGroupKey, string.Empty); }
+            set { _config.SetString(DefaultGroupKey, value); }
+        }
+
+        public bool DefaultGroupAlwaysAllow
+        {
+            get { return _config.GetBool(DefaultGroupAlwaysAllowKey, false); }
+            set { _config.SetBool(DefaultGroupAlwaysAllowKey, value); }
+        }
     }
 }
