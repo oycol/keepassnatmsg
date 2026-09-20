@@ -328,12 +328,17 @@ namespace KeePassNatMsg.Protocol
             if (string.IsNullOrEmpty(url))
                 return new ErrorResponse(req, ErrorType.NoUrlProvided);
 
+            // GetLoginsCount: return count without prompting for access
             var es = new EntrySearch();
-            var items = es.FindMatchingEntries(url, null);
-
             var resp = req.GetResponse();
-            resp.Message.Add("count", items.Count());
-
+            // Use the same handler logic as GetLogins but only return count
+            var getLoginsResp = es.GetLoginsHandler(req);
+            if (getLoginsResp is ErrorResponse)
+            {
+                return getLoginsResp;
+            }
+            var countStr = getLoginsResp.Message.GetString("count");
+            resp.Message.Add("count", countStr ?? "0");
             return resp;
         }
 
@@ -347,20 +352,14 @@ namespace KeePassNatMsg.Protocol
             if (string.IsNullOrEmpty(search))
                 return new ErrorResponse(req, ErrorType.NoUrlProvided);
 
-            // Perform Global Auto-Type with the search term
+            // Trigger Global Auto-Type via KeePass command
             _host.MainWindow.Invoke(new System.Action(() =>
             {
                 try
                 {
-                    // Use KeePass's built-in global auto-type with the search query
-                    var autoType = _host.MainWindow;
-                    // KeePass 2.x supports sending auto-type sequences via command line
-                    // or via the MainForm's ExecuteGlobalAutoType method
-                    // We use the search term to perform a targeted auto-type
-                    KeePass.Util.AutoType.PerformIntoPreviousWindow(
-                        _host.MainWindow,
-                        _host.Database,
-                        search);
+                    // KeePass 2.x: use AutoType with a search filter
+                    // The PerformGlobalAutoType method opens the Auto-Type entry selection dialog
+                    KeePass.Util.AutoType.PerformGlobalAutoType(search, _host.MainWindow);
                 }
                 catch (Exception)
                 {

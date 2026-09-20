@@ -55,7 +55,7 @@ namespace KeePassNatMsg.Tests
         {
             var pair = new KeyPair();
             var base64 = pair.ToBase64();
-            Assert.IsNotNullOrEmpty(base64);
+            Assert.IsFalse(string.IsNullOrEmpty(base64));
         }
 
         #endregion

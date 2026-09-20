@@ -127,7 +127,7 @@ namespace KeePassNatMsg.Tests
             foreach (ErrorType et in Enum.GetValues(typeof(ErrorType)))
             {
                 string msg = Errors.GetErrorMessage(et);
-                Assert.IsNotNullOrEmpty(msg, "Error message for {0} should not be empty", et);
+                Assert.IsFalse(string.IsNullOrEmpty(msg), "Error message for {0} should not be empty", et);
             }
         }
 
