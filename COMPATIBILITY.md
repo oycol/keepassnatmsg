@@ -4,7 +4,7 @@
 
 | Component | Version | Status |
 |---|---|---|
-| KeePass | 2.60 x64 | ✅ CI build verified |
+| KeePass | 2.35+ x64 | ✅ CI build verified (2.60) |
 | KeePassXC-Browser | 1.10.4 Chromium | ✅ Protocol compatible |
 | Microsoft Edge | 153.0.4234.48 x64 | ⚠️ Pending real Windows VM verification |
 | Windows | 10/11 x64 | ✅ CI build on windows-2022 |
@@ -89,12 +89,14 @@
 
 ## Known Limitations
 
-1. **Passkeys not supported**: `passkeys-get` and `passkeys-register` require KeePassXC 2.7.7+ native implementation. Not available in KeePass 2.x plugin model.
+1. **Passkeys not supported**: `passkeys-get` and `passkeys-register` require KeePassXC 2.7.7+ native implementation. Not available in KeePass 2.x plugin model. Protocol version is set to 2.7.0 (not 2.7.7) to avoid enabling passkeys UI in the browser extension.
 
-2. **Auto-Type requires real desktop**: `request-autotype` triggers KeePass's auto-type which requires an active desktop session and target window. Cannot be tested in CI.
+2. **Minimum KeePass version is 2.35** (not 2.17 as upstream README claimed): The plugin uses `PwDatabase.CustomData` (introduced in 2.34) and `PwEntry.CustomData` (introduced in 2.35) for storing association keys and entry-level access control. Without these APIs, the plugin cannot function.
 
-3. **GUI dialogs require interactive session**: Association confirmation and access control dialogs require an interactive Windows desktop. CI can verify protocol logic but not GUI interaction.
+3. **Auto-Type requires real desktop**: `request-autotype` triggers KeePass's auto-type which requires an active desktop session and target window. Cannot be tested in CI.
 
-4. **Proxy executable**: Native Messaging requires `keepassnatmsg-proxy.exe` which bridges browser stdio to named pipe. This must be downloaded separately from [keepassnatmsg-proxy](https://github.com/smorks/keepassnatmsg-proxy/releases).
+4. **GUI dialogs require interactive session**: Association confirmation and access control dialogs require an interactive Windows desktop. CI can verify protocol logic but not GUI interaction.
 
-5. **Database hash method**: KeePassNatMsg supports both its own hash method and KeePassXC's method (controlled by `UseKeePassXcSettings` option). KeePassXC-Browser 1.10.4 expects KeePassXC's method.
+5. **Proxy executable**: Native Messaging requires `keepassnatmsg-proxy.exe` which bridges browser stdio to named pipe. This must be downloaded separately from [keepassnatmsg-proxy](https://github.com/smorks/keepassnatmsg-proxy/releases).
+
+6. **Database hash method**: KeePassNatMsg supports both its own hash method and KeePassXC's method (controlled by `UseKeePassXcSettings` option). KeePassXC-Browser 1.10.4 expects KeePassXC's method.

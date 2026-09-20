@@ -37,7 +37,7 @@ This fork adds compatibility with **KeePassXC-Browser 1.10.4** while maintaining
  * Whenever events occur, the user is prompted either by tray notification or requesting interaction (allow/deny/remember).
 
 ## System requirements
- * KeePass 2.17 or higher
+ * KeePass 2.35 or higher (requires CustomData API introduced in 2.35)
  * For Windows: .NET Framework 4.0 or higher
  * For Linux: Mono 4.0 or higher
  * For Mac: Mono 4.0 or higher (untested)
