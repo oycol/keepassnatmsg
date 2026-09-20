@@ -20,21 +20,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download KeePass 2.60
+      - name: Download KeePass
+        id: dlkp
+        uses: smorks/keepass-download-action@v0.0.5
+
+      - name: Extract KeePass
         shell: pwsh
         run: |
-          $kpUrl = 'https://sourceforge.net/projects/keepass/files/KeePass%202.x/2.60/KeePass-2.60.zip/download'
-          $kpZip = 'KeePass-2.60.zip'
-          Invoke-WebRequest -Uri $kpUrl -OutFile $kpZip -UserAgent "Mozilla/5.0"
-          if (-not (Test-Path $kpZip)) {
-            throw "Failed to download KeePass 2.60"
-          }
           New-Item -ItemType Directory -Force -Path build | Out-Null
-          7z x -o"build" $kpZip KeePass.exe
+          7z x -o"build" ${{ steps.dlkp.outputs.filename }} KeePass.exe
           if (-not (Test-Path "build\KeePass.exe")) {
             throw "KeePass.exe not found after extraction"
           }
-          Write-Host "KeePass 2.60 downloaded and extracted"
           $kpHash = (Get-FileHash "build\KeePass.exe" -Algorithm SHA256).Hash.ToLower()
           Write-Host "KeePass.exe SHA256: $kpHash"
 
@@ -53,10 +50,6 @@ jobs:
           if (Test-Path "KeePassNatMsg.Tests\packages.config") {
             nuget restore KeePassNatMsg.Tests\packages.config -OutputDirectory packages
           }
-          # Also restore via solution if packages.config exists for main project
-          if (Test-Path "packages.config") {
-            nuget restore packages.config -OutputDirectory packages
-          }
 
       - name: Build plugin (Release)
         run: msbuild /p:Configuration=Release /verbosity:minimal
@@ -64,7 +57,6 @@ jobs:
       - name: Build test project
         shell: pwsh
         run: |
-          # Build the test project
           if (Test-Path "KeePassNatMsg.Tests\KeePassNatMsg.Tests.csproj") {
             msbuild KeePassNatMsg.Tests\KeePassNatMsg.Tests.csproj /p:Configuration=Release /verbosity:minimal
           }
@@ -81,7 +73,6 @@ jobs:
 
           if ($testDll -and $runner) {
             Write-Host "Running tests: $($testDll.FullName)"
-            Write-Host "Runner: $($runner.FullName)"
 
             # Copy NUnit framework DLL next to test DLL if not already there
             $nunitFramework = Get-ChildItem -Path packages -Filter "nunit.framework.dll" -Recurse | Where-Object { $_.FullName -like "*net40*" } | Select-Object -First 1
@@ -89,11 +80,18 @@ jobs:
               Copy-Item $nunitFramework.FullName $testDll.DirectoryName
             }
 
+            # Copy Newtonsoft.Json next to test DLL
+            $newtonsoft = Get-ChildItem -Path KeePassNatMsg\lib -Filter "Newtonsoft.Json.dll" -Recurse | Select-Object -First 1
+            if ($newtonsoft -and -not (Test-Path (Join-Path $testDll.DirectoryName "Newtonsoft.Json.dll"))) {
+              Copy-Item $newtonsoft.FullName $testDll.DirectoryName
+            }
+
             & $runner.FullName $testDll.FullName --result=test-results.xml --work=$pwd
             if ($LASTEXITCODE -ne 0) {
               Write-Host "Tests failed with exit code $LASTEXITCODE"
               exit 1
             }
+            Write-Host "All tests passed!"
           } else {
             if (-not $testDll) { Write-Host "No test assembly found" }
             if (-not $runner) { Write-Host "NUnit console runner not found" }
@@ -103,7 +101,6 @@ jobs:
       - name: Build .plgx
         shell: pwsh
         run: |
-          # Start KeePass to build .plgx
           $kpPath = Resolve-Path "build\KeePass.exe"
           $p = Start-Process -FilePath $kpPath -ArgumentList "--plgx-create","$pwd\KeePassNatMsg" -PassThru
           $p.WaitForExit()
@@ -120,22 +117,18 @@ jobs:
           $artifactsDir = "artifacts"
           New-Item -ItemType Directory -Force -Path $artifactsDir | Out-Null
 
-          # Copy build output
           if (Test-Path "KeePassNatMsg\bin\Release") {
             Copy-Item -Path "KeePassNatMsg\bin\Release\*" -Destination $artifactsDir -Recurse
           }
 
-          # Copy .plgx
           if (Test-Path "KeePassNatMsg.plgx") {
             Copy-Item "KeePassNatMsg.plgx" $artifactsDir
           }
 
-          # Copy test results
           if (Test-Path "test-results.xml") {
             Copy-Item "test-results.xml" $artifactsDir
           }
 
-          # Generate SHA256SUMS
           $hashes = @()
           Get-ChildItem -Path $artifactsDir -File | ForEach-Object {
             $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
