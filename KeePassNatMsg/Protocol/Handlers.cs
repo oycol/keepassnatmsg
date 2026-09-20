@@ -352,14 +352,51 @@ namespace KeePassNatMsg.Protocol
             if (string.IsNullOrEmpty(search))
                 return new ErrorResponse(req, ErrorType.NoUrlProvided);
 
-            // Trigger Global Auto-Type via KeePass command
+            // Trigger Global Auto-Type via KeePass
+            // Use reflection to call KeePass's global auto-type method, as the
+            // exact API signature varies between KeePass 2.x versions.
             _host.MainWindow.Invoke(new System.Action(() =>
             {
                 try
                 {
-                    // KeePass 2.x: use AutoType with a search filter
-                    // The PerformGlobalAutoType method opens the Auto-Type entry selection dialog
-                    KeePass.Util.AutoType.PerformGlobalAutoType(search, _host.MainWindow);
+                    // KeePass 2.x: MainForm has an ExecuteGlobalAutoType method
+                    // that accepts a search string for filtering entries
+                    var mainWindow = _host.MainWindow;
+                    var mi = mainWindow.GetType().GetMethod("ExecuteGlobalAutoType",
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (mi != null)
+                    {
+                        mi.Invoke(mainWindow, new object[] { search });
+                    }
+                    else
+                    {
+                        // Fallback: try to trigger via Program.MainWindow
+                        var autoTypeType = typeof(KeePass.Util.AutoType);
+                        var methods = autoTypeType.GetMethods(
+                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                        // Look for a method that takes a string and IPluginHost or similar
+                        foreach (var m in methods)
+                        {
+                            var parms = m.GetParameters();
+                            if (m.Name.Contains("Global") && parms.Length >= 1 &&
+                                parms[0].ParameterType == typeof(string))
+                            {
+                                var args = new object[parms.Length];
+                                args[0] = search;
+                                for (int i = 1; i < parms.Length; i++)
+                                {
+                                    if (parms[i].ParameterType.IsAssignableFrom(typeof(KeePass.UI.IPluginHost)))
+                                        args[i] = _host;
+                                    else if (parms[i].ParameterType == typeof(KeePassLib.PwDatabase))
+                                        args[i] = _host.Database;
+                                    else
+                                        args[i] = null;
+                                }
+                                m.Invoke(null, args);
+                                break;
+                            }
+                        }
+                    }
                 }
                 catch (Exception)
                 {
