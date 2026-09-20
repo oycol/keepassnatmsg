@@ -21,7 +21,7 @@ namespace KeePassNatMsg
 
         public static string GetVersion()
         {
-            return "2.7.7";
+            return "2.7.0";
         }
 
         internal string GetDbHashForMessage()

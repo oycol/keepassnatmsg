@@ -29,13 +29,13 @@
 | `create-new-group` | ✅ | ✅ | ✅ |
 | `get-totp` | ✅ | ✅ | ✅ |
 | `request-autotype` | ✅ (2.7.0+) | ✅ NEW | ⚠️ |
-| `passkeys-get` | ✅ (2.7.7+) | ❌ Not implemented | N/A |
-| `passkeys-register` | ✅ (2.7.7+) | ❌ Not implemented | N/A |
+| `passkeys-get` | ✅ (2.7.7+) | ❌ Not implemented (version 2.7.0 avoids enabling this flag) | N/A |
+| `passkeys-register` | ✅ (2.7.7+) | ❌ Not implemented (version 2.7.0 avoids enabling this flag) | N/A |
 
 ## Changes from KeePassNatMsg v2.0.17
 
 ### Version Update
-- Protocol version: `2.6.6` → `2.7.7` (matches KeePassXC 2.7.7+)
+- Protocol version: `2.6.6` → `2.7.0` (enables 1.10.4 features without falsely claiming passkeys support)
 
 ### New Actions
 - `get-logins-count`: Returns count of matching entries for a URL
