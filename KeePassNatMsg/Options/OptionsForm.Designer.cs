@@ -72,6 +72,10 @@
             this.btnRemoveAllKeys = new System.Windows.Forms.Button();
             this.btnRemoveSelectedKeys = new System.Windows.Forms.Button();
             this.chkUseLegacyHostMatching = new System.Windows.Forms.CheckBox();
+            this.lblDefaultGroup = new System.Windows.Forms.Label();
+            this.txtDefaultGroup = new System.Windows.Forms.TextBox();
+            this.chkDefaultGroupAlwaysAllow = new System.Windows.Forms.CheckBox();
+            this.chkUseKpxcSettingsGeneral = new System.Windows.Forms.CheckBox();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
@@ -122,6 +126,7 @@
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.chkUseKpxcSettingsGeneral);
             this.tabPage1.Controls.Add(this.chkUseLegacyHostMatching);
             this.tabPage1.Controls.Add(this.lblVersion);
             this.tabPage1.Controls.Add(this.lblProxyVersion);
@@ -257,6 +262,9 @@
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.txtDefaultGroup);
+            this.tabPage2.Controls.Add(this.lblDefaultGroup);
+            this.tabPage2.Controls.Add(this.chkDefaultGroupAlwaysAllow);
             this.tabPage2.Controls.Add(this.comboBoxSearchDatabases);
             this.tabPage2.Controls.Add(this.credOnlySearchInSelectedDatabaseRadioButton);
             this.tabPage2.Controls.Add(this.credRestrictSearchInSpecificDatabaseRadioButton);
@@ -572,8 +580,44 @@
             this.chkUseLegacyHostMatching.Name = "chkUseLegacyHostMatching";
             this.chkUseLegacyHostMatching.Size = new System.Drawing.Size(345, 17);
             this.chkUseLegacyHostMatching.TabIndex = 18;
-            this.chkUseLegacyHostMatching.Text = "Use legacy host matching (don\'t prompt when host matches title/url)";
+            this.chkUseLegacyHostMatching.Text = "Use legacy host matching (don\\'t prompt when host matches title/url)";
             this.chkUseLegacyHostMatching.UseVisualStyleBackColor = true;
+            //
+            // chkUseKpxcSettingsGeneral - on General tab, top
+            //
+            this.chkUseKpxcSettingsGeneral.AutoSize = true;
+            this.chkUseKpxcSettingsGeneral.Location = new System.Drawing.Point(7, 216);
+            this.chkUseKpxcSettingsGeneral.Name = "chkUseKpxcSettingsGeneral";
+            this.chkUseKpxcSettingsGeneral.Size = new System.Drawing.Size(220, 17);
+            this.chkUseKpxcSettingsGeneral.TabIndex = 24;
+            this.chkUseKpxcSettingsGeneral.Text = "Use KeePassXC-Browser settings (recommended)";
+            this.chkUseKpxcSettingsGeneral.UseVisualStyleBackColor = true;
+            //
+            // lblDefaultGroup
+            //
+            this.lblDefaultGroup.AutoSize = true;
+            this.lblDefaultGroup.Location = new System.Drawing.Point(8, 350);
+            this.lblDefaultGroup.Name = "lblDefaultGroup";
+            this.lblDefaultGroup.Size = new System.Drawing.Size(78, 13);
+            this.lblDefaultGroup.TabIndex = 44;
+            this.lblDefaultGroup.Text = "Default Group:";
+            //
+            // txtDefaultGroup
+            //
+            this.txtDefaultGroup.Location = new System.Drawing.Point(100, 347);
+            this.txtDefaultGroup.Name = "txtDefaultGroup";
+            this.txtDefaultGroup.Size = new System.Drawing.Size(200, 20);
+            this.txtDefaultGroup.TabIndex = 45;
+            //
+            // chkDefaultGroupAlwaysAllow
+            //
+            this.chkDefaultGroupAlwaysAllow.AutoSize = true;
+            this.chkDefaultGroupAlwaysAllow.Location = new System.Drawing.Point(11, 373);
+            this.chkDefaultGroupAlwaysAllow.Name = "chkDefaultGroupAlwaysAllow";
+            this.chkDefaultGroupAlwaysAllow.Size = new System.Drawing.Size(280, 17);
+            this.chkDefaultGroupAlwaysAllow.TabIndex = 46;
+            this.chkDefaultGroupAlwaysAllow.Text = "Always allow access for entries in default group";
+            this.chkDefaultGroupAlwaysAllow.UseVisualStyleBackColor = true;
             // 
             // OptionsForm
             // 
@@ -655,5 +699,9 @@
         private System.Windows.Forms.RadioButton credSearchInAllOpenedDatabasesRadioButton;
         private System.Windows.Forms.RadioButton credOnlySearchInSelectedDatabaseRadioButton;
         private System.Windows.Forms.ComboBox comboBoxSearchDatabases;
+        private System.Windows.Forms.Label lblDefaultGroup;
+        private System.Windows.Forms.TextBox txtDefaultGroup;
+        private System.Windows.Forms.CheckBox chkDefaultGroupAlwaysAllow;
+        private System.Windows.Forms.CheckBox chkUseKpxcSettingsGeneral;
     }
 }

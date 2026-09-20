@@ -179,8 +179,20 @@ namespace KeePassNatMsg.Protocol
 
                 if (string.IsNullOrEmpty(uuid))
                 {
-                    // Create new entry - pass group name if provided
-                    result = eu.CreateEntry(login, pw, url, submitUrl, null, groupUuid);
+                    // Create new entry
+                    // If group name is provided, find or create the group by name
+                    // Otherwise use groupUuid if provided, or the default KeePassNatMsg group
+                    string effectiveGroupUuid = groupUuid;
+                    if (!string.IsNullOrEmpty(group))
+                    {
+                        var db = _ext.GetConnectionDatabase();
+                        var grp = db.RootGroup.FindCreateSubTree(group, new[] { '/' }, true);
+                        if (grp != null)
+                        {
+                            effectiveGroupUuid = grp.Uuid.ToHexString();
+                        }
+                    }
+                    result = eu.CreateEntry(login, pw, url, submitUrl, null, effectiveGroupUuid);
                 }
                 else
                 {

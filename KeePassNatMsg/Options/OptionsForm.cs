@@ -66,7 +66,10 @@ namespace KeePassNatMsg.Options
             txtKPXCVerOverride.Text = _config.OverrideKeePassXcVersion;
             chkSearchUrls.Checked = _config.SearchUrls;
             chkUseKpxcSettingsKey.Checked = _config.UseKeePassXcSettings;
+            chkUseKpxcSettingsGeneral.Checked = _config.UseKeePassXcSettings;
             chkUseLegacyHostMatching.Checked = _config.UseLegacyHostMatching;
+            txtDefaultGroup.Text = _config.DefaultGroup;
+            chkDefaultGroupAlwaysAllow.Checked = _config.DefaultGroupAlwaysAllow;
 
             this.returnStringFieldsCheckbox_CheckedChanged(null, EventArgs.Empty);
 
@@ -104,13 +107,21 @@ namespace KeePassNatMsg.Options
             _config.ConnectionDatabaseHash = (comboBoxDatabases.SelectedItem as DatabaseItem) == null ? null : (comboBoxDatabases.SelectedItem as DatabaseItem).DbHash;
             _config.SearchUrls = chkSearchUrls.Checked;
             _config.UseLegacyHostMatching = chkUseLegacyHostMatching.Checked;
+            _config.DefaultGroup = txtDefaultGroup.Text;
+            _config.DefaultGroupAlwaysAllow = chkDefaultGroupAlwaysAllow.Checked;
 
-            if (_config.UseKeePassXcSettings != chkUseKpxcSettingsKey.Checked)
+            // Sync both checkboxes (General and Advanced tab)
+            var useKpxc = chkUseKpxcSettingsKey.Checked || chkUseKpxcSettingsGeneral.Checked;
+            chkUseKpxcSettingsKey.Checked = useKpxc;
+            chkUseKpxcSettingsGeneral.Checked = useKpxc;
+
+            if (_config.UseKeePassXcSettings != useKpxc)
             {
+                _config.UseKeePassXcSettings = useKpxc;
                 MigrateSettings(true);
             }
 
-            _config.UseKeePassXcSettings = chkUseKpxcSettingsKey.Checked;
+            _config.UseKeePassXcSettings = useKpxc;
 
             if (_restartRequired)
             {
