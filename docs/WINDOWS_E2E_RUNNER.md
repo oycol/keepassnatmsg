@@ -34,7 +34,20 @@ runs-on: [self-hosted, windows, keepass-e2e, interactive, chrome]
 
 ## Setup Commands
 
-Generate a fresh one-hour registration token from GitHub, then run the setup commands on the Windows test machine in PowerShell.
+Generate a fresh one-hour registration token from GitHub, then run the bootstrap script on the Windows test machine in an interactive PowerShell session.
+
+Recommended bootstrap:
+
+```powershell
+mkdir C:\KeePassNatMsg-Bootstrap
+cd C:\KeePassNatMsg-Bootstrap
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/oycol/keepassnatmsg/main/scripts/setup-windows-e2e-runner.ps1 -OutFile setup-windows-e2e-runner.ps1
+powershell -ExecutionPolicy Bypass -File .\setup-windows-e2e-runner.ps1 -RegistrationToken <REGISTRATION_TOKEN>
+```
+
+The script checks it is running in an interactive desktop session, disables sleep/lock for the test session, checks/installs basic dependencies, configures the runner with the required labels, and starts `run.cmd`.
+
+Manual fallback:
 
 ```powershell
 mkdir C:\actions-runner-keepassnatmsg
