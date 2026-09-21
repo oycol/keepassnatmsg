@@ -1,0 +1,109 @@
+name: Windows Interactive E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_fla_ui:
+        description: 'Run FlaUI KeePass desktop UI tests'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      run_playwright:
+        description: 'Run Playwright Chrome/KeePassXC-Browser tests'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  e2e:
+    name: Chrome Native Messaging E2E
+    runs-on: [self-hosted, windows, keepass-e2e, interactive, chrome]
+    timeout-minutes: 60
+
+    env:
+      E2E_OUTPUT_DIR: e2e-artifacts
+      KEEPASS_E2E_DIR: C:\KeePassNatMsg-E2E
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare artifact directories
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:E2E_OUTPUT_DIR | Out-Null
+          New-Item -ItemType Directory -Force -Path $env:KEEPASS_E2E_DIR | Out-Null
+
+      - name: Collect environment diagnostics
+        run: |
+          $diag = [ordered]@{
+            timestamp = (Get-Date).ToString('o')
+            user = [Environment]::UserName
+            machine = [Environment]::MachineName
+            interactive = [Environment]::UserInteractive
+            os = (Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, BuildNumber)
+            chrome = @(
+              'C:\Program Files\Google\Chrome\Application\chrome.exe',
+              'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe'
+            ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+            keepass = @(
+              'C:\Program Files\KeePass Password Safe 2\KeePass.exe',
+              'C:\Program Files (x86)\KeePass Password Safe 2\KeePass.exe'
+            ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+            localAppData = $env:LOCALAPPDATA
+            nativeHostKey = 'HKCU:\Software\Google\Chrome\NativeMessagingHosts\org.keepassxc.keepassxc_browser'
+            nativeHostRegistryExists = Test-Path 'HKCU:\Software\Google\Chrome\NativeMessagingHosts\org.keepassxc.keepassxc_browser'
+          }
+          $diag | ConvertTo-Json -Depth 8 | Set-Content "$env:E2E_OUTPUT_DIR\diagnostics.json" -Encoding UTF8
+          Get-Content "$env:E2E_OUTPUT_DIR\diagnostics.json"
+
+      - name: Build solution for E2E host
+        run: |
+          if (Get-Command msbuild -ErrorAction SilentlyContinue) {
+            msbuild /p:Configuration=Release /verbosity:minimal
+          } else {
+            throw 'msbuild not found on self-hosted runner'
+          }
+
+      - name: Run FlaUI KeePass desktop UI tests
+        if: ${{ inputs.run_fla_ui == 'true' }}
+        run: |
+          if (Test-Path 'KeePassNatMsg.E2E.Tests\KeePassNatMsg.E2E.Tests.csproj') {
+            dotnet test KeePassNatMsg.E2E.Tests\KeePassNatMsg.E2E.Tests.csproj --logger "trx;LogFileName=flaui-e2e.trx" --results-directory $env:E2E_OUTPUT_DIR
+          } else {
+            Write-Warning 'KeePassNatMsg.E2E.Tests project not present yet; skipping until v2.2.0 implementation adds it.'
+          }
+
+      - name: Run Playwright Chrome E2E tests
+        if: ${{ inputs.run_playwright == 'true' }}
+        run: |
+          if (Test-Path 'e2e\package.json') {
+            Push-Location e2e
+            npm ci
+            npx playwright install chromium
+            npx playwright test --reporter=line,json --output="..\$env:E2E_OUTPUT_DIR\playwright-output"
+            Pop-Location
+          } else {
+            Write-Warning 'e2e/package.json not present yet; skipping until v2.2.0 implementation adds it.'
+          }
+
+      - name: Upload E2E artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-interactive-e2e
+          path: e2e-artifacts\
+          if-no-files-found: ignore
+          retention-days: 14
