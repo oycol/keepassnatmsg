@@ -21,8 +21,8 @@ namespace KeePassNatMsg.Tests
         public void Constants_AreCorrectForChromeAndKeePassXcBrowser()
         {
             Assert.AreEqual("org.keepassxc.keepassxc_browser", ChromeIntegrationService.NativeHostName);
-            Assert.AreEqual("obcddimikignkfpophjabdkdggkodnnh", ChromeIntegrationService.ChromeExtensionId);
-            Assert.AreEqual("chrome-extension://obcddimikignkfpophjabdkdggkodnnh/", ChromeIntegrationService.ChromeExtensionOrigin);
+            Assert.AreEqual("pdffhmdngciaglkoonimfcmckehcpafo", ChromeIntegrationService.ChromeExtensionId);
+            Assert.AreEqual("chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/", ChromeIntegrationService.ChromeExtensionOrigin);
             Assert.AreEqual(@"Software\Google\Chrome\NativeMessagingHosts\org.keepassxc.keepassxc_browser", ChromeIntegrationService.RegistrySubKey);
         }
 
@@ -41,7 +41,7 @@ namespace KeePassNatMsg.Tests
 
             var origins = parsed["allowed_origins"] as JArray;
             Assert.IsNotNull(origins);
-            Assert.AreEqual(1, origins.Count);
+            Assert.AreEqual(ChromeIntegrationService.AllowedExtensionOrigins.Length, origins.Count);
             Assert.AreEqual(ChromeIntegrationService.ChromeExtensionOrigin, (string)origins[0]);
         }
 

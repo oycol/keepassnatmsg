@@ -34,8 +34,14 @@ namespace KeePassNatMsg.NativeMessaging
     public class ChromeIntegrationService
     {
         public const string NativeHostName = "org.keepassxc.keepassxc_browser";
-        public const string ChromeExtensionId = "obcddimikignkfpophjabdkdggkodnnh";
-        public const string ChromeExtensionOrigin = "chrome-extension://obcddimikignkfpophjabdkdggkodnnh/";
+        public const string ChromeExtensionId = "pdffhmdngciaglkoonimfcmckehcpafo";
+        public const string ChromeExtensionOrigin = "chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/";
+        public static readonly string[] AllowedExtensionOrigins = new[]
+        {
+            "chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/", // Official Chrome Web Store
+            "chrome-extension://oboonakemofpalcgghocfoadofidjkkk/", // Official Chromium / Edge
+            "chrome-extension://obcddimikignkfpophjabdkdggkodnnh/"  // Legacy / Dev
+        };
         public const string RegistrySubKey = @"Software\Google\Chrome\NativeMessagingHosts\" + NativeHostName;
 
         public static string ExpectedProxySha256 = "760a0b1e1ca3e88e2a2174ff642b8f62a94370210c73f62c6471448818f7b2f4";
@@ -74,7 +80,11 @@ namespace KeePassNatMsg.NativeMessaging
             sb.AppendLine("  \"type\": \"stdio\",");
             sb.AppendLine("  \"path\": \"" + proxyPath.Replace(@"\", @"\\") + "\",");
             sb.AppendLine("  \"allowed_origins\": [");
-            sb.AppendLine("    \"" + ChromeExtensionOrigin + "\"");
+            for (var i = 0; i < AllowedExtensionOrigins.Length; i++)
+            {
+                var comma = (i < AllowedExtensionOrigins.Length - 1) ? "," : "";
+                sb.AppendLine("    \"" + AllowedExtensionOrigins[i] + "\"" + comma);
+            }
             sb.AppendLine("  ]");
             sb.AppendLine("}");
             return sb.ToString();
