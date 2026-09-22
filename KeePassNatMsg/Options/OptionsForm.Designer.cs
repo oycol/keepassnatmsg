@@ -55,8 +55,6 @@
             this.labelConnDb = new System.Windows.Forms.Label();
             this.comboBoxDatabases = new System.Windows.Forms.ComboBox();
             this.chkUseKpxcSettingsKey = new System.Windows.Forms.CheckBox();
-            this.txtKPXCVerOverride = new System.Windows.Forms.TextBox();
-            this.lblKPXCVerOverride = new System.Windows.Forms.Label();
             this.btnMigrateSettings = new System.Windows.Forms.Button();
             this.btnCheckForLegacyConfig = new System.Windows.Forms.Button();
             this.tabPage3 = new System.Windows.Forms.TabPage();
@@ -327,8 +325,6 @@
             this.tabPage2.Controls.Add(this.labelConnDb);
             this.tabPage2.Controls.Add(this.comboBoxDatabases);
             this.tabPage2.Controls.Add(this.chkUseKpxcSettingsKey);
-            this.tabPage2.Controls.Add(this.txtKPXCVerOverride);
-            this.tabPage2.Controls.Add(this.lblKPXCVerOverride);
             this.tabPage2.Controls.Add(this.btnMigrateSettings);
             this.tabPage2.Controls.Add(this.btnCheckForLegacyConfig);
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
@@ -530,21 +526,9 @@
             this.chkUseKpxcSettingsKey.Text = "Use KeePassXC Settings Key";
             this.chkUseKpxcSettingsKey.UseVisualStyleBackColor = true;
             // 
-            // txtKPXCVerOverride
             // 
-            this.txtKPXCVerOverride.Location = new System.Drawing.Point(430, 404);
-            this.txtKPXCVerOverride.Name = "txtKPXCVerOverride";
-            this.txtKPXCVerOverride.Size = new System.Drawing.Size(90, 22);
-            this.txtKPXCVerOverride.TabIndex = 8;
             // 
-            // lblKPXCVerOverride
             // 
-            this.lblKPXCVerOverride.AutoSize = true;
-            this.lblKPXCVerOverride.Location = new System.Drawing.Point(370, 408);
-            this.lblKPXCVerOverride.Name = "lblKPXCVerOverride";
-            this.lblKPXCVerOverride.Size = new System.Drawing.Size(53, 13);
-            this.lblKPXCVerOverride.TabIndex = 7;
-            this.lblKPXCVerOverride.Text = "Ver Over:";
             // 
             // btnMigrateSettings
             // 
@@ -750,8 +734,6 @@
         private System.Windows.Forms.Label labelConnDb;
         private System.Windows.Forms.ComboBox comboBoxDatabases;
         private System.Windows.Forms.CheckBox chkUseKpxcSettingsKey;
-        private System.Windows.Forms.TextBox txtKPXCVerOverride;
-        private System.Windows.Forms.Label lblKPXCVerOverride;
         private System.Windows.Forms.Button btnMigrateSettings;
         private System.Windows.Forms.Button btnCheckForLegacyConfig;
     }
