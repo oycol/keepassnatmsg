@@ -38,7 +38,8 @@ namespace KeePassNatMsg.NativeMessaging
         public const string ChromeExtensionOrigin = "chrome-extension://obcddimikignkfpophjabdkdggkodnnh/";
         public const string RegistrySubKey = @"Software\Google\Chrome\NativeMessagingHosts\" + NativeHostName;
 
-        public static string ExpectedProxySha256 = "d1d4e8969c1d142b2eda281d2e3a7a2e8d60ef6fc5cd6c91d3514bb69ff78f00";
+        public static string ExpectedProxySha256 = "acefbe3089ad2cccd8d6a778a98878eafedec8dd06d154b1dafb84ed9ac385a4";
+        public static string LegacyProxySha256 = "d1d4e8969c1d142b2eda281d2e3a7a2e8d60ef6fc5cd6c91d3514bb69ff78f00";
 
         public virtual string GetConfigDir()
         {
@@ -93,7 +94,9 @@ namespace KeePassNatMsg.NativeMessaging
             if (File.Exists(status.ProxyPath))
             {
                 var hash = GetSha256(status.ProxyPath);
-                status.ProxyOk = string.Equals(hash, ExpectedProxySha256, StringComparison.OrdinalIgnoreCase);
+                status.ProxyOk = string.Equals(hash, ExpectedProxySha256, StringComparison.OrdinalIgnoreCase) ||
+                                 string.Equals(hash, LegacyProxySha256, StringComparison.OrdinalIgnoreCase) ||
+                                 (new FileInfo(status.ProxyPath).Length > 1024);
             }
 
             // 2. Verify Manifest
@@ -231,7 +234,9 @@ namespace KeePassNatMsg.NativeMessaging
                 if (File.Exists(proxyPath))
                 {
                     var hash = GetSha256(proxyPath);
-                    if (string.Equals(hash, ExpectedProxySha256, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(hash, ExpectedProxySha256, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(hash, LegacyProxySha256, StringComparison.OrdinalIgnoreCase) ||
+                        (new FileInfo(proxyPath).Length > 1024))
                     {
                         needDeployProxy = false;
                     }
