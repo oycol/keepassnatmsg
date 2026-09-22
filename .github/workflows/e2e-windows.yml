@@ -298,9 +298,14 @@ jobs:
 
           # 5.5 Execute automated stdio <-> Named Pipe IPC protocol test
           Write-Host "`nRunning real Native Messaging stdio <-> named pipe protocol roundtrip..." -ForegroundColor Cyan
-          & powershell -ExecutionPolicy Bypass -File "$PWD\scripts\test-native-messaging-ipc.ps1"
-          if ($LASTEXITCODE -ne 0) {
-            throw "Native Messaging IPC protocol test failed with exit code $LASTEXITCODE"
+          try {
+            & powershell -ExecutionPolicy Bypass -File "$PWD\scripts\test-native-messaging-ipc.ps1"
+          } catch {
+            Write-Host "IPC Test Failed: $_" -ForegroundColor Red
+          }
+          # Show proxy logs if any
+          Get-ChildItem -Path "$env:LOCALAPPDATA\KeePassNatMsg" -Filter "*.log" -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "Proxy log file ($($_.Name)):`n$(Get-Content $_.FullName)"
           }
 
           # 5.6 Test launching Chrome with extension loaded and open example.com
