@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Read plugin.log and KeePass config
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "=== plugin.log ===" -ForegroundColor Cyan
           $logPath = "$env:LOCALAPPDATA\KeePassNatMsg\plugin.log"
@@ -42,7 +42,7 @@ jobs:
           }
 
       - name: Load KeePass DLL and inspect microsoftonline entries
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "=== Inspect KeePass database entries for microsoftonline ===" -ForegroundColor Cyan
 
@@ -97,7 +97,7 @@ jobs:
           $db.Close()
 
       - name: Read proxy.log
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "=== proxy.log ===" -ForegroundColor Cyan
           $proxyLog = "$env:LOCALAPPDATA\KeePassNatMsg\proxy.log"
