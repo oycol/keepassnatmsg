@@ -212,8 +212,9 @@ jobs:
           if (-not (Test-Path $proxyPath)) { throw "Proxy exe does not exist at: $proxyPath" }
           $proxyHash = (Get-FileHash $proxyPath -Algorithm SHA256).Hash.ToLower()
           Write-Host "  Proxy Path: $proxyPath (SHA256: $proxyHash)"
-          if ($proxyHash -ne [KeePassNatMsg.NativeMessaging.ChromeIntegrationService]::ExpectedProxySha256) {
-            throw "Proxy SHA256 mismatch! Got: $proxyHash"
+          $status = $service.CheckStatus()
+          if (-not $status.ProxyOk) {
+            throw "Proxy verification failed! Hash: $proxyHash"
           }
 
           if (-not (Test-Path $manifestPath)) { throw "Manifest file does not exist at: $manifestPath" }
