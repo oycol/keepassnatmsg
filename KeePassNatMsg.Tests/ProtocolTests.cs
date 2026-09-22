@@ -126,6 +126,8 @@ namespace KeePassNatMsg.Tests
 
         #endregion
 
+        #region Errors
+
         [Test]
         public void ErrorType_AllExpectedValuesExist()
         {

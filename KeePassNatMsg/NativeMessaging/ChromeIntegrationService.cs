@@ -121,15 +121,14 @@ namespace KeePassNatMsg.NativeMessaging
         {
             // Build via JObject so path escaping and JSON formatting are always correct,
             // even for UNC paths or paths containing backslashes / special characters.
-            var obj = new Newtonsoft.Json.Linq.JObject
-            {
-                ["name"]        = NativeHostName,
-                ["description"] = "KeePassXC-Browser native messaging host (KeePassNatMsg)",
-                ["type"]        = "stdio",
-                ["path"]        = proxyPath,
-                ["allowed_origins"] = new Newtonsoft.Json.Linq.JArray(
-                    (object[])AllowedExtensionOrigins)
-            };
+            // Use Add() rather than indexer initialisation to stay compatible with C# 5.
+            var obj = new Newtonsoft.Json.Linq.JObject();
+            obj.Add("name",        NativeHostName);
+            obj.Add("description", "KeePassXC-Browser native messaging host (KeePassNatMsg)");
+            obj.Add("type",        "stdio");
+            obj.Add("path",        proxyPath);
+            obj.Add("allowed_origins", new Newtonsoft.Json.Linq.JArray(
+                (object[])AllowedExtensionOrigins));
             return obj.ToString(Newtonsoft.Json.Formatting.Indented) + Environment.NewLine;
         }
 
