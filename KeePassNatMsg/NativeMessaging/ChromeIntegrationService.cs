@@ -44,7 +44,7 @@ namespace KeePassNatMsg.NativeMessaging
         };
         public const string RegistrySubKey = @"Software\Google\Chrome\NativeMessagingHosts\" + NativeHostName;
 
-        public static string ExpectedProxySha256 = "760a0b1e1ca3e88e2a2174ff642b8f62a94370210c73f62c6471448818f7b2f4";
+        public static string ExpectedProxySha256 = "60f8e6d7f10701f0aaa99047aee82f9e6d2b8b755e97b0e8f0bea10f7e26e705";
         public static string LegacyProxySha256 = "d1d4e8969c1d142b2eda281d2e3a7a2e8d60ef6fc5cd6c91d3514bb69ff78f00";
 
         public virtual string GetConfigDir()

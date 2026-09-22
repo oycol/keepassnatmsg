@@ -149,19 +149,6 @@ jobs:
             dotnet build KeePassNatMsg\KeePassNatMsg.csproj -c Release -o $buildDir
           }
 
-          # 1.5 Compile robust NativeProxy.exe on Windows test host
-          $csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
-          $robustProxy = "$PWD\KeePassNatMsg\Resources\keepassnatmsg-proxy.exe"
-          Write-Host "Compiling robust native 64-bit keepassnatmsg-proxy.exe..."
-          & $csc /nologo /target:exe /optimize+ /out:$robustProxy "$PWD\scripts\NativeProxy.cs"
-          $proxyHash = (Get-FileHash $robustProxy -Algorithm SHA256).Hash.ToLower()
-          Write-Host "New keepassnatmsg-proxy.exe SHA256: $proxyHash" -ForegroundColor Green
-
-          # Copy to config dir for testing
-          $configDir = "$env:LOCALAPPDATA\KeePassNatMsg"
-          New-Item -ItemType Directory -Force -Path $configDir | Out-Null
-          Copy-Item $robustProxy "$configDir\keepassnatmsg-proxy.exe" -Force
-
           # Also create .plgx using the installed KeePass.exe
           $kpExe = "C:\Program Files\KeePass Password Safe 2\KeePass.exe"
           if (Test-Path $kpExe) {
@@ -343,9 +330,3 @@ jobs:
           }
 
           Write-Host "`n=== All Windows E2E Integration and IPC Protocol Tests PASSED! ===" -ForegroundColor Green
-
-      - name: Upload compiled robust proxy
-        uses: actions/upload-artifact@v4
-        with:
-          name: robust-proxy
-          path: KeePassNatMsg\Resources\keepassnatmsg-proxy.exe
