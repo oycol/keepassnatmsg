@@ -65,18 +65,6 @@ namespace KeePassNatMsg.Options
 
             InitDatabasesDropdown();
 
-            // Inject Logo dynamically
-            var pbLogo = new System.Windows.Forms.PictureBox
-            {
-                Location = new System.Drawing.Point(380, 20),
-                Size = new System.Drawing.Size(110, 110),
-                SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom,
-                Image = KeePassNatMsg.Properties.Resources.earth_lock,
-                Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right
-            };
-            this.tabPageGeneral.Controls.Add(pbLogo);
-            pbLogo.BringToFront();
-
             foreach (DatabaseItem item in comboBoxSearchDatabases.Items)
             {
                 if (item.DbHash == _config.SearchDatabaseHash)

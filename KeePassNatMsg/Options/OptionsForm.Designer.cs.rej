@@ -1,0 +1,42 @@
+--- KeePassNatMsg/Options/OptionsForm.Designer.cs
++++ KeePassNatMsg/Options/OptionsForm.Designer.cs
+@@ -37,6 +37,7 @@
+             this.SortByTitleRadioButton = new System.Windows.Forms.RadioButton();
+             this.SortByUsernameRadioButton = new System.Windows.Forms.RadioButton();
+             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
++            this.pictureBoxLogo = new System.Windows.Forms.PictureBox();
+             this.tabControl.SuspendLayout();
+             this.tabPageGeneral.SuspendLayout();
+             this.grpChrome.SuspendLayout();
+@@ -48,6 +49,7 @@
+             this.grpDangerZone.SuspendLayout();
+             this.tabPageKeys.SuspendLayout();
+             this.grpKeyExchange.SuspendLayout();
++            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxLogo)).BeginInit();
+             this.SuspendLayout();
+             // 
+             // btnOK
+@@ -73,6 +75,7 @@
+             // 
+             // tabPageGeneral
+             // 
++            this.tabPageGeneral.Controls.Add(this.pictureBoxLogo);
+             this.tabPageGeneral.Controls.Add(this.grpChrome);
+             this.tabPageGeneral.Controls.Add(this.grpSorting);
+             this.tabPageGeneral.Controls.Add(this.grpMatching);
+@@ -758,6 +769,7 @@
+             this.grpDangerZone.PerformLayout();
+             this.tabPageKeys.ResumeLayout(false);
+             this.grpKeyExchange.ResumeLayout(false);
++            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxLogo)).EndInit();
+             this.ResumeLayout(false);
+ 
+         }
+@@ -783,6 +795,7 @@
+         private System.Windows.Forms.TextBox txtKPXCVerOverride;
+         private System.Windows.Forms.Label lblKPXCVerOverride;
+         private System.Windows.Forms.ToolTip toolTip;
++        private System.Windows.Forms.PictureBox pictureBoxLogo;
+     }
+ }
+ 
