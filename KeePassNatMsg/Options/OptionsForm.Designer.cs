@@ -48,9 +48,6 @@
             this.txtDefaultGroup = new System.Windows.Forms.TextBox();
             this.chkDefaultGroupAlwaysAllow = new System.Windows.Forms.CheckBox();
             this.grpFields = new System.Windows.Forms.GroupBox();
-            this.returnStringFieldsCheckbox = new System.Windows.Forms.CheckBox();
-            this.returnStringFieldsWithKphOnlyCheckBox = new System.Windows.Forms.CheckBox();
-            this.chkSearchUrls = new System.Windows.Forms.CheckBox();
             this.grpDangerZone = new System.Windows.Forms.GroupBox();
             this.credAllowAccessCheckbox = new System.Windows.Forms.CheckBox();
             this.credAllowUpdatesCheckbox = new System.Windows.Forms.CheckBox();
@@ -443,9 +440,6 @@
             // 
             this.grpFields.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpFields.Controls.Add(this.returnStringFieldsCheckbox);
-            this.grpFields.Controls.Add(this.returnStringFieldsWithKphOnlyCheckBox);
-            this.grpFields.Controls.Add(this.chkSearchUrls);
             this.grpFields.Location = new System.Drawing.Point(10, 198);
             this.grpFields.Name = "grpFields";
             this.grpFields.Size = new System.Drawing.Size(510, 95);
@@ -453,36 +447,12 @@
             this.grpFields.TabStop = false;
             this.grpFields.Text = "String Fields & Custom Attributes";
             // 
-            // returnStringFieldsCheckbox
             // 
-            this.returnStringFieldsCheckbox.AutoSize = true;
-            this.returnStringFieldsCheckbox.Location = new System.Drawing.Point(15, 20);
-            this.returnStringFieldsCheckbox.Name = "returnStringFieldsCheckbox";
-            this.returnStringFieldsCheckbox.Size = new System.Drawing.Size(189, 17);
-            this.returnStringFieldsCheckbox.TabIndex = 0;
-            this.returnStringFieldsCheckbox.Text = "Return string fields (attributes)";
-            this.returnStringFieldsCheckbox.UseVisualStyleBackColor = true;
 
             // 
-            // returnStringFieldsWithKphOnlyCheckBox
             // 
-            this.returnStringFieldsWithKphOnlyCheckBox.AutoSize = true;
-            this.returnStringFieldsWithKphOnlyCheckBox.Location = new System.Drawing.Point(15, 43);
-            this.returnStringFieldsWithKphOnlyCheckBox.Name = "returnStringFieldsWithKphOnlyCheckBox";
-            this.returnStringFieldsWithKphOnlyCheckBox.Size = new System.Drawing.Size(252, 17);
-            this.returnStringFieldsWithKphOnlyCheckBox.TabIndex = 1;
-            this.returnStringFieldsWithKphOnlyCheckBox.Text = "Only return string fields with \'KPH:\' prefix";
-            this.returnStringFieldsWithKphOnlyCheckBox.UseVisualStyleBackColor = true;
             // 
-            // chkSearchUrls
             // 
-            this.chkSearchUrls.AutoSize = true;
-            this.chkSearchUrls.Location = new System.Drawing.Point(15, 66);
-            this.chkSearchUrls.Name = "chkSearchUrls";
-            this.chkSearchUrls.Size = new System.Drawing.Size(225, 17);
-            this.chkSearchUrls.TabIndex = 2;
-            this.chkSearchUrls.Text = "Search custom fields starting with URL";
-            this.chkSearchUrls.UseVisualStyleBackColor = true;
             // 
             // grpDangerZone
             // 
@@ -773,9 +743,6 @@
         private System.Windows.Forms.TextBox txtDefaultGroup;
         private System.Windows.Forms.CheckBox chkDefaultGroupAlwaysAllow;
         private System.Windows.Forms.GroupBox grpFields;
-        private System.Windows.Forms.CheckBox returnStringFieldsCheckbox;
-        private System.Windows.Forms.CheckBox returnStringFieldsWithKphOnlyCheckBox;
-        private System.Windows.Forms.CheckBox chkSearchUrls;
         private System.Windows.Forms.GroupBox grpDangerZone;
         private System.Windows.Forms.CheckBox credAllowAccessCheckbox;
         private System.Windows.Forms.CheckBox credAllowUpdatesCheckbox;
