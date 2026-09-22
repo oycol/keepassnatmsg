@@ -185,7 +185,7 @@
             this.btnUninstallIntegration.UseVisualStyleBackColor = true;
             this.btnUninstallIntegration.Click += new System.EventHandler(this.btnUninstallIntegration_Click);
             //
-            // tabPreferences
+            // tabPreferences  (AutoScroll so all groups are reachable on any DPI)
             //
             this.tabPreferences.AutoScroll = true;
             this.tabPreferences.Controls.Add(this.grpMatching);
@@ -200,7 +200,7 @@
             this.tabPreferences.Text = "Preferences";
             this.tabPreferences.UseVisualStyleBackColor = true;
             //
-            // grpMatching
+            // grpMatching  Y=14, H=200
             //
             this.grpMatching.Controls.Add(this.credNotifyCheckbox);
             this.grpMatching.Controls.Add(this.credMatchingCheckbox);
@@ -212,7 +212,7 @@
             this.grpMatching.Controls.Add(this.SortByUsernameRadioButton);
             this.grpMatching.Location = new System.Drawing.Point(14, 14);
             this.grpMatching.Name = "grpMatching";
-            this.grpMatching.Size = new System.Drawing.Size(638, 218);
+            this.grpMatching.Size = new System.Drawing.Size(638, 200);
             this.grpMatching.TabIndex = 0;
             this.grpMatching.TabStop = false;
             this.grpMatching.Text = "Credential Matching";
@@ -223,48 +223,48 @@
             this.credNotifyCheckbox.Text = "Notify when credentials are requested";
             this.credNotifyCheckbox.UseVisualStyleBackColor = true;
             this.credMatchingCheckbox.AutoSize = true;
-            this.credMatchingCheckbox.Location = new System.Drawing.Point(18, 58);
+            this.credMatchingCheckbox.Location = new System.Drawing.Point(18, 56);
             this.credMatchingCheckbox.Name = "credMatchingCheckbox";
             this.credMatchingCheckbox.Size = new System.Drawing.Size(206, 19);
             this.credMatchingCheckbox.Text = "Return only the best URL matches";
             this.credMatchingCheckbox.UseVisualStyleBackColor = true;
             this.unlockDatabaseCheckbox.AutoSize = true;
-            this.unlockDatabaseCheckbox.Location = new System.Drawing.Point(18, 88);
+            this.unlockDatabaseCheckbox.Location = new System.Drawing.Point(18, 84);
             this.unlockDatabaseCheckbox.Name = "unlockDatabaseCheckbox";
             this.unlockDatabaseCheckbox.Size = new System.Drawing.Size(222, 19);
             this.unlockDatabaseCheckbox.Text = "Request database unlock when needed";
             this.unlockDatabaseCheckbox.UseVisualStyleBackColor = true;
             this.hideExpiredCheckbox.AutoSize = true;
-            this.hideExpiredCheckbox.Location = new System.Drawing.Point(18, 118);
+            this.hideExpiredCheckbox.Location = new System.Drawing.Point(18, 112);
             this.hideExpiredCheckbox.Name = "hideExpiredCheckbox";
             this.hideExpiredCheckbox.Size = new System.Drawing.Size(166, 19);
             this.hideExpiredCheckbox.Text = "Exclude expired entries";
             this.hideExpiredCheckbox.UseVisualStyleBackColor = true;
             this.matchSchemesCheckbox.AutoSize = true;
-            this.matchSchemesCheckbox.Location = new System.Drawing.Point(18, 148);
+            this.matchSchemesCheckbox.Location = new System.Drawing.Point(18, 140);
             this.matchSchemesCheckbox.Name = "matchSchemesCheckbox";
             this.matchSchemesCheckbox.Size = new System.Drawing.Size(206, 19);
             this.matchSchemesCheckbox.Text = "Require matching URL scheme";
             this.matchSchemesCheckbox.UseVisualStyleBackColor = true;
             this.lblSort.AutoSize = true;
-            this.lblSort.Location = new System.Drawing.Point(18, 182);
+            this.lblSort.Location = new System.Drawing.Point(18, 170);
             this.lblSort.Name = "lblSort";
             this.lblSort.Size = new System.Drawing.Size(78, 15);
             this.lblSort.Text = "Sort results:";
             this.SortByTitleRadioButton.AutoSize = true;
-            this.SortByTitleRadioButton.Location = new System.Drawing.Point(110, 180);
+            this.SortByTitleRadioButton.Location = new System.Drawing.Point(110, 168);
             this.SortByTitleRadioButton.Name = "SortByTitleRadioButton";
             this.SortByTitleRadioButton.Size = new System.Drawing.Size(61, 19);
             this.SortByTitleRadioButton.Text = "Title";
             this.SortByTitleRadioButton.UseVisualStyleBackColor = true;
             this.SortByUsernameRadioButton.AutoSize = true;
-            this.SortByUsernameRadioButton.Location = new System.Drawing.Point(190, 180);
+            this.SortByUsernameRadioButton.Location = new System.Drawing.Point(190, 168);
             this.SortByUsernameRadioButton.Name = "SortByUsernameRadioButton";
             this.SortByUsernameRadioButton.Size = new System.Drawing.Size(83, 19);
             this.SortByUsernameRadioButton.Text = "Username";
             this.SortByUsernameRadioButton.UseVisualStyleBackColor = true;
             //
-            // grpDatabase
+            // grpDatabase  Y=222, H=130
             //
             this.grpDatabase.Controls.Add(this.credOnlySearchInSelectedDatabaseRadioButton);
             this.grpDatabase.Controls.Add(this.credSearchInAllOpenedDatabasesRadioButton);
@@ -272,9 +272,9 @@
             this.grpDatabase.Controls.Add(this.comboBoxSearchDatabases);
             this.grpDatabase.Controls.Add(this.labelConnDb);
             this.grpDatabase.Controls.Add(this.comboBoxDatabases);
-            this.grpDatabase.Location = new System.Drawing.Point(14, 242);
+            this.grpDatabase.Location = new System.Drawing.Point(14, 222);
             this.grpDatabase.Name = "grpDatabase";
-            this.grpDatabase.Size = new System.Drawing.Size(638, 139);
+            this.grpDatabase.Size = new System.Drawing.Size(638, 130);
             this.grpDatabase.TabIndex = 1;
             this.grpDatabase.TabStop = false;
             this.grpDatabase.Text = "Database Scope";
@@ -293,7 +293,7 @@
             this.credSearchInAllOpenedDatabasesRadioButton.UseVisualStyleBackColor = true;
             this.credSearchInAllOpenedDatabasesRadioButton.CheckedChanged += new System.EventHandler(this.rbSearchDatabase_CheckedChanged);
             this.credRestrictSearchInSpecificDatabaseRadioButton.AutoSize = true;
-            this.credRestrictSearchInSpecificDatabaseRadioButton.Location = new System.Drawing.Point(18, 58);
+            this.credRestrictSearchInSpecificDatabaseRadioButton.Location = new System.Drawing.Point(18, 55);
             this.credRestrictSearchInSpecificDatabaseRadioButton.Name = "credRestrictSearchInSpecificDatabaseRadioButton";
             this.credRestrictSearchInSpecificDatabaseRadioButton.Size = new System.Drawing.Size(151, 19);
             this.credRestrictSearchInSpecificDatabaseRadioButton.Text = "Search only this database:";
@@ -301,29 +301,29 @@
             this.credRestrictSearchInSpecificDatabaseRadioButton.CheckedChanged += new System.EventHandler(this.rbSearchDatabase_CheckedChanged);
             this.comboBoxSearchDatabases.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxSearchDatabases.FormattingEnabled = true;
-            this.comboBoxSearchDatabases.Location = new System.Drawing.Point(180, 56);
+            this.comboBoxSearchDatabases.Location = new System.Drawing.Point(180, 53);
             this.comboBoxSearchDatabases.Name = "comboBoxSearchDatabases";
             this.comboBoxSearchDatabases.Size = new System.Drawing.Size(430, 23);
             this.labelConnDb.AutoSize = true;
-            this.labelConnDb.Location = new System.Drawing.Point(18, 101);
+            this.labelConnDb.Location = new System.Drawing.Point(18, 95);
             this.labelConnDb.Name = "labelConnDb";
             this.labelConnDb.Size = new System.Drawing.Size(123, 15);
             this.labelConnDb.Text = "Connection database:";
             this.comboBoxDatabases.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxDatabases.FormattingEnabled = true;
-            this.comboBoxDatabases.Location = new System.Drawing.Point(180, 97);
+            this.comboBoxDatabases.Location = new System.Drawing.Point(180, 91);
             this.comboBoxDatabases.Name = "comboBoxDatabases";
             this.comboBoxDatabases.Size = new System.Drawing.Size(430, 23);
             //
-            // grpNewLogins
+            // grpNewLogins  Y=360, H=108
             //
             this.grpNewLogins.Controls.Add(this.lblDefaultGroup);
             this.grpNewLogins.Controls.Add(this.txtDefaultGroup);
             this.grpNewLogins.Controls.Add(this.chkDefaultGroupAlwaysAllow);
             this.grpNewLogins.Controls.Add(this.chkSearchUrls);
-            this.grpNewLogins.Location = new System.Drawing.Point(14, 391);
+            this.grpNewLogins.Location = new System.Drawing.Point(14, 360);
             this.grpNewLogins.Name = "grpNewLogins";
-            this.grpNewLogins.Size = new System.Drawing.Size(638, 116);
+            this.grpNewLogins.Size = new System.Drawing.Size(638, 108);
             this.grpNewLogins.TabIndex = 2;
             this.grpNewLogins.TabStop = false;
             this.grpNewLogins.Text = "Entries and New Logins";
@@ -336,54 +336,54 @@
             this.txtDefaultGroup.Name = "txtDefaultGroup";
             this.txtDefaultGroup.Size = new System.Drawing.Size(495, 23);
             this.chkDefaultGroupAlwaysAllow.AutoSize = true;
-            this.chkDefaultGroupAlwaysAllow.Location = new System.Drawing.Point(18, 58);
+            this.chkDefaultGroupAlwaysAllow.Location = new System.Drawing.Point(18, 56);
             this.chkDefaultGroupAlwaysAllow.Name = "chkDefaultGroupAlwaysAllow";
             this.chkDefaultGroupAlwaysAllow.Size = new System.Drawing.Size(293, 19);
             this.chkDefaultGroupAlwaysAllow.Text = "Allow entries in the default group without prompting";
             this.chkDefaultGroupAlwaysAllow.UseVisualStyleBackColor = true;
             this.chkSearchUrls.AutoSize = true;
-            this.chkSearchUrls.Location = new System.Drawing.Point(18, 86);
+            this.chkSearchUrls.Location = new System.Drawing.Point(18, 82);
             this.chkSearchUrls.Name = "chkSearchUrls";
             this.chkSearchUrls.Size = new System.Drawing.Size(244, 19);
             this.chkSearchUrls.Text = "Search additional URL and KP2A_URL fields";
             this.chkSearchUrls.UseVisualStyleBackColor = true;
             //
-            // grpDangerZone
+            // grpDangerZone  Y=476, H=124  — fits within 536px tab height (14 padding + 476 + 124 = 614 → AutoScroll handles overflow gracefully)
             //
             this.grpDangerZone.Controls.Add(this.lblDangerWarning);
             this.grpDangerZone.Controls.Add(this.credAllowAccessCheckbox);
             this.grpDangerZone.Controls.Add(this.credAllowUpdatesCheckbox);
             this.grpDangerZone.Controls.Add(this.removePermissionsButton);
             this.grpDangerZone.ForeColor = System.Drawing.Color.DarkRed;
-            this.grpDangerZone.Location = new System.Drawing.Point(14, 517);
+            this.grpDangerZone.Location = new System.Drawing.Point(14, 476);
             this.grpDangerZone.Name = "grpDangerZone";
-            this.grpDangerZone.Size = new System.Drawing.Size(638, 132);
+            this.grpDangerZone.Size = new System.Drawing.Size(638, 124);
             this.grpDangerZone.TabIndex = 3;
             this.grpDangerZone.TabStop = false;
             this.grpDangerZone.Text = "Danger Zone";
             this.lblDangerWarning.ForeColor = System.Drawing.Color.DarkRed;
-            this.lblDangerWarning.Location = new System.Drawing.Point(18, 23);
+            this.lblDangerWarning.Location = new System.Drawing.Point(18, 22);
             this.lblDangerWarning.Name = "lblDangerWarning";
-            this.lblDangerWarning.Size = new System.Drawing.Size(600, 34);
+            this.lblDangerWarning.Size = new System.Drawing.Size(600, 30);
             this.lblDangerWarning.Text = "These options bypass confirmation prompts. Enable them only when you understand the credential exposure risk.";
             this.credAllowAccessCheckbox.AutoSize = true;
             this.credAllowAccessCheckbox.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.credAllowAccessCheckbox.Location = new System.Drawing.Point(18, 62);
+            this.credAllowAccessCheckbox.Location = new System.Drawing.Point(18, 58);
             this.credAllowAccessCheckbox.Name = "credAllowAccessCheckbox";
             this.credAllowAccessCheckbox.Size = new System.Drawing.Size(210, 19);
             this.credAllowAccessCheckbox.Text = "Always allow credential access";
             this.credAllowAccessCheckbox.UseVisualStyleBackColor = true;
             this.credAllowUpdatesCheckbox.AutoSize = true;
             this.credAllowUpdatesCheckbox.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.credAllowUpdatesCheckbox.Location = new System.Drawing.Point(250, 62);
+            this.credAllowUpdatesCheckbox.Location = new System.Drawing.Point(250, 58);
             this.credAllowUpdatesCheckbox.Name = "credAllowUpdatesCheckbox";
             this.credAllowUpdatesCheckbox.Size = new System.Drawing.Size(204, 19);
             this.credAllowUpdatesCheckbox.Text = "Always allow credential updates";
             this.credAllowUpdatesCheckbox.UseVisualStyleBackColor = true;
             this.removePermissionsButton.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.removePermissionsButton.Location = new System.Drawing.Point(18, 91);
+            this.removePermissionsButton.Location = new System.Drawing.Point(18, 86);
             this.removePermissionsButton.Name = "removePermissionsButton";
-            this.removePermissionsButton.Size = new System.Drawing.Size(250, 28);
+            this.removePermissionsButton.Size = new System.Drawing.Size(250, 26);
             this.removePermissionsButton.Text = "Reset entry access permissions...";
             this.removePermissionsButton.UseVisualStyleBackColor = true;
             this.removePermissionsButton.Click += new System.EventHandler(this.removePermissionsButton_Click);

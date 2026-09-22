@@ -17,6 +17,7 @@ namespace KeePassNatMsg.Options
         private bool _initialAlwaysAllowAccess;
         private bool _initialAlwaysAllowUpdates;
         private bool _initialDefaultGroupAlwaysAllow;
+        private ToolTip _toolTip;
 
         private string AssemblyVersion
         {
@@ -24,7 +25,13 @@ namespace KeePassNatMsg.Options
             {
                 try
                 {
-                    return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                    var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                    // Trim trailing zero components: 2.3.1.0 → 2.3.1, 2.3.0.0 → 2.3
+                    if (v.Revision == 0 && v.Build == 0)
+                        return string.Format("{0}.{1}", v.Major, v.Minor);
+                    if (v.Revision == 0)
+                        return string.Format("{0}.{1}.{2}", v.Major, v.Minor, v.Build);
+                    return v.ToString();
                 }
                 catch { }
 
@@ -82,7 +89,7 @@ namespace KeePassNatMsg.Options
                 }
             }
 
-            var toolTip = new ToolTip();
+            var toolTip = _toolTip = new ToolTip();
             toolTip.AutoPopDelay = 10000;
             toolTip.InitialDelay = 500;
             toolTip.ReshowDelay = 500;

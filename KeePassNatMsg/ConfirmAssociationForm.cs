@@ -17,6 +17,20 @@ namespace KeePassNatMsg
             Saved = false;
         }
 
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            // Inherit the KeePass window icon so the dialog has a proper logo.
+            // The caller already assigns f.Icon = win.Icon before ShowDialog, but
+            // we also render it into the PictureBox for a visible in-form logo.
+            try
+            {
+                if (this.Icon != null)
+                    picLogo.Image = this.Icon.ToBitmap();
+            }
+            catch { }
+        }
+
         private void Save_Click(object sender, EventArgs e)
         {
             var value = KeyName.Text;
