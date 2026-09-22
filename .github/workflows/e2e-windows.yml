@@ -176,14 +176,12 @@ jobs:
 
           Write-Host "`n=== Step 2: Test Native Messaging Host & Registry Configuration ===" -ForegroundColor Cyan
           $configDir = "$env:LOCALAPPDATA\KeePassNatMsg"
-          $proxyPath = "$configDir\keepassnatmsg-proxy.exe"
-          $manifestPath = "$configDir\org.keepassxc.keepassxc_browser.chrome.json"
-          $regKey = "HKCU:\Software\Google\Chrome\NativeMessagingHosts\org.keepassxc.keepassxc_browser"
-
           # Compile and load ChromeIntegrationService directly via Add-Type
           $sourceFile = "$PWD\KeePassNatMsg\NativeMessaging\ChromeIntegrationService.cs"
           Add-Type -Path $sourceFile
           $service = New-Object KeePassNatMsg.NativeMessaging.ChromeIntegrationService
+          $manifestPath = $service.GetManifestPath()
+          $proxyPath = $service.GetProxyPath()
 
           Write-Host "Initial status before install:"
           $s1 = $service.CheckStatus()
@@ -211,10 +209,11 @@ jobs:
             throw "Manifest does not contain Chrome extension origin!"
           }
 
+          $chromeRegKey = "HKCU:\Software\Google\Chrome\NativeMessagingHosts\org.keepassxc.keepassxc_browser"
           $edgeRegKey = "HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\org.keepassxc.keepassxc_browser"
-          if (-not (Test-Path $regKey)) { throw "Chrome Registry key does not exist: $regKey" }
+          if (-not (Test-Path $chromeRegKey)) { throw "Chrome Registry key does not exist: $chromeRegKey" }
           if (-not (Test-Path $edgeRegKey)) { throw "Edge Registry key does not exist: $edgeRegKey" }
-          $regVal = (Get-ItemProperty -Path $regKey).'(default)'
+          $regVal = (Get-ItemProperty -Path $chromeRegKey).'(default)'
           $edgeRegVal = (Get-ItemProperty -Path $edgeRegKey).'(default)'
           Write-Host "  Chrome Registry Value: $regVal"
           Write-Host "  Edge Registry Value: $edgeRegVal"
@@ -230,7 +229,7 @@ jobs:
 
           Write-Host "`n=== Step 3: Test Uninstall & Clean Up ===" -ForegroundColor Cyan
           $service.Uninstall([ref]$err)
-          if (Test-Path $regKey) { throw "Chrome Registry key should be removed after uninstall!" }
+          if (Test-Path $chromeRegKey) { throw "Chrome Registry key should be removed after uninstall!" }
           if (Test-Path $edgeRegKey) { throw "Edge Registry key should be removed after uninstall!" }
           if (Test-Path $manifestPath) { throw "Manifest should be removed after uninstall!" }
           Write-Host "Uninstall successfully cleaned up registry and manifest." -ForegroundColor Green
