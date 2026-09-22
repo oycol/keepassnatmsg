@@ -237,7 +237,7 @@ jobs:
           }
           Write-Host "Chrome Integration is 100% verified and READY for Chrome!" -ForegroundColor Green
 
-          Write-Host "`n=== Step 5: Test KeePass Startup with KeePassNatMsg Plugin ===" -ForegroundColor Cyan
+          Write-Host "`n=== Step 5: Test KeePass Startup & Named Pipe with Plugin ===" -ForegroundColor Cyan
           $kpExe = "C:\Program Files\KeePass Password Safe 2\KeePass.exe"
           $kpProc = Start-Process -FilePath $kpExe -PassThru
           Start-Sleep -Seconds 3
@@ -245,6 +245,25 @@ jobs:
             throw "KeePass process exited unexpectedly on startup!"
           }
           Write-Host "KeePass is running cleanly (PID: $($kpProc.Id))." -ForegroundColor Green
+
+          # Check Named Pipe created by KeePassNatMsg for proxy communication
+          $pipes = [System.IO.Directory]::GetFiles('\\.\pipe\') | Where-Object { $_ -match "keepass" }
+          Write-Host "Active KeePass pipes:"
+          $pipes | ForEach-Object { Write-Host "  $_" -ForegroundColor Green }
+
+          # Check Chrome KeePassXC-Browser extension status
+          $extId = "obcddimikignkfpophjabdkdggkodnnh"
+          $extDirs = @(
+            "$env:LOCALAPPDATA\Google\Chrome\User Data\Default\Extensions\$extId",
+            "$env:LOCALAPPDATA\Google\Chrome\User Data\Profile*\Extensions\$extId"
+          )
+          $foundExt = Get-ChildItem -Path $extDirs -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($foundExt) {
+            Write-Host "KeePassXC-Browser extension installed in Chrome profile: $($foundExt.FullName)" -ForegroundColor Green
+          } else {
+            Write-Host "KeePassXC-Browser extension is NOT yet installed in user profile." -ForegroundColor Yellow
+          }
+
           Stop-Process -Id $kpProc.Id -Force -ErrorAction SilentlyContinue
           Write-Host "KeePass closed gracefully." -ForegroundColor Green
           exit 0
