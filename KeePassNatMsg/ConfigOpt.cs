@@ -13,7 +13,7 @@ namespace KeePassNatMsg
 
     public class ConfigOpt
     {
-        private readonly KeePassLib.CustomConfig _config;
+        private readonly AceCustomConfig _config;
 
         const string ReceiveCredentialNotificationKey = "KeePassHttp_ReceiveCredentialNotification";
         const string SpecificMatchingOnlyKey = "KeePassHttp_SpecificMatchingOnly";
@@ -31,7 +31,7 @@ namespace KeePassNatMsg
         const string DefaultGroupKey = "KeePassNatMsg_DefaultGroup";
         const string DefaultGroupAlwaysAllowKey = "KeePassNatMsg_DefaultGroupAlwaysAllow";
 
-        public ConfigOpt(KeePassLib.CustomConfig config)
+        public ConfigOpt(AceCustomConfig config)
         {
             _config = config;
         }
