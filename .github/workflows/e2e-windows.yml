@@ -245,8 +245,9 @@ jobs:
             throw "KeePass process exited unexpectedly on startup!"
           }
           Write-Host "KeePass is running cleanly (PID: $($kpProc.Id))." -ForegroundColor Green
-          Stop-Process -Id $kpProc.Id -Force
+          Stop-Process -Id $kpProc.Id -Force -ErrorAction SilentlyContinue
           Write-Host "KeePass closed gracefully." -ForegroundColor Green
+          exit 0
 
       - name: Build solution for E2E host
         run: |
