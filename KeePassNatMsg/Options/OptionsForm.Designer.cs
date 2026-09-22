@@ -472,7 +472,7 @@
             this.returnStringFieldsCheckbox.TabIndex = 0;
             this.returnStringFieldsCheckbox.Text = "Return string fields (attributes)";
             this.returnStringFieldsCheckbox.UseVisualStyleBackColor = true;
-            this.returnStringFieldsCheckbox.CheckedChanged += new System.EventHandler(this.returnStringFieldsCheckbox_CheckedChanged);
+
             // 
             // returnStringFieldsWithKphOnlyCheckBox
             // 

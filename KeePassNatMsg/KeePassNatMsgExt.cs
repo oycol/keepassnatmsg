@@ -495,9 +495,7 @@ namespace KeePassNatMsg
 
         public static string GetVersion()
         {
-            var c = new ConfigOpt(HostInstance.CustomConfig);
-            var verOvr = c.OverrideKeePassXcVersion;
-            return string.IsNullOrWhiteSpace(verOvr) ? KeePassXcVersion.ToString() : verOvr;
+            return "2.7.0"; // Strictly locked to 2.7.0 for KeePassXC-Browser compatibility without Passkeys
         }
 
         public void Dispose()
