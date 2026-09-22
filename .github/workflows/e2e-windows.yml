@@ -46,6 +46,38 @@ jobs:
           New-Item -ItemType Directory -Force -Path $env:E2E_OUTPUT_DIR | Out-Null
           New-Item -ItemType Directory -Force -Path $env:KEEPASS_E2E_DIR | Out-Null
 
+      - name: Ensure test environment software (Chrome and KeePass)
+        run: |
+          Write-Host "Checking Chrome and KeePass..."
+          $chromePath = @(
+            'C:\Program Files\Google\Chrome\Application\chrome.exe',
+            'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe'
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+          if (-not $chromePath) {
+            Write-Host "Chrome not found, installing Chrome..."
+            $chromeInstaller = "$env:TEMP\ChromeSetup.exe"
+            Invoke-WebRequest -Uri "https://dl.google.com/chrome/install/latest/chrome_installer.exe" -OutFile $chromeInstaller
+            Start-Process -FilePath $chromeInstaller -ArgumentList "/silent /install" -Wait
+          }
+
+          $kpPath = @(
+            'C:\Program Files\KeePass Password Safe 2\KeePass.exe',
+            'C:\Program Files (x86)\KeePass Password Safe 2\KeePass.exe'
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+          if (-not $kpPath) {
+            Write-Host "KeePass not found, downloading portable KeePass 2.60..."
+            $kpDir = "C:\Program Files\KeePass Password Safe 2"
+            New-Item -ItemType Directory -Force -Path $kpDir | Out-Null
+            $kpZip = "$env:TEMP\KeePass-2.60.zip"
+            Invoke-WebRequest -Uri "https://github.com/smorks/keepassnatmsg/releases/download/v2.0.17/KeePassNatMsg.v2.0.17.zip" -ErrorAction SilentlyContinue
+            # Let's download KeePass 2.60 portable directly
+            Invoke-WebRequest -Uri "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/2.60/KeePass-2.60.zip" -OutFile $kpZip
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            [System.IO.Compression.ZipFile]::ExtractToDirectory($kpZip, $kpDir)
+          }
+
       - name: Collect environment diagnostics
         run: |
           $diag = [ordered]@{
