@@ -7,6 +7,7 @@
 | KeePass | 2.35+ x64 | ✅ CI build & real Windows verified (2.60) |
 | KeePassXC-Browser | 1.10.4 Chromium | ✅ Protocol compatible & E2E loaded |
 | Google Chrome | 134+ x64 | ✅ Real Windows interactive host verified |
+| Microsoft Edge | 153+ x64 | ✅ Real Windows interactive host verified |
 | Windows | 10/11 x64 | ✅ CI build on windows-2022 & real Win11 E2E |
 | .NET Framework | 4.0+ | ✅ Target framework |
 

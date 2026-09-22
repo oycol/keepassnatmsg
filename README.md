@@ -13,10 +13,10 @@
 - **Single-File Delivery (`KeePassNatMsg.plgx`)**:
   - No complex packages, manual DLL extractions, or external dependencies.
   - Simply drop `KeePassNatMsg.plgx` into your KeePass `Plugins\` folder.
-- **Zero-Script One-Click Chrome Integration**:
+- **Zero-Script One-Click Browser Integration (Chrome & Edge)**:
   - No PowerShell execution policy issues (`PSSecurityException`).
   - No manual `install.ps1` or `uninstall.ps1` scripts needed.
-  - Set up or remove Chrome Native Messaging host directly from KeePass UI (`Tools -> KeePassNatMsg Options -> Chrome Integration`).
+  - Set up or remove Native Messaging hosts for both **Microsoft Edge** and **Google Chrome** directly from KeePass UI (`Tools -> KeePassNatMsg Options -> Browser Integration (Chrome & Edge)`).
 - **Embedded Proxy Engine**:
   - `keepassnatmsg-proxy.exe` is embedded directly inside the plugin assembly.
   - Automatically extracted to `%LOCALAPPDATA%\KeePassNatMsg` and verified via SHA256 integrity check.
@@ -72,10 +72,10 @@
 Open via `Tools -> KeePassNatMsg Options`:
 
 ### General Tab
-- **Chrome Integration**:
-  - **Status**: Displays real-time registry and manifest configuration state.
-  - **Install / Repair**: Extracts the embedded proxy and writes current-user HKCU manifest keys.
-  - **Uninstall**: Cleanly removes registered Chrome Native Messaging host keys and files.
+- **Browser Integration (Chrome & Edge)**:
+  - **Status**: Displays real-time registry and manifest configuration state for both Chrome and Edge.
+  - **Install / Repair**: Extracts the embedded proxy and writes current-user HKCU manifest keys for both Chrome and Edge.
+  - **Uninstall**: Cleanly removes registered Chrome and Edge Native Messaging host keys and files.
 - **Credential Matching**:
   - *Only return best matching entries for URL*: Uses Levenshtein distance to prioritize exact URL path matches.
   - *Match URL scheme*: Restricts credentials to `http` or `https` matching schemes.
