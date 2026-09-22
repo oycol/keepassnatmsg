@@ -55,8 +55,9 @@ try {
     $stdin.Write($jsonBytes, 0, $len)
     $stdin.Flush()
 
-    # Read 4-byte response length with 5s timeout
-    $task = $stdout.ReadAsync($respLenBytes = New-Object byte[] 4, 0, 4)
+    # Read 4-byte response length with 8s timeout
+    $respLenBytes = New-Object byte[] 4
+    $task = $stdout.ReadAsync($respLenBytes, 0, 4)
     if (-not $task.Wait(8000)) {
         throw "Timeout waiting for response length from proxy (8 seconds elapsed)."
     }
