@@ -153,7 +153,7 @@
             this.grpChrome.Size = new System.Drawing.Size(510, 105);
             this.grpChrome.TabIndex = 0;
             this.grpChrome.TabStop = false;
-            this.grpChrome.Text = "Chrome Browser Integration";
+            this.grpChrome.Text = "Browser Integration (Chrome & Edge)";
             // 
             // lblChromeStatus
             // 

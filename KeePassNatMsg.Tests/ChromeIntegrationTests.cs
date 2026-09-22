@@ -24,6 +24,11 @@ namespace KeePassNatMsg.Tests
             Assert.AreEqual("pdffhmdngciaglkoonimfcmckehcpafo", ChromeIntegrationService.ChromeExtensionId);
             Assert.AreEqual("chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/", ChromeIntegrationService.ChromeExtensionOrigin);
             Assert.AreEqual(@"Software\Google\Chrome\NativeMessagingHosts\org.keepassxc.keepassxc_browser", ChromeIntegrationService.RegistrySubKey);
+
+            // Verify both Chrome and Edge registry keys are registered
+            Assert.AreEqual(2, ChromeIntegrationService.SupportedRegistryKeys.Length);
+            Assert.Contains(@"Software\Google\Chrome\NativeMessagingHosts\org.keepassxc.keepassxc_browser", ChromeIntegrationService.SupportedRegistryKeys);
+            Assert.Contains(@"Software\Microsoft\Edge\NativeMessagingHosts\org.keepassxc.keepassxc_browser", ChromeIntegrationService.SupportedRegistryKeys);
         }
 
         [Test]
@@ -46,14 +51,25 @@ namespace KeePassNatMsg.Tests
         }
 
         [Test]
-        public void ProxyExpectedSha256_IsDefinedAndHex64()
+        public void ExecutableValidation_DetectsValidMzHeader()
         {
-            Assert.IsNotNull(ChromeIntegrationService.ExpectedProxySha256);
-            Assert.AreEqual(64, ChromeIntegrationService.ExpectedProxySha256.Length);
-            // Verify all characters are hex
-            foreach (var c in ChromeIntegrationService.ExpectedProxySha256)
+            var tempFile = Path.GetTempFileName();
+            try
             {
-                Assert.IsTrue((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'));
+                // File less than 1KB should fail
+                File.WriteAllBytes(tempFile, new byte[] { 0x4D, 0x5A });
+                Assert.IsFalse(ChromeIntegrationService.IsValidExecutable(tempFile));
+
+                // 2KB file with valid MZ header should pass
+                var validDummy = new byte[2048];
+                validDummy[0] = (byte)'M';
+                validDummy[1] = (byte)'Z';
+                File.WriteAllBytes(tempFile, validDummy);
+                Assert.IsTrue(ChromeIntegrationService.IsValidExecutable(tempFile));
+            }
+            finally
+            {
+                if (File.Exists(tempFile)) File.Delete(tempFile);
             }
         }
     }

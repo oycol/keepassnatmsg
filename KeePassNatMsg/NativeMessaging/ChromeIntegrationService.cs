@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -36,16 +37,21 @@ namespace KeePassNatMsg.NativeMessaging
         public const string NativeHostName = "org.keepassxc.keepassxc_browser";
         public const string ChromeExtensionId = "pdffhmdngciaglkoonimfcmckehcpafo";
         public const string ChromeExtensionOrigin = "chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/";
+
         public static readonly string[] AllowedExtensionOrigins = new[]
         {
             "chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/", // Official Chrome Web Store
             "chrome-extension://oboonakemofpalcgghocfoadofidjkkk/", // Official Chromium / Edge
             "chrome-extension://obcddimikignkfpophjabdkdggkodnnh/"  // Legacy / Dev
         };
+
         public const string RegistrySubKey = @"Software\Google\Chrome\NativeMessagingHosts\" + NativeHostName;
 
-        public static string ExpectedProxySha256 = "60f8e6d7f10701f0aaa99047aee82f9e6d2b8b755e97b0e8f0bea10f7e26e705";
-        public static string LegacyProxySha256 = "d1d4e8969c1d142b2eda281d2e3a7a2e8d60ef6fc5cd6c91d3514bb69ff78f00";
+        public static readonly string[] SupportedRegistryKeys = new[]
+        {
+            @"Software\Google\Chrome\NativeMessagingHosts\" + NativeHostName,
+            @"Software\Microsoft\Edge\NativeMessagingHosts\" + NativeHostName
+        };
 
         public virtual string GetConfigDir()
         {
@@ -60,7 +66,7 @@ namespace KeePassNatMsg.NativeMessaging
 
         public virtual string GetManifestPath()
         {
-            return Path.Combine(GetConfigDir(), "org.keepassxc.keepassxc_browser.chrome.json");
+            return Path.Combine(GetConfigDir(), "org.keepassxc.keepassxc_browser.json");
         }
 
         public virtual bool IsChromeInstalled()
@@ -68,7 +74,32 @@ namespace KeePassNatMsg.NativeMessaging
             var p1 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Google\Chrome\Application\chrome.exe");
             var p2 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Google\Chrome\Application\chrome.exe");
             var p3 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Google\Chrome\Application\chrome.exe");
-            return File.Exists(p1) || File.Exists(p2) || File.Exists(p3);
+            var e1 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Microsoft\Edge\Application\msedge.exe");
+            var e2 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Microsoft\Edge\Application\msedge.exe");
+            return File.Exists(p1) || File.Exists(p2) || File.Exists(p3) || File.Exists(e1) || File.Exists(e2);
+        }
+
+        public static bool IsValidExecutable(string path)
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return false;
+            try
+            {
+                var fi = new FileInfo(path);
+                if (fi.Length < 1024) return false;
+
+                // Validate MZ header (Windows Portable Executable format)
+                using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    if (fs.Length < 2) return false;
+                    var b1 = fs.ReadByte();
+                    var b2 = fs.ReadByte();
+                    return b1 == 'M' && b2 == 'Z';
+                }
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public string GenerateManifestContent(string proxyPath)
@@ -100,14 +131,8 @@ namespace KeePassNatMsg.NativeMessaging
                 ChromeDetected = IsChromeInstalled()
             };
 
-            // 1. Verify Proxy
-            if (File.Exists(status.ProxyPath))
-            {
-                var hash = GetSha256(status.ProxyPath);
-                status.ProxyOk = string.Equals(hash, ExpectedProxySha256, StringComparison.OrdinalIgnoreCase) ||
-                                 string.Equals(hash, LegacyProxySha256, StringComparison.OrdinalIgnoreCase) ||
-                                 (new FileInfo(status.ProxyPath).Length > 1024);
-            }
+            // 1. Verify Proxy (executable check, no brittle fixed hash)
+            status.ProxyOk = IsValidExecutable(status.ProxyPath);
 
             // 2. Verify Manifest
             if (File.Exists(status.ManifestPath))
@@ -125,28 +150,33 @@ namespace KeePassNatMsg.NativeMessaging
                 }
             }
 
-            // 3. Verify Registry
-            try
+            // 3. Verify Registry (check Chrome and Edge keys)
+            var regOkCount = 0;
+            foreach (var subKey in SupportedRegistryKeys)
             {
-                using (var key = Registry.CurrentUser.OpenSubKey(RegistrySubKey, false))
+                try
                 {
-                    if (key != null)
+                    using (var key = Registry.CurrentUser.OpenSubKey(subKey, false))
                     {
-                        var val = key.GetValue(null) as string;
-                        status.RegistryOk = string.Equals(val, status.ManifestPath, StringComparison.OrdinalIgnoreCase);
+                        if (key != null)
+                        {
+                            var val = key.GetValue(null) as string;
+                            if (string.Equals(val, status.ManifestPath, StringComparison.OrdinalIgnoreCase))
+                            {
+                                regOkCount++;
+                            }
+                        }
                     }
                 }
+                catch { }
             }
-            catch
-            {
-                status.RegistryOk = false;
-            }
+            status.RegistryOk = (regOkCount > 0);
 
             // Synthesize State
             if (status.ProxyOk && status.ManifestOk && status.RegistryOk)
             {
                 status.State = ChromeIntegrationState.Ready;
-                status.Message = "Chrome integration is active and verified.";
+                status.Message = "Browser integration (Chrome & Edge) is active and verified.";
             }
             else if (!File.Exists(status.ProxyPath) && !File.Exists(status.ManifestPath) && !status.RegistryOk)
             {
@@ -175,7 +205,6 @@ namespace KeePassNatMsg.NativeMessaging
         public bool DeployEmbeddedProxy(string targetPath)
         {
             var asm = Assembly.GetExecutingAssembly();
-            // Look for resource ending with keepassnatmsg-proxy.exe
             string resourceName = null;
             foreach (var name in asm.GetManifestResourceNames())
             {
@@ -194,8 +223,7 @@ namespace KeePassNatMsg.NativeMessaging
                     {
                         var dir = Path.GetDirectoryName(targetPath);
                         if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-
-                        using (var fileStream = new FileStream(targetPath, FileMode.Create, FileAccess.Write))
+                        using (var fileStream = new FileStream(targetPath, FileMode.Create, FileAccess.Write, FileShare.None))
                         {
                             stream.CopyTo(fileStream);
                         }
@@ -204,7 +232,7 @@ namespace KeePassNatMsg.NativeMessaging
                 }
             }
 
-            // Fallback: search relative paths for keepassnatmsg-proxy.exe
+            // Fallback: search relative paths
             var candidatePaths = new[]
             {
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins", "keepassnatmsg-proxy.exe"),
@@ -238,21 +266,9 @@ namespace KeePassNatMsg.NativeMessaging
                     Directory.CreateDirectory(configDir);
                 }
 
-                // 1. Deploy Proxy if missing or hash mismatch
+                // 1. Deploy Proxy if missing or not a valid executable
                 var proxyPath = GetProxyPath();
-                bool needDeployProxy = true;
-                if (File.Exists(proxyPath))
-                {
-                    var hash = GetSha256(proxyPath);
-                    if (string.Equals(hash, ExpectedProxySha256, StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(hash, LegacyProxySha256, StringComparison.OrdinalIgnoreCase) ||
-                        (new FileInfo(proxyPath).Length > 1024))
-                    {
-                        needDeployProxy = false;
-                    }
-                }
-
-                if (needDeployProxy)
+                if (!IsValidExecutable(proxyPath))
                 {
                     if (!DeployEmbeddedProxy(proxyPath))
                     {
@@ -266,22 +282,35 @@ namespace KeePassNatMsg.NativeMessaging
                 var manifestContent = GenerateManifestContent(proxyPath);
                 File.WriteAllText(manifestPath, manifestContent, new UTF8Encoding(false));
 
-                // 3. Write Registry (HKCU)
-                using (var key = Registry.CurrentUser.CreateSubKey(RegistrySubKey))
+                // 3. Write Registry for both Chrome and Edge (HKCU)
+                var registeredAny = false;
+                foreach (var subKey in SupportedRegistryKeys)
                 {
-                    if (key == null)
+                    try
                     {
-                        errorMessage = "Failed to create registry key: " + RegistrySubKey;
-                        return false;
+                        using (var key = Registry.CurrentUser.CreateSubKey(subKey))
+                        {
+                            if (key != null)
+                            {
+                                key.SetValue(null, manifestPath, RegistryValueKind.String);
+                                registeredAny = true;
+                            }
+                        }
                     }
-                    key.SetValue(null, manifestPath, RegistryValueKind.String);
+                    catch { }
                 }
 
-                // 4. Verify roundtrip
-                var status = CheckStatus();
-                if (status.State != ChromeIntegrationState.Ready)
+                if (!registeredAny)
                 {
-                    errorMessage = "Verification failed after install: " + status.Message;
+                    errorMessage = "Failed to write browser NativeMessagingHosts registry keys.";
+                    return false;
+                }
+
+                // Verify status
+                var verified = CheckStatus();
+                if (verified.State != ChromeIntegrationState.Ready)
+                {
+                    errorMessage = "Verification failed after install: " + verified.Message;
                     return false;
                 }
 
@@ -299,25 +328,51 @@ namespace KeePassNatMsg.NativeMessaging
             errorMessage = null;
             try
             {
-                // 1. Delete Registry Key
-                try
+                // 1. Remove registry keys for Chrome and Edge
+                foreach (var subKey in SupportedRegistryKeys)
                 {
-                    Registry.CurrentUser.DeleteSubKeyTree(RegistrySubKey, false);
-                }
-                catch (Exception ex)
-                {
-                    errorMessage = "Failed to remove registry key: " + ex.Message;
+                    try
+                    {
+                        Registry.CurrentUser.DeleteSubKeyTree(subKey, false);
+                    }
+                    catch { }
                 }
 
-                // 2. Delete Manifest JSON
+                // 2. Remove Manifest JSON file
                 var manifestPath = GetManifestPath();
                 if (File.Exists(manifestPath))
                 {
                     try { File.Delete(manifestPath); } catch { }
                 }
 
-                // Leave proxy.exe alone or clean if empty
-                return errorMessage == null;
+                // 3. Remove legacy chrome json if present
+                var legacyManifest = Path.Combine(GetConfigDir(), "org.keepassxc.keepassxc_browser.chrome.json");
+                if (File.Exists(legacyManifest))
+                {
+                    try { File.Delete(legacyManifest); } catch { }
+                }
+
+                // 4. Clean up proxy and directory if possible
+                var proxyPath = GetProxyPath();
+                if (File.Exists(proxyPath))
+                {
+                    try { File.Delete(proxyPath); } catch { }
+                }
+
+                var configDir = GetConfigDir();
+                if (Directory.Exists(configDir))
+                {
+                    try
+                    {
+                        if (Directory.GetFiles(configDir).Length == 0 && Directory.GetDirectories(configDir).Length == 0)
+                        {
+                            Directory.Delete(configDir);
+                        }
+                    }
+                    catch { }
+                }
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -326,15 +381,19 @@ namespace KeePassNatMsg.NativeMessaging
             }
         }
 
-        private static string GetSha256(string filePath)
+        public static string GetSha256(string filePath)
         {
+            if (!File.Exists(filePath)) return null;
             using (var sha256 = SHA256.Create())
             {
                 using (var stream = File.OpenRead(filePath))
                 {
-                    var bytes = sha256.ComputeHash(stream);
+                    var hashBytes = sha256.ComputeHash(stream);
                     var sb = new StringBuilder();
-                    foreach (var b in bytes) sb.Append(b.ToString("x2"));
+                    foreach (var b in hashBytes)
+                    {
+                        sb.Append(b.ToString("x2"));
+                    }
                     return sb.ToString();
                 }
             }

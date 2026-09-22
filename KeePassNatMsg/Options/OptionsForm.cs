@@ -238,7 +238,7 @@ namespace KeePassNatMsg.Options
             if (_chromeService.InstallOrRepair(out error))
             {
                 UpdateChromeIntegrationUi();
-                MessageBox.Show(this, "Chrome integration installed successfully!\n\nNext steps:\n1. Restart Chrome if running.\n2. Open KeePassXC-Browser extension and click 'Connect'.", "Integration Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(this, "Browser integration (Chrome & Edge) installed successfully!\n\nNext steps:\n1. Restart Chrome or Edge if running.\n2. Open KeePassXC-Browser extension and click 'Connect'.", "Integration Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {

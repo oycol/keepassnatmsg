@@ -211,11 +211,15 @@ jobs:
             throw "Manifest does not contain Chrome extension origin!"
           }
 
-          if (-not (Test-Path $regKey)) { throw "Registry key does not exist: $regKey" }
+          $edgeRegKey = "HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\org.keepassxc.keepassxc_browser"
+          if (-not (Test-Path $regKey)) { throw "Chrome Registry key does not exist: $regKey" }
+          if (-not (Test-Path $edgeRegKey)) { throw "Edge Registry key does not exist: $edgeRegKey" }
           $regVal = (Get-ItemProperty -Path $regKey).'(default)'
-          Write-Host "  Registry Value: $regVal"
-          if ($regVal -ne $manifestPath) {
-            throw "Registry value does not point to manifest path!"
+          $edgeRegVal = (Get-ItemProperty -Path $edgeRegKey).'(default)'
+          Write-Host "  Chrome Registry Value: $regVal"
+          Write-Host "  Edge Registry Value: $edgeRegVal"
+          if ($regVal -ne $manifestPath -or $edgeRegVal -ne $manifestPath) {
+            throw "Registry values do not point to manifest path!"
           }
 
           $s2 = $service.CheckStatus()
@@ -226,7 +230,8 @@ jobs:
 
           Write-Host "`n=== Step 3: Test Uninstall & Clean Up ===" -ForegroundColor Cyan
           $service.Uninstall([ref]$err)
-          if (Test-Path $regKey) { throw "Registry key should be removed after uninstall!" }
+          if (Test-Path $regKey) { throw "Chrome Registry key should be removed after uninstall!" }
+          if (Test-Path $edgeRegKey) { throw "Edge Registry key should be removed after uninstall!" }
           if (Test-Path $manifestPath) { throw "Manifest should be removed after uninstall!" }
           Write-Host "Uninstall successfully cleaned up registry and manifest." -ForegroundColor Green
 
