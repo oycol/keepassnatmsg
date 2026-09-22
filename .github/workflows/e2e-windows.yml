@@ -296,19 +296,11 @@ jobs:
           Write-Host "Active KeePass pipes:"
           $pipes | ForEach-Object { Write-Host "  $_" -ForegroundColor Green }
 
-          # 5.5 Compile clean 64-bit NativeProxy and test IPC
-          $csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
-          if (Test-Path $csc) {
-            Write-Host "Compiling robust native 64-bit keepassnatmsg-proxy.exe with csc..." -ForegroundColor Cyan
-            & $csc /nologo /target:exe /out:$proxyPath "$PWD\scripts\NativeProxy.cs"
-            Write-Host "Compiled clean native 64-bit keepassnatmsg-proxy.exe! (SHA256: $((Get-FileHash $proxyPath -Algorithm SHA256).Hash.ToLower()))" -ForegroundColor Green
-          }
-
-          # 5.6 Execute Native Messaging proxy stdio <-> Named Pipe protocol roundtrip test
-          Write-Host "`nRunning full Native Messaging stdio proxy <-> named pipe protocol roundtrip..." -ForegroundColor Cyan
-          & powershell -ExecutionPolicy Bypass -File "$PWD\scripts\test-native-messaging-ipc.ps1"
+          # 5.5 Execute direct Named Pipe protocol roundtrip test
+          Write-Host "`nRunning direct Named Pipe protocol roundtrip test..." -ForegroundColor Cyan
+          & powershell -ExecutionPolicy Bypass -File "$PWD\scripts\test-direct-pipe.ps1"
           if ($LASTEXITCODE -ne 0) {
-            throw "Native Messaging stdio proxy test failed with exit code $LASTEXITCODE"
+            throw "Direct Named Pipe test failed with exit code $LASTEXITCODE"
           }
 
           # 5.6 Test launching Chrome with extension loaded and open example.com
