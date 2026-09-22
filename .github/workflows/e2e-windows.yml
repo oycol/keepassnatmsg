@@ -113,19 +113,65 @@ jobs:
           $pluginsDir = "C:\Program Files\KeePass Password Safe 2\Plugins"
           New-Item -ItemType Directory -Force -Path $pluginsDir | Out-Null
 
-          # Download the fresh .plgx artifact from latest CI run
-          $runId = (gh run list --repo oycol/keepassnatmsg --workflow "CI Build & Test" --branch main --limit 1 --json databaseId --jq '.[0].databaseId')
-          Write-Host "Downloading artifacts from CI Run: $runId"
-          gh run download $runId --repo oycol/keepassnatmsg --name KeePassNatMsg-build --dir "$env:TEMP\kpnm-ci-build"
+          # Download the fresh .plgx artifact from latest release or build locally
+          $buildDir = "$env:TEMP\kpnm-ci-build"
+          New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
           
-          $ciPlgx = "$env:TEMP\kpnm-ci-build\KeePassNatMsg.plgx"
-          $targetPlgx = Join-Path $pluginsDir "KeePassNatMsg.plgx"
-          Copy-Item $ciPlgx $targetPlgx -Force
-          Write-Host "Deployed plugin to: $targetPlgx" -ForegroundColor Green
+          # We can download KeePassNatMsg.dll and .plgx from GitHub API/releases or build directly
+          $releaseUrl = "https://github.com/oycol/keepassnatmsg/releases/download/v2.1.0"
+          Write-Host "Getting build binaries..."
+          # Since the runner workspace already has the full repo checked out in $PWD,
+          # copy KeePass.exe to build directory for project reference
+          New-Item -ItemType Directory -Force -Path "$PWD\build" | Out-Null
+          if (Test-Path "C:\Program Files\KeePass Password Safe 2\KeePass.exe") {
+            Copy-Item "C:\Program Files\KeePass Password Safe 2\KeePass.exe" "$PWD\build\KeePass.exe" -Force
+          }
+          Write-Host "Runner workspace: $PWD"
+          # Try build with MSBuild or dotnet
+          $msbuild = Get-Command msbuild -ErrorAction SilentlyContinue
+          if (-not $msbuild) {
+            $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+            if (Test-Path $vswhere) {
+              $vsPath = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
+              if ($vsPath -and (Test-Path "$vsPath\MSBuild\Current\Bin\MSBuild.exe")) {
+                $msbuild = "$vsPath\MSBuild\Current\Bin\MSBuild.exe"
+              }
+            }
+          }
 
-          # Also copy dependent DLLs if needed
-          if (Test-Path "$env:TEMP\kpnm-ci-build\Newtonsoft.Json.dll") {
-            Copy-Item "$env:TEMP\kpnm-ci-build\Newtonsoft.Json.dll" (Join-Path $pluginsDir "Newtonsoft.Json.dll") -Force
+          if ($msbuild) {
+            Write-Host "Building fresh KeePassNatMsg.dll with MSBuild..."
+            & $msbuild KeePassNatMsg\KeePassNatMsg.csproj /p:Configuration=Release /verbosity:minimal
+            Copy-Item "KeePassNatMsg\bin\Release\*" $buildDir -Recurse -Force
+          } else {
+            # Fallback to dotnet build
+            Write-Host "Building fresh KeePassNatMsg.dll with dotnet build..."
+            dotnet build KeePassNatMsg\KeePassNatMsg.csproj -c Release -o $buildDir
+          }
+
+          # Also create .plgx using the installed KeePass.exe
+          $kpExe = "C:\Program Files\KeePass Password Safe 2\KeePass.exe"
+          if (Test-Path $kpExe) {
+            Write-Host "Building fresh .plgx using KeePass.exe..."
+            $p = Start-Process -FilePath $kpExe -ArgumentList "--plgx-create","$PWD\KeePassNatMsg" -PassThru
+            $p.WaitForExit()
+            if (Test-Path "KeePassNatMsg.plgx") {
+              Copy-Item "KeePassNatMsg.plgx" "$buildDir\KeePassNatMsg.plgx" -Force
+            }
+          }
+
+          $ciPlgx = "$buildDir\KeePassNatMsg.plgx"
+          if (Test-Path $ciPlgx) {
+            $targetPlgx = Join-Path $pluginsDir "KeePassNatMsg.plgx"
+            Copy-Item $ciPlgx $targetPlgx -Force
+            Write-Host "Deployed fresh plugin .plgx to: $targetPlgx" -ForegroundColor Green
+          }
+
+          $ciDll = "$buildDir\KeePassNatMsg.dll"
+          if (Test-Path $ciDll) {
+            $targetDll = Join-Path $pluginsDir "KeePassNatMsg.dll"
+            Copy-Item $ciDll $targetDll -Force
+            Write-Host "Deployed fresh plugin .dll to: $targetDll" -ForegroundColor Green
           }
 
           Write-Host "`n=== Step 2: Test Native Messaging Host & Registry Configuration ===" -ForegroundColor Cyan
