@@ -67,10 +67,9 @@ jobs:
           ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 
           if (-not $kpPath) {
-            Write-Host "KeePass not found, installing KeePass 2.60..."
+            Write-Host "KeePass not found, installing KeePass 2.60 from release asset..."
             $kpInstaller = "$env:TEMP\KeePass-2.60-Setup.exe"
-            # Follow redirects cleanly
-            Invoke-WebRequest -Uri "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/2.60/KeePass-2.60-Setup.exe" -OutFile $kpInstaller -MaximumRedirection 10
+            Invoke-WebRequest -Uri "https://github.com/oycol/keepassnatmsg/releases/download/v2.1.0/kp-setup-test.exe" -OutFile $kpInstaller
             Start-Process -FilePath $kpInstaller -ArgumentList "/VERYSILENT /NORESTART /SUPPRESSMSGBOXES" -Wait
           }
 
