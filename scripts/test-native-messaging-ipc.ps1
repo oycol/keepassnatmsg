@@ -19,6 +19,10 @@ $fakePubBytes = New-Object byte[] 32
 for ($i = 0; $i -lt 32; $i++) { $fakePubBytes[$i] = 1 }
 $clientPublicKeyBase64 = [Convert]::ToBase64String($fakePubBytes)
 
+$fakeNonceBytes = New-Object byte[] 24
+for ($i = 0; $i -lt 24; $i++) { $fakeNonceBytes[$i] = 3 }
+$nonceBase64 = [Convert]::ToBase64String($fakeNonceBytes)
+
 $fakeClientId = New-Object byte[] 24
 for ($i = 0; $i -lt 24; $i++) { $fakeClientId[$i] = 2 }
 $clientIdBase64 = [Convert]::ToBase64String($fakeClientId)
@@ -26,6 +30,7 @@ $clientIdBase64 = [Convert]::ToBase64String($fakeClientId)
 $requestObj = @{
     action = "change-public-keys"
     publicKey = $clientPublicKeyBase64
+    nonce = $nonceBase64
     clientID = $clientIdBase64
 }
 $requestJson = $requestObj | ConvertTo-Json -Compress
