@@ -42,8 +42,6 @@ Write-Host "Sending action 'change-public-keys' ($len bytes): $requestJson"
 
 $psi = New-Object System.Diagnostics.ProcessStartInfo
 $psi.FileName = $ProxyPath
-# Enable proxy logging with /log argument if supported
-$psi.Arguments = "/log"
 $psi.UseShellExecute = $false
 $psi.RedirectStandardInput = $true
 $psi.RedirectStandardOutput = $true

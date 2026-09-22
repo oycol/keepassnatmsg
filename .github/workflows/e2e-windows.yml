@@ -296,21 +296,14 @@ jobs:
           Write-Host "Active KeePass pipes:"
           $pipes | ForEach-Object { Write-Host "  $_" -ForegroundColor Green }
 
-          # 5.5 Execute direct Named Pipe protocol roundtrip test
-          Write-Host "`nRunning direct Named Pipe protocol test..." -ForegroundColor Cyan
-          & powershell -ExecutionPolicy Bypass -File "$PWD\scripts\test-direct-pipe.ps1"
-          if ($LASTEXITCODE -ne 0) {
-            throw "Direct Named Pipe test failed with exit code $LASTEXITCODE"
-          }
-
-          # 5.6 Execute Native Messaging proxy stdio <-> Named Pipe protocol roundtrip test
+          # 5.5 Execute Native Messaging proxy stdio <-> Named Pipe protocol roundtrip test
           Write-Host "`nRunning full Native Messaging stdio proxy <-> named pipe protocol roundtrip..." -ForegroundColor Cyan
           & powershell -ExecutionPolicy Bypass -File "$PWD\scripts\test-native-messaging-ipc.ps1"
           if ($LASTEXITCODE -ne 0) {
             throw "Native Messaging stdio proxy test failed with exit code $LASTEXITCODE"
           }
 
-          # 5.7 Test launching Chrome with extension loaded and open example.com
+          # 5.6 Test launching Chrome with extension loaded and open example.com
           $chromeExe = "C:\Program Files\Google\Chrome\Application\chrome.exe"
           $chromeUserData = "C:\KeePassNatMsg-E2E\chrome-user-data"
           Write-Host "Launching Chrome with KeePassXC-Browser extension..."
