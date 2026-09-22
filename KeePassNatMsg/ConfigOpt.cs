@@ -126,3 +126,4 @@ namespace KeePassNatMsg
             set { _config.SetBool(DefaultGroupAlwaysAllowKey, value); }
         }
     }
+}
