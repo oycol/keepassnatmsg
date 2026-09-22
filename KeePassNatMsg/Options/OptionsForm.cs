@@ -65,6 +65,27 @@ namespace KeePassNatMsg.Options
 
             InitDatabasesDropdown();
 
+            // Safely hide the legacy string fields checkboxes without breaking Designer code
+            returnStringFieldsCheckbox.Visible = false;
+            returnStringFieldsWithKphOnlyCheckBox.Visible = false;
+            txtKPXCVerOverride.Visible = false;
+            lblKPXCVerOverride.Visible = false;
+            
+            // Adjust the groupbox text since it now only holds the search URL checkbox
+            grpFields.Text = "Additional URL Search";
+            
+            // Dynamically inject the new Logo
+            var pbLogo = new System.Windows.Forms.PictureBox
+            {
+                Location = new System.Drawing.Point(375, 20),
+                Size = new System.Drawing.Size(120, 120),
+                SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom,
+                Image = KeePassNatMsg.Properties.Resources.earth_lock,
+                Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right
+            };
+            this.tabPageGeneral.Controls.Add(pbLogo);
+            pbLogo.BringToFront();
+
             foreach (DatabaseItem item in comboBoxSearchDatabases.Items)
             {
                 if (item.DbHash == _config.SearchDatabaseHash)
