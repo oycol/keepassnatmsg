@@ -138,7 +138,7 @@ namespace KeePassNatMsg.Entry
             entry.Strings.Set(PwDefs.TitleField, new ProtectedString(false, uri.Host));
             entry.Strings.Set(PwDefs.UserNameField, new ProtectedString(false, username));
             entry.Strings.Set(PwDefs.PasswordField, new ProtectedString(true, password));
-            entry.Strings.Set(PwDefs.UrlField, new ProtectedString(true, baseUrl));
+            entry.Strings.Set(PwDefs.UrlField, new ProtectedString(false, baseUrl));
 
             if ((submithost != null && uri.Host != submithost) || realm != null)
             {

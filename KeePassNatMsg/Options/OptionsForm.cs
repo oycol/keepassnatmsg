@@ -89,6 +89,18 @@ namespace KeePassNatMsg.Options
                     comboBoxDatabases.SelectedItem = item;
                 }
             }
+
+            var toolTip = new ToolTip();
+            toolTip.AutoPopDelay = 10000;
+            toolTip.InitialDelay = 500;
+            toolTip.ReshowDelay = 500;
+            toolTip.ShowAlways = true;
+            
+            toolTip.SetToolTip(credMatchingCheckbox, "When checked, only entries with the most precise URL match are returned.\nUncheck this if you want all matching entries (including those with only the root domain) to be displayed.");
+            toolTip.SetToolTip(chkSearchUrls, "When checked, KeePassNatMsg will also search for URLs in custom string fields\n(e.g., URL1, URL2) in the 'Advanced' tab of your entries.");
+            toolTip.SetToolTip(hideExpiredCheckbox, "When checked, entries that have passed their expiry date will not be sent to the browser.");
+            toolTip.SetToolTip(matchSchemesCheckbox, "When checked, the URL protocol (http vs https) must match exactly.");
+            toolTip.SetToolTip(chkUseLegacyHostMatching, "Use older matching logic. Not recommended for modern browsers.");
         }
 
         private void okButton_Click(object sender, EventArgs e)
@@ -110,6 +122,13 @@ namespace KeePassNatMsg.Options
             _config.UseLegacyHostMatching = chkUseLegacyHostMatching.Checked;
             _config.DefaultGroup = txtDefaultGroup.Text;
             _config.DefaultGroupAlwaysAllow = chkDefaultGroupAlwaysAllow.Checked;
+
+            if (credOnlySearchInSelectedDatabaseRadioButton.Checked)
+                _config.AllowSearchDatabase = (ulong)AllowSearchDatabase.SearchInOnlySelectedDatabase;
+            else if (credSearchInAllOpenedDatabasesRadioButton.Checked)
+                _config.AllowSearchDatabase = (ulong)AllowSearchDatabase.SearchInAllOpenedDatabases;
+            else
+                _config.AllowSearchDatabase = (ulong)AllowSearchDatabase.RestrictSearchInSpecificDatabase;
 
             // Sync both checkboxes (General and Advanced tab)
             var useKpxc = chkUseKpxcSettingsKey.Checked || chkUseKpxcSettingsGeneral.Checked;

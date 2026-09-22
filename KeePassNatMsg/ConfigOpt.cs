@@ -89,7 +89,7 @@ namespace KeePassNatMsg
 
         public bool HideExpired
         {
-            get { return _config.GetBool(HideExpiredKey, false); }
+            get { return _config.GetBool(HideExpiredKey, true); } // Default true
             set { _config.SetBool(HideExpiredKey, value); }
         }
         public bool MatchSchemes
@@ -138,7 +138,7 @@ namespace KeePassNatMsg
         {
             get
             {
-                return _config.GetBool(SearchUrlsKey, false);
+                return _config.GetBool(SearchUrlsKey, true); // Default true for better UX
             }
             set
             {
