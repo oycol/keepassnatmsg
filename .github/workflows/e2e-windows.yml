@@ -67,15 +67,25 @@ jobs:
           ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 
           if (-not $kpPath) {
-            Write-Host "KeePass not found, downloading portable KeePass 2.60..."
-            $kpDir = "C:\Program Files\KeePass Password Safe 2"
-            New-Item -ItemType Directory -Force -Path $kpDir | Out-Null
-            $kpZip = "$env:TEMP\KeePass-2.60.zip"
-            Invoke-WebRequest -Uri "https://github.com/smorks/keepassnatmsg/releases/download/v2.0.17/KeePassNatMsg.v2.0.17.zip" -ErrorAction SilentlyContinue
-            # Let's download KeePass 2.60 portable directly
-            Invoke-WebRequest -Uri "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/2.60/KeePass-2.60.zip" -OutFile $kpZip
-            Add-Type -AssemblyName System.IO.Compression.FileSystem
-            [System.IO.Compression.ZipFile]::ExtractToDirectory($kpZip, $kpDir)
+            Write-Host "KeePass not found, installing via winget..."
+            if (Get-Command winget -ErrorAction SilentlyContinue) {
+              winget install -e --id DominikReichl.KeePass --accept-package-agreements --accept-source-agreements --silent
+            }
+            # Recheck after winget
+            $kpPath = @(
+              'C:\Program Files\KeePass Password Safe 2\KeePass.exe',
+              'C:\Program Files (x86)\KeePass Password Safe 2\KeePass.exe'
+            ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+            if (-not $kpPath) {
+              Write-Host "Winget failed or pending, downloading portable KeePass..."
+              $kpDir = "C:\Program Files\KeePass Password Safe 2"
+              New-Item -ItemType Directory -Force -Path $kpDir | Out-Null
+              $kpZip = "$env:TEMP\KeePass-2.60.zip"
+              Invoke-WebRequest -Uri "https://master.dl.sourceforge.net/project/keepass/KeePass%202.x/2.60/KeePass-2.60.zip" -OutFile $kpZip
+              Add-Type -AssemblyName System.IO.Compression.FileSystem
+              [System.IO.Compression.ZipFile]::ExtractToDirectory($kpZip, $kpDir)
+            }
           }
 
       - name: Collect environment diagnostics
