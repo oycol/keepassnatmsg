@@ -67,25 +67,11 @@ jobs:
           ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 
           if (-not $kpPath) {
-            Write-Host "KeePass not found, installing via winget..."
-            if (Get-Command winget -ErrorAction SilentlyContinue) {
-              winget install -e --id DominikReichl.KeePass --accept-package-agreements --accept-source-agreements --silent
-            }
-            # Recheck after winget
-            $kpPath = @(
-              'C:\Program Files\KeePass Password Safe 2\KeePass.exe',
-              'C:\Program Files (x86)\KeePass Password Safe 2\KeePass.exe'
-            ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-
-            if (-not $kpPath) {
-              Write-Host "Winget failed or pending, downloading portable KeePass..."
-              $kpDir = "C:\Program Files\KeePass Password Safe 2"
-              New-Item -ItemType Directory -Force -Path $kpDir | Out-Null
-              $kpZip = "$env:TEMP\KeePass-2.60.zip"
-              Invoke-WebRequest -Uri "https://master.dl.sourceforge.net/project/keepass/KeePass%202.x/2.60/KeePass-2.60.zip" -OutFile $kpZip
-              Add-Type -AssemblyName System.IO.Compression.FileSystem
-              [System.IO.Compression.ZipFile]::ExtractToDirectory($kpZip, $kpDir)
-            }
+            Write-Host "KeePass not found, installing KeePass 2.60..."
+            $kpInstaller = "$env:TEMP\KeePass-2.60-Setup.exe"
+            # Follow redirects cleanly
+            Invoke-WebRequest -Uri "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/2.60/KeePass-2.60-Setup.exe" -OutFile $kpInstaller -MaximumRedirection 10
+            Start-Process -FilePath $kpInstaller -ArgumentList "/VERYSILENT /NORESTART /SUPPRESSMSGBOXES" -Wait
           }
 
       - name: Collect environment diagnostics
