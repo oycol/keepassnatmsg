@@ -242,35 +242,45 @@ jobs:
 
           # 5.1 Download & deploy KeePassXC-Browser extension to C:\KeePassNatMsg-E2E\extension
           $extDir = "C:\KeePassNatMsg-E2E\extension"
-          New-Item -ItemType Directory -Force -Path $extDir | Out-Null
-          $extZip = "$env:TEMP\kpxc-browser.zip"
-          Invoke-WebRequest -Uri "https://github.com/oycol/keepassnatmsg/releases/download/v2.2.0/kpxc-browser.zip" -OutFile $extZip
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          [System.IO.Compression.ZipFile]::ExtractToDirectory($extZip, $extDir)
-          Write-Host "KeePassXC-Browser 1.10.4 unpacked to: $extDir" -ForegroundColor Green
+          if (-not (Test-Path "$extDir\manifest.json")) {
+            New-Item -ItemType Directory -Force -Path $extDir | Out-Null
+            $extZip = "$env:TEMP\kpxc-browser.zip"
+            if (-not (Test-Path $extZip)) {
+              Invoke-WebRequest -Uri "https://github.com/oycol/keepassnatmsg/releases/download/v2.2.0/kpxc-browser.zip" -OutFile $extZip
+            }
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            [System.IO.Compression.ZipFile]::ExtractToDirectory($extZip, $extDir)
+            Write-Host "KeePassXC-Browser 1.10.4 unpacked to: $extDir" -ForegroundColor Green
+          } else {
+            Write-Host "KeePassXC-Browser extension already unpacked at: $extDir" -ForegroundColor Green
+          }
 
           # 5.2 Create dedicated test database with a credential entry
           $testDbPath = "C:\KeePassNatMsg-E2E\test.kdbx"
           $testDbPass = "TestPassword2026!"
-          Write-Host "Creating test database: $testDbPath"
-          [System.Reflection.Assembly]::LoadFrom($kpExe) | Out-Null
-          $db = New-Object KeePassLib.PwDatabase
-          $io = New-Object KeePassLib.Serialization.IOConnectionInfo
-          $io.Path = $testDbPath
-          $compKey = New-Object KeePassLib.Keys.CompositeKey
-          $passKey = New-Object KeePassLib.Keys.KcpPassword($testDbPass)
-          $compKey.AddUserKey($passKey)
-          $db.New($io, $compKey)
+          if (-not (Test-Path $testDbPath)) {
+            Write-Host "Creating test database: $testDbPath"
+            [System.Reflection.Assembly]::LoadFrom($kpExe) | Out-Null
+            $db = New-Object KeePassLib.PwDatabase
+            $io = New-Object KeePassLib.Serialization.IOConnectionInfo
+            $io.Path = $testDbPath
+            $compKey = New-Object KeePassLib.Keys.CompositeKey
+            $passKey = New-Object KeePassLib.Keys.KcpPassword($testDbPass)
+            $compKey.AddUserKey($passKey)
+            $db.New($io, $compKey)
 
-          $entry = New-Object KeePassLib.PwEntry($true, $true)
-          $entry.Strings.Set("Title", (New-Object KeePassLib.Security.ProtectedString($false, "Example Site")))
-          $entry.Strings.Set("UserName", (New-Object KeePassLib.Security.ProtectedString($false, "admin_tester")))
-          $entry.Strings.Set("Password", (New-Object KeePassLib.Security.ProtectedString($true, "MySuperSecretPassword2026!")))
-          $entry.Strings.Set("URL", (New-Object KeePassLib.Security.ProtectedString($false, "https://example.com/")))
-          $db.RootGroup.AddEntry($entry, $true)
-          $db.Save($null)
-          $db.Close()
-          Write-Host "Test database created with entry for https://example.com/" -ForegroundColor Green
+            $entry = New-Object KeePassLib.PwEntry($true, $true)
+            $entry.Strings.Set("Title", (New-Object KeePassLib.Security.ProtectedString($false, "Example Site")))
+            $entry.Strings.Set("UserName", (New-Object KeePassLib.Security.ProtectedString($false, "admin_tester")))
+            $entry.Strings.Set("Password", (New-Object KeePassLib.Security.ProtectedString($true, "MySuperSecretPassword2026!")))
+            $entry.Strings.Set("URL", (New-Object KeePassLib.Security.ProtectedString($false, "https://example.com/")))
+            $db.RootGroup.AddEntry($entry, $true)
+            $db.Save($null)
+            $db.Close()
+            Write-Host "Test database created with entry for https://example.com/" -ForegroundColor Green
+          } else {
+            Write-Host "Test database already exists at: $testDbPath" -ForegroundColor Green
+          }
 
           # 5.3 Launch KeePass and open test.kdbx
           Write-Host "Launching KeePass with test database..."
