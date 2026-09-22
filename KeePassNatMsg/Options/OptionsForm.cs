@@ -45,36 +45,26 @@ namespace KeePassNatMsg.Options
             unlockDatabaseCheckbox.Checked = _config.UnlockDatabaseRequest;
             credAllowAccessCheckbox.Checked = _config.AlwaysAllowAccess;
             credAllowUpdatesCheckbox.Checked = _config.AlwaysAllowUpdates;
-            if (_config.SearchInAllOpenedDatabases)
-            {
-                // Only for backward compatibility
+            if (_config.AllowSearchDatabase == (ulong)AllowSearchDatabase.SearchInOnlySelectedDatabase)
+                credOnlySearchInSelectedDatabaseRadioButton.Checked = true;
+            else if (_config.AllowSearchDatabase == (ulong)AllowSearchDatabase.SearchInAllOpenedDatabases)
                 credSearchInAllOpenedDatabasesRadioButton.Checked = true;
-                _config.SearchInAllOpenedDatabases = false;
-            }
             else
-            {
-                credOnlySearchInSelectedDatabaseRadioButton.Checked = (_config.AllowSearchDatabase == (ulong)AllowSearchDatabase.SearchInOnlySelectedDatabase);
-                credSearchInAllOpenedDatabasesRadioButton.Checked = (_config.AllowSearchDatabase == (ulong)AllowSearchDatabase.SearchInAllOpenedDatabases);
-                credRestrictSearchInSpecificDatabaseRadioButton.Checked = (_config.AllowSearchDatabase == (ulong)AllowSearchDatabase.RestrictSearchInSpecificDatabase);
-            }
+                credRestrictSearchInSpecificDatabaseRadioButton.Checked = true;
+
             comboBoxSearchDatabases.Enabled = credRestrictSearchInSpecificDatabaseRadioButton.Checked;
             hideExpiredCheckbox.Checked = _config.HideExpired;
             matchSchemesCheckbox.Checked = _config.MatchSchemes;
-            returnStringFieldsCheckbox.Checked = _config.ReturnStringFields;
-            returnStringFieldsWithKphOnlyCheckBox.Checked = _config.ReturnStringFieldsWithKphOnly;
             SortByUsernameRadioButton.Checked = _config.SortResultByUsername;
             SortByTitleRadioButton.Checked = !_config.SortResultByUsername;
-            txtKPXCVerOverride.Text = _config.OverrideKeePassXcVersion;
             chkSearchUrls.Checked = _config.SearchUrls;
             chkUseKpxcSettingsKey.Checked = _config.UseKeePassXcSettings;
             chkUseKpxcSettingsGeneral.Checked = _config.UseKeePassXcSettings;
-            chkUseLegacyHostMatching.Checked = _config.UseLegacyHostMatching;
             txtDefaultGroup.Text = _config.DefaultGroup;
             chkDefaultGroupAlwaysAllow.Checked = _config.DefaultGroupAlwaysAllow;
 
-            this.returnStringFieldsCheckbox_CheckedChanged(null, EventArgs.Empty);
-
             InitDatabasesDropdown();
+
             foreach (DatabaseItem item in comboBoxSearchDatabases.Items)
             {
                 if (item.DbHash == _config.SearchDatabaseHash)
@@ -113,13 +103,9 @@ namespace KeePassNatMsg.Options
             _config.SearchDatabaseHash = (comboBoxSearchDatabases.SelectedItem as DatabaseItem) == null ? null : (comboBoxSearchDatabases.SelectedItem as DatabaseItem).DbHash;
             _config.HideExpired = hideExpiredCheckbox.Checked;
             _config.MatchSchemes = matchSchemesCheckbox.Checked;
-            _config.ReturnStringFields = returnStringFieldsCheckbox.Checked;
-            _config.ReturnStringFieldsWithKphOnly = returnStringFieldsWithKphOnlyCheckBox.Checked;
             _config.SortResultByUsername = SortByUsernameRadioButton.Checked;
-            _config.OverrideKeePassXcVersion = txtKPXCVerOverride.Text;
             _config.ConnectionDatabaseHash = (comboBoxDatabases.SelectedItem as DatabaseItem) == null ? null : (comboBoxDatabases.SelectedItem as DatabaseItem).DbHash;
             _config.SearchUrls = chkSearchUrls.Checked;
-            _config.UseLegacyHostMatching = chkUseLegacyHostMatching.Checked;
             _config.DefaultGroup = txtDefaultGroup.Text;
             _config.DefaultGroupAlwaysAllow = chkDefaultGroupAlwaysAllow.Checked;
 
@@ -226,10 +212,7 @@ namespace KeePassNatMsg.Options
             }
         }
 
-        private void returnStringFieldsCheckbox_CheckedChanged(object sender, EventArgs e)
-        {
-            this.returnStringFieldsWithKphOnlyCheckBox.Enabled = this.returnStringFieldsCheckbox.Checked;
-        }
+
 
         private void UpdateChromeIntegrationUi()
         {

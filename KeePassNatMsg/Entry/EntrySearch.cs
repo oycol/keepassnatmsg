@@ -293,41 +293,31 @@ namespace KeePassNatMsg.Entry
         private static IEnumerable<KeyValuePair<string, string>> GetFields(ConfigOpt configOpt, PwEntryDatabase entryDatabase)
         {
             SprContext ctx = new SprContext(entryDatabase.entry, entryDatabase.database, SprCompileFlags.All, false, false);
+            var fields = new List<KeyValuePair<string, string>>();
 
-            List<KeyValuePair<string, string>> fields = null;
-            if (configOpt.ReturnStringFields)
+            var standardFields = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase)
             {
-                fields = new List<KeyValuePair<string, string>>();
+                PwDefs.TitleField, PwDefs.UserNameField, PwDefs.PasswordField, PwDefs.UrlField, PwDefs.NotesField
+            };
 
-                foreach (var sf in entryDatabase.entry.Strings)
-                {
-                    var sfValue = entryDatabase.entry.Strings.ReadSafe(sf.Key);
+            foreach (var sf in entryDatabase.entry.Strings)
+            {
+                if (standardFields.Contains(sf.Key)) continue;
 
-                    // follow references
-                    sfValue = SprEngine.Compile(sfValue, ctx);
+                var sfValue = entryDatabase.entry.Strings.ReadSafe(sf.Key);
+                // follow references
+                sfValue = SprEngine.Compile(sfValue, ctx);
 
-                    if (configOpt.ReturnStringFieldsWithKphOnly && sf.Key.StartsWith("KPH: "))
-                    {
-                        fields.Add(new KeyValuePair<string, string>(sf.Key.Substring(5), sfValue));
-                    }
-                    else
-                    {
-                        fields.Add(new KeyValuePair<string, string>(sf.Key, sfValue));
-                    }
-                }
-
-                if (fields.Count > 0)
-                {
-                    var sorted = from e2 in fields orderby e2.Key ascending select e2;
-                    fields = sorted.ToList();
-                }
-                else
-                {
-                    fields = null;
-                }
+                // Strip legacy prefix if user still has it
+                var key = sf.Key.StartsWith("KPH: ") ? sf.Key.Substring(5) : sf.Key;
+                fields.Add(new KeyValuePair<string, string>(key, sfValue));
             }
 
-            return fields;
+            if (fields.Count > 0)
+            {
+                return (from e2 in fields orderby e2.Key ascending select e2).ToList();
+            }
+            return null;
         }
 
         private IEnumerable<PwEntryDatabase> FindMatchingEntries(string url, string realm)
