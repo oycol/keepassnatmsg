@@ -93,9 +93,9 @@ jobs:
             }
             Write-Host "All tests passed!"
           } else {
-            if (-not $testDll) { Write-Host "No test assembly found" }
-            if (-not $runner) { Write-Host "NUnit console runner not found" }
-            Write-Host "Skipping test execution"
+            if (-not $testDll) { Write-Error "No test assembly found" }
+            if (-not $runner) { Write-Error "NUnit console runner not found" }
+            exit 1
           }
 
       - name: Build .plgx
@@ -108,7 +108,7 @@ jobs:
             $hash = (Get-FileHash "KeePassNatMsg.plgx" -Algorithm SHA256).Hash.ToLower()
             Write-Host "KeePassNatMsg.plgx SHA256: $hash"
           } else {
-            Write-Host "WARNING: .plgx build failed"
+            throw ".plgx build failed"
           }
 
       - name: Prepare artifacts
@@ -120,19 +120,11 @@ jobs:
           # 1. Primary artifact: KeePassNatMsg.plgx (single self-contained file)
           if (Test-Path "KeePassNatMsg.plgx") {
             Copy-Item "KeePassNatMsg.plgx" $artifactsDir
+          } else {
+            throw "KeePassNatMsg.plgx is missing from artifact preparation"
           }
 
-          # 2. Secondary artifact: clean binary zip for manual DLL installation
-          $binDir = "KeePassNatMsg\bin\Release"
-          if (Test-Path $binDir) {
-            $zipDir = "KeePassNatMsg-binary"
-            New-Item -ItemType Directory -Force -Path $zipDir | Out-Null
-            Get-ChildItem -Path $binDir -Include "*.dll" -Recurse | Copy-Item -Destination $zipDir
-            Compress-Archive -Path "$zipDir\*" -DestinationPath "$artifactsDir\KeePassNatMsg-binary.zip" -Force
-            Remove-Item -Recurse -Force $zipDir
-          }
-
-          # 3. Generate clean SHA256 checksums
+          # 2. Generate checksum for the single supported installation artifact
           $hashes = @()
           Get-ChildItem -Path $artifactsDir -File | ForEach-Object {
             $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()

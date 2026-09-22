@@ -1,5 +1,5 @@
 # Diagnostics: read plugin.log and query get-logins via named pipe
-# For KeePass on Windows test host (192.168.8.90)
+# Run locally on the interactive Windows test host.
 
 [CmdletBinding()]
 param(

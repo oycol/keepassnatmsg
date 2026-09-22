@@ -176,8 +176,6 @@ namespace KeePassNatMsg
 
             var optionsMenu = new ToolStripMenuItem("KeePassNatMsg Options...");
             optionsMenu.Click += OnOptions_Click;
-            optionsMenu.Image = KeePassNatMsg.Properties.Resources.earth_lock;
-            //optionsMenu.Image = global::KeePass.Properties.Resources.B16x16_File_Close;
             HostInstance.MainWindow.ToolsMenu.DropDownItems.Add(optionsMenu);
 
             pluginHost.MainWindow.FileClosingPre += MainWindow_FileClosingPre;

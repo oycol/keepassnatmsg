@@ -4,7 +4,8 @@ using KeePassNatMsg.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Security.Cryptography;
+using System.Text;
 using System.Windows.Forms;
 
 namespace KeePassNatMsg.Options
@@ -13,6 +14,9 @@ namespace KeePassNatMsg.Options
     {
         readonly ConfigOpt _config;
         private readonly ChromeIntegrationService _chromeService = new ChromeIntegrationService();
+        private bool _initialAlwaysAllowAccess;
+        private bool _initialAlwaysAllowUpdates;
+        private bool _initialDefaultGroupAlwaysAllow;
 
         private string AssemblyVersion
         {
@@ -55,23 +59,13 @@ namespace KeePassNatMsg.Options
             SortByUsernameRadioButton.Checked = _config.SortResultByUsername;
             SortByTitleRadioButton.Checked = !_config.SortResultByUsername;
             chkSearchUrls.Checked = _config.SearchUrls;
-            chkUseKpxcSettingsKey.Checked = _config.UseKeePassXcSettings;
             txtDefaultGroup.Text = _config.DefaultGroup;
             chkDefaultGroupAlwaysAllow.Checked = _config.DefaultGroupAlwaysAllow;
+            _initialAlwaysAllowAccess = credAllowAccessCheckbox.Checked;
+            _initialAlwaysAllowUpdates = credAllowUpdatesCheckbox.Checked;
+            _initialDefaultGroupAlwaysAllow = chkDefaultGroupAlwaysAllow.Checked;
 
             InitDatabasesDropdown();
-
-            // Inject Logo into non-conflicting bottom branding area
-            var pbLogo = new System.Windows.Forms.PictureBox
-            {
-                Location = new System.Drawing.Point(12, 518),
-                Size = new System.Drawing.Size(24, 24),
-                SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom,
-                Image = KeePassNatMsg.Properties.Resources.earth_lock,
-                Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left
-            };
-            this.Controls.Add(pbLogo);
-            lblVersion.Location = new System.Drawing.Point(40, 524);
 
             foreach (DatabaseItem item in comboBoxSearchDatabases.Items)
             {
@@ -103,6 +97,20 @@ namespace KeePassNatMsg.Options
 
         private void okButton_Click(object sender, EventArgs e)
         {
+            if ((!_initialAlwaysAllowAccess && credAllowAccessCheckbox.Checked) ||
+                (!_initialAlwaysAllowUpdates && credAllowUpdatesCheckbox.Checked) ||
+                (!_initialDefaultGroupAlwaysAllow && chkDefaultGroupAlwaysAllow.Checked))
+            {
+                var confirm = MessageBox.Show(
+                    this,
+                    "You are enabling an option that bypasses KeePass confirmation prompts. This can expose or overwrite credentials without an additional approval dialog.\n\nContinue?",
+                    "Confirm Unsafe Setting",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button2);
+                if (confirm != DialogResult.Yes) return;
+            }
+
             _config.ReceiveCredentialNotification = credNotifyCheckbox.Checked;
             _config.SpecificMatchingOnly = credMatchingCheckbox.Checked;
             _config.UnlockDatabaseRequest = unlockDatabaseCheckbox.Checked;
@@ -124,20 +132,6 @@ namespace KeePassNatMsg.Options
             else
                 _config.AllowSearchDatabase = (ulong)AllowSearchDatabase.RestrictSearchInSpecificDatabase;
 
-            var useKpxc = chkUseKpxcSettingsKey.Checked;
-
-            if (_config.UseKeePassXcSettings != useKpxc)
-            {
-                if (MigrateSettings(true))
-                {
-                    _config.UseKeePassXcSettings = useKpxc;
-                }
-                else
-                {
-                    chkUseKpxcSettingsKey.Checked = _config.UseKeePassXcSettings;
-                }
-            }
-
             DialogResult = DialogResult.OK;
             Close();
         }
@@ -150,6 +144,15 @@ namespace KeePassNatMsg.Options
 
         private void removePermissionsButton_Click(object sender, EventArgs e)
         {
+            var confirm = MessageBox.Show(
+                this,
+                "Remove all saved per-entry browser access decisions from the active database?\n\nThis does not delete entries or browser associations.",
+                "Reset Entry Permissions",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning,
+                MessageBoxDefaultButton.Button2);
+            if (confirm != DialogResult.Yes) return;
+
             if (KeePass.Program.MainForm.DocumentManager.ActiveDatabase.IsOpen)
             {
                 PwDatabase db = KeePass.Program.MainForm.DocumentManager.ActiveDatabase;
@@ -213,68 +216,75 @@ namespace KeePassNatMsg.Options
 
 
 
-        private void UpdateChromeIntegrationUi()
+        private static string StatusText(bool ok)
         {
-            var status = _chromeService.CheckStatus();
-            if (status.State == ChromeIntegrationState.Ready)
-            {
-                lblChromeStatus.Text = "Status: OK (Browser integration is active and verified)";
-                lblChromeStatus.ForeColor = System.Drawing.Color.DarkGreen;
-            }
-            else if (status.State == ChromeIntegrationState.NeedsInstall)
-            {
-                lblChromeStatus.Text = "Status: Not Installed (Click Install to set up automatically)";
-                lblChromeStatus.ForeColor = System.Drawing.Color.DarkOrange;
-            }
-            else
-            {
-                lblChromeStatus.Text = "Status: " + status.Message;
-                lblChromeStatus.ForeColor = System.Drawing.Color.DarkRed;
-            }
+            return ok ? "Ready" : "Needs repair";
         }
 
-        private void btnInstallChrome_Click(object sender, EventArgs e)
+        private static System.Drawing.Color StatusColor(bool ok)
+        {
+            return ok ? System.Drawing.Color.DarkGreen : System.Drawing.Color.DarkRed;
+        }
+
+        private void UpdateIntegrationUi()
+        {
+            var status = _chromeService.CheckStatus();
+            var ready = status.State == ChromeIntegrationState.Ready;
+            lblOverallStatus.Text = ready ? "Integration is ready" : status.Message;
+            lblOverallStatus.ForeColor = ready ? System.Drawing.Color.DarkGreen : System.Drawing.Color.DarkOrange;
+
+            lblProxyStatus.Text = "Proxy: " + StatusText(status.ProxyOk);
+            lblProxyStatus.ForeColor = StatusColor(status.ProxyOk);
+            lblManifestStatus.Text = "Manifest: " + StatusText(status.ManifestOk);
+            lblManifestStatus.ForeColor = StatusColor(status.ManifestOk);
+            lblChromeStatus.Text = "Google Chrome: " + StatusText(status.ChromeRegistryOk);
+            lblChromeStatus.ForeColor = StatusColor(status.ChromeRegistryOk);
+            lblEdgeStatus.Text = "Microsoft Edge: " + StatusText(status.EdgeRegistryOk);
+            lblEdgeStatus.ForeColor = StatusColor(status.EdgeRegistryOk);
+        }
+
+        private void btnInstallIntegration_Click(object sender, EventArgs e)
         {
             string error;
             if (_chromeService.InstallOrRepair(out error))
             {
-                UpdateChromeIntegrationUi();
-                MessageBox.Show(this, "Browser integration (Chrome & Edge) installed successfully!\n\nNext steps:\n1. Restart Chrome or Edge if running.\n2. Open KeePassXC-Browser extension and click 'Connect'.", "Integration Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                UpdateIntegrationUi();
+                MessageBox.Show(this, "Browser integration for Chrome and Edge was installed successfully.\n\nRestart the browsers, then open KeePassXC-Browser and click Connect.", "Integration Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {
-                UpdateChromeIntegrationUi();
-                MessageBox.Show(this, "Failed to install Chrome integration:\n\n" + error, "Installation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UpdateIntegrationUi();
+                MessageBox.Show(this, "Failed to install browser integration:\n\n" + error, "Installation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void btnUninstallChrome_Click(object sender, EventArgs e)
+        private void btnUninstallIntegration_Click(object sender, EventArgs e)
         {
-            var confirm = MessageBox.Show(this, "Are you sure you want to uninstall Chrome integration?", "Confirm Uninstall", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            var confirm = MessageBox.Show(this, "Remove the Native Messaging registration for Chrome and Edge, including the deployed proxy?", "Confirm Uninstall", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
             if (confirm == DialogResult.Yes)
             {
                 string error;
                 if (_chromeService.Uninstall(out error))
                 {
-                    UpdateChromeIntegrationUi();
-                    MessageBox.Show(this, "Chrome integration has been removed.", "Uninstall Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    UpdateIntegrationUi();
+                    MessageBox.Show(this, "Chrome and Edge integration has been removed.", "Uninstall Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {
-                    UpdateChromeIntegrationUi();
+                    UpdateIntegrationUi();
                     MessageBox.Show(this, "Failed to uninstall: " + error, "Uninstall Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
 
-        private void btnRefreshChrome_Click(object sender, EventArgs e)
+        private void btnRefreshIntegration_Click(object sender, EventArgs e)
         {
-            UpdateChromeIntegrationUi();
+            UpdateIntegrationUi();
         }
 
         private void OptionsForm_Shown(object sender, EventArgs e)
         {
-            UpdateChromeIntegrationUi();
+            UpdateIntegrationUi();
         }
 
         private void InitDatabasesDropdown()
@@ -312,7 +322,7 @@ namespace KeePassNatMsg.Options
                     if (cd.Key.StartsWith(dbKey))
                     {
                         var keyName = cd.Key.Substring(dbKey.Length);
-                        keys.Add(new DatabaseKeyItem { Name = keyName, Key = cd.Value });
+                        keys.Add(new DatabaseKeyItem { Name = keyName, Fingerprint = CreateFingerprint(cd.Value) });
                     }
                 }
 
@@ -320,9 +330,19 @@ namespace KeePassNatMsg.Options
             }
         }
 
-        private void tabControl1_Selected(object sender, TabControlEventArgs e)
+        private static string CreateFingerprint(string value)
         {
-            if (e.TabPage == tabPage3)
+            if (string.IsNullOrEmpty(value)) return "(empty)";
+            using (var sha256 = SHA256.Create())
+            {
+                var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(value));
+                return string.Join(":", hash.Take(8).Select(x => x.ToString("X2")));
+            }
+        }
+
+        private void tabControl_Selected(object sender, TabControlEventArgs e)
+        {
+            if (e.TabPage == tabAssociations)
             {
                 LoadDatabaseKeys();
             }
@@ -345,6 +365,10 @@ namespace KeePassNatMsg.Options
                     .Select(x => x.Key).ToList();
 
                 RemoveKeys(deleteKeys, db);
+            }
+            else
+            {
+                MessageBox.Show(this, "The active database is locked. Unlock it before removing browser associations.", "Database Locked", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -395,78 +419,6 @@ namespace KeePassNatMsg.Options
                     MessageBoxIcon.Information
                 );
             }
-        }
-
-        private void btnCheckForLegacyConfig_Click(object sender, EventArgs e)
-        {
-            var ext = KeePassNatMsgExt.ExtInstance;
-            var db = KeePass.Program.MainForm.DocumentManager.ActiveDatabase;
-
-            if (!db.IsOpen)
-            {
-                MessageBox.Show(this, "The active database is not open, config cannot be migrated.", "Active Database Not Open");
-                return;
-            }
-
-            if (ext.HasLegacyConfig(db))
-            {
-                ext.PromptToMigrate(db);
-            }
-            else
-            {
-                MessageBox.Show(this, "Legacy Configuration was not found, or the config has already been migrated for the active database.", "Legacy Config Not Found");
-            }
-        }
-
-        private void btnMigrateSettings_Click(object sender, EventArgs e)
-        {
-            MigrateSettings(false);
-        }
-
-        private bool MigrateSettings(bool quiet)
-        {
-            var ext = KeePassNatMsgExt.ExtInstance;
-            var db = KeePass.Program.MainForm.DocumentManager.ActiveDatabase;
-
-            if (!db.IsOpen)
-            {
-                if (!quiet)
-                    MessageBox.Show(this, "The active database is not open, config cannot be migrated.", "Active Database Not Open");
-                return false;
-            }
-
-            var fromKpnm = chkUseKpxcSettingsKey.Checked;
-            var from = fromKpnm ? "KeePassNatMsg" : "KeePassXC";
-            var to = fromKpnm ? "KeePassXC" : "KeePassNatMsg";
-
-            if (ext.HasConfig(db, fromKpnm))
-            {
-                var result = DialogResult.Yes;
-
-                if (!quiet)
-                {
-                    result = MessageBox.Show(
-                        this,
-                        string.Format("CAUTION: This will move all {0} Settings to {1}. Any existing {1} settings will be overwritten. You should create a backup of the database before proceeding. Are you sure you want to migrate settings from {0} to {1}?", from, to),
-                        "Confirm Migrate Settings", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
-                }
-
-                if (result == DialogResult.Yes)
-                {
-                    UseWaitCursor = true;
-                    ext.MoveConfig(db, fromKpnm);
-                    UseWaitCursor = false;
-                }
-            }
-            else
-            {
-                if (!quiet)
-                    MessageBox.Show(this, string.Format("No {0} Settings found.", from), "No Settings to be Migrated");
-
-                return false;
-            }
-
-            return true;
         }
 
         private void rbSearchDatabase_CheckedChanged(object sender, EventArgs e)

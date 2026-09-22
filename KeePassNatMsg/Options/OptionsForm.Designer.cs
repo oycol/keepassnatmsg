@@ -6,10 +6,7 @@
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
-            {
-                components.Dispose();
-            }
+            if (disposing && (components != null)) components.Dispose();
             base.Dispose(disposing);
         }
 
@@ -17,627 +14,473 @@
 
         private void InitializeComponent()
         {
-            this.cancelButton = new System.Windows.Forms.Button();
-            this.okButton = new System.Windows.Forms.Button();
-            this.tabControl1 = new System.Windows.Forms.TabControl();
-            this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.grpChrome = new System.Windows.Forms.GroupBox();
+            this.tabControl = new System.Windows.Forms.TabControl();
+            this.tabIntegration = new System.Windows.Forms.TabPage();
+            this.grpIntegration = new System.Windows.Forms.GroupBox();
+            this.lblOverallStatus = new System.Windows.Forms.Label();
+            this.lblProxyStatus = new System.Windows.Forms.Label();
+            this.lblManifestStatus = new System.Windows.Forms.Label();
             this.lblChromeStatus = new System.Windows.Forms.Label();
-            this.btnInstallChrome = new System.Windows.Forms.Button();
-            this.btnUninstallChrome = new System.Windows.Forms.Button();
-            this.btnRefreshChrome = new System.Windows.Forms.Button();
+            this.lblEdgeStatus = new System.Windows.Forms.Label();
+            this.lblIntegrationHint = new System.Windows.Forms.Label();
+            this.btnInstallIntegration = new System.Windows.Forms.Button();
+            this.btnRefreshIntegration = new System.Windows.Forms.Button();
+            this.btnUninstallIntegration = new System.Windows.Forms.Button();
+            this.tabPreferences = new System.Windows.Forms.TabPage();
             this.grpMatching = new System.Windows.Forms.GroupBox();
             this.credNotifyCheckbox = new System.Windows.Forms.CheckBox();
             this.credMatchingCheckbox = new System.Windows.Forms.CheckBox();
             this.unlockDatabaseCheckbox = new System.Windows.Forms.CheckBox();
             this.hideExpiredCheckbox = new System.Windows.Forms.CheckBox();
             this.matchSchemesCheckbox = new System.Windows.Forms.CheckBox();
-            this.grpSorting = new System.Windows.Forms.GroupBox();
             this.SortByTitleRadioButton = new System.Windows.Forms.RadioButton();
             this.SortByUsernameRadioButton = new System.Windows.Forms.RadioButton();
-            this.lblVersion = new System.Windows.Forms.Label();
-            this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.grpSearchDb = new System.Windows.Forms.GroupBox();
+            this.lblSort = new System.Windows.Forms.Label();
+            this.grpDatabase = new System.Windows.Forms.GroupBox();
             this.credOnlySearchInSelectedDatabaseRadioButton = new System.Windows.Forms.RadioButton();
             this.credSearchInAllOpenedDatabasesRadioButton = new System.Windows.Forms.RadioButton();
             this.credRestrictSearchInSpecificDatabaseRadioButton = new System.Windows.Forms.RadioButton();
             this.comboBoxSearchDatabases = new System.Windows.Forms.ComboBox();
-            this.grpDefaultGroup = new System.Windows.Forms.GroupBox();
+            this.labelConnDb = new System.Windows.Forms.Label();
+            this.comboBoxDatabases = new System.Windows.Forms.ComboBox();
+            this.grpNewLogins = new System.Windows.Forms.GroupBox();
             this.lblDefaultGroup = new System.Windows.Forms.Label();
             this.txtDefaultGroup = new System.Windows.Forms.TextBox();
             this.chkDefaultGroupAlwaysAllow = new System.Windows.Forms.CheckBox();
-            this.grpFields = new System.Windows.Forms.GroupBox();
             this.chkSearchUrls = new System.Windows.Forms.CheckBox();
             this.grpDangerZone = new System.Windows.Forms.GroupBox();
+            this.lblDangerWarning = new System.Windows.Forms.Label();
             this.credAllowAccessCheckbox = new System.Windows.Forms.CheckBox();
             this.credAllowUpdatesCheckbox = new System.Windows.Forms.CheckBox();
             this.removePermissionsButton = new System.Windows.Forms.Button();
-            this.labelConnDb = new System.Windows.Forms.Label();
-            this.comboBoxDatabases = new System.Windows.Forms.ComboBox();
-            this.chkUseKpxcSettingsKey = new System.Windows.Forms.CheckBox();
-            this.btnMigrateSettings = new System.Windows.Forms.Button();
-            this.btnCheckForLegacyConfig = new System.Windows.Forms.Button();
-            this.tabPage3 = new System.Windows.Forms.TabPage();
-            this.scKeysMain = new System.Windows.Forms.SplitContainer();
+            this.tabAssociations = new System.Windows.Forms.TabPage();
+            this.lblKeysHint = new System.Windows.Forms.Label();
             this.dgvKeys = new System.Windows.Forms.DataGridView();
             this.colName = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colKey = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.btnRemoveAllKeys = new System.Windows.Forms.Button();
+            this.colFingerprint = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.btnRemoveSelectedKeys = new System.Windows.Forms.Button();
-            this.tabControl1.SuspendLayout();
-            this.tabPage1.SuspendLayout();
-            this.grpChrome.SuspendLayout();
+            this.btnRemoveAllKeys = new System.Windows.Forms.Button();
+            this.lblVersion = new System.Windows.Forms.Label();
+            this.okButton = new System.Windows.Forms.Button();
+            this.cancelButton = new System.Windows.Forms.Button();
+            this.tabControl.SuspendLayout();
+            this.tabIntegration.SuspendLayout();
+            this.grpIntegration.SuspendLayout();
+            this.tabPreferences.SuspendLayout();
             this.grpMatching.SuspendLayout();
-            this.grpSorting.SuspendLayout();
-            this.tabPage2.SuspendLayout();
-            this.grpSearchDb.SuspendLayout();
-            this.grpDefaultGroup.SuspendLayout();
-            this.grpFields.SuspendLayout();
+            this.grpDatabase.SuspendLayout();
+            this.grpNewLogins.SuspendLayout();
             this.grpDangerZone.SuspendLayout();
-            this.tabPage3.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.scKeysMain)).BeginInit();
-            this.scKeysMain.Panel1.SuspendLayout();
-            this.scKeysMain.Panel2.SuspendLayout();
-            this.scKeysMain.SuspendLayout();
+            this.tabAssociations.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvKeys)).BeginInit();
             this.SuspendLayout();
-            // 
-            // cancelButton
-            // 
-            this.cancelButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cancelButton.Location = new System.Drawing.Point(465, 520);
-            this.cancelButton.Name = "cancelButton";
-            this.cancelButton.Size = new System.Drawing.Size(85, 26);
-            this.cancelButton.TabIndex = 2;
-            this.cancelButton.Text = "Cancel";
-            this.cancelButton.UseVisualStyleBackColor = true;
-            this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
-            // 
-            // okButton
-            // 
-            this.okButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.okButton.Location = new System.Drawing.Point(374, 520);
-            this.okButton.Name = "okButton";
-            this.okButton.Size = new System.Drawing.Size(85, 26);
-            this.okButton.TabIndex = 1;
-            this.okButton.Text = "Save";
-            this.okButton.UseVisualStyleBackColor = true;
-            this.okButton.Click += new System.EventHandler(this.okButton_Click);
-            // 
-            // tabControl1
-            // 
-            this.tabControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.tabControl1.Controls.Add(this.tabPage1);
-            this.tabControl1.Controls.Add(this.tabPage2);
-            this.tabControl1.Controls.Add(this.tabPage3);
-            this.tabControl1.Location = new System.Drawing.Point(12, 12);
-            this.tabControl1.Name = "tabControl1";
-            this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(538, 498);
-            this.tabControl1.TabIndex = 0;
-            this.tabControl1.Selected += new System.Windows.Forms.TabControlEventHandler(this.tabControl1_Selected);
-            // 
-            // tabPage1
-            // 
-            this.tabPage1.Controls.Add(this.grpChrome);
-            this.tabPage1.Controls.Add(this.grpMatching);
-            this.tabPage1.Controls.Add(this.grpSorting);
-            this.tabPage1.Location = new System.Drawing.Point(4, 22);
-            this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Padding = new System.Windows.Forms.Padding(10);
-            this.tabPage1.Size = new System.Drawing.Size(530, 472);
-            this.tabPage1.TabIndex = 0;
-            this.tabPage1.Text = "General";
-            this.tabPage1.UseVisualStyleBackColor = true;
-            // 
-            // grpChrome
-            // 
-            this.grpChrome.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpChrome.Controls.Add(this.lblChromeStatus);
-            this.grpChrome.Controls.Add(this.btnInstallChrome);
-            this.grpChrome.Controls.Add(this.btnUninstallChrome);
-            this.grpChrome.Controls.Add(this.btnRefreshChrome);
-            this.grpChrome.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.grpChrome.Location = new System.Drawing.Point(10, 10);
-            this.grpChrome.Name = "grpChrome";
-            this.grpChrome.Size = new System.Drawing.Size(510, 105);
-            this.grpChrome.TabIndex = 0;
-            this.grpChrome.TabStop = false;
-            this.grpChrome.Text = "Browser Integration (Chrome & Edge)";
-            // 
-            // lblChromeStatus
-            // 
+            //
+            // tabControl
+            //
+            this.tabControl.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.tabControl.Controls.Add(this.tabIntegration);
+            this.tabControl.Controls.Add(this.tabPreferences);
+            this.tabControl.Controls.Add(this.tabAssociations);
+            this.tabControl.Location = new System.Drawing.Point(12, 12);
+            this.tabControl.Name = "tabControl";
+            this.tabControl.SelectedIndex = 0;
+            this.tabControl.Size = new System.Drawing.Size(696, 564);
+            this.tabControl.TabIndex = 0;
+            this.tabControl.Selected += new System.Windows.Forms.TabControlEventHandler(this.tabControl_Selected);
+            //
+            // tabIntegration
+            //
+            this.tabIntegration.Controls.Add(this.grpIntegration);
+            this.tabIntegration.Location = new System.Drawing.Point(4, 24);
+            this.tabIntegration.Name = "tabIntegration";
+            this.tabIntegration.Padding = new System.Windows.Forms.Padding(14);
+            this.tabIntegration.Size = new System.Drawing.Size(688, 536);
+            this.tabIntegration.TabIndex = 0;
+            this.tabIntegration.Text = "Browser Integration";
+            this.tabIntegration.UseVisualStyleBackColor = true;
+            //
+            // grpIntegration
+            //
+            this.grpIntegration.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.grpIntegration.Controls.Add(this.lblOverallStatus);
+            this.grpIntegration.Controls.Add(this.lblProxyStatus);
+            this.grpIntegration.Controls.Add(this.lblManifestStatus);
+            this.grpIntegration.Controls.Add(this.lblChromeStatus);
+            this.grpIntegration.Controls.Add(this.lblEdgeStatus);
+            this.grpIntegration.Controls.Add(this.lblIntegrationHint);
+            this.grpIntegration.Controls.Add(this.btnInstallIntegration);
+            this.grpIntegration.Controls.Add(this.btnRefreshIntegration);
+            this.grpIntegration.Controls.Add(this.btnUninstallIntegration);
+            this.grpIntegration.Location = new System.Drawing.Point(14, 14);
+            this.grpIntegration.Name = "grpIntegration";
+            this.grpIntegration.Size = new System.Drawing.Size(660, 286);
+            this.grpIntegration.TabIndex = 0;
+            this.grpIntegration.TabStop = false;
+            this.grpIntegration.Text = "Chrome and Edge Native Messaging";
+            //
+            // lblOverallStatus
+            //
+            this.lblOverallStatus.AutoSize = true;
+            this.lblOverallStatus.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
+            this.lblOverallStatus.Location = new System.Drawing.Point(18, 30);
+            this.lblOverallStatus.Name = "lblOverallStatus";
+            this.lblOverallStatus.Size = new System.Drawing.Size(127, 19);
+            this.lblOverallStatus.TabIndex = 0;
+            this.lblOverallStatus.Text = "Checking status...";
+            //
+            // status labels
+            //
+            this.lblProxyStatus.AutoSize = true;
+            this.lblProxyStatus.Location = new System.Drawing.Point(20, 68);
+            this.lblProxyStatus.Name = "lblProxyStatus";
+            this.lblProxyStatus.Size = new System.Drawing.Size(79, 15);
+            this.lblProxyStatus.Text = "Proxy: ...";
+            this.lblManifestStatus.AutoSize = true;
+            this.lblManifestStatus.Location = new System.Drawing.Point(20, 94);
+            this.lblManifestStatus.Name = "lblManifestStatus";
+            this.lblManifestStatus.Size = new System.Drawing.Size(91, 15);
+            this.lblManifestStatus.Text = "Manifest: ...";
             this.lblChromeStatus.AutoSize = true;
-            this.lblChromeStatus.Location = new System.Drawing.Point(12, 25);
+            this.lblChromeStatus.Location = new System.Drawing.Point(20, 120);
             this.lblChromeStatus.Name = "lblChromeStatus";
-            this.lblChromeStatus.Size = new System.Drawing.Size(180, 15);
-            this.lblChromeStatus.TabIndex = 0;
-            this.lblChromeStatus.Text = "Status: Checking integration...";
-            // 
-            // btnInstallChrome
-            // 
-            this.btnInstallChrome.Location = new System.Drawing.Point(15, 55);
-            this.btnInstallChrome.Name = "btnInstallChrome";
-            this.btnInstallChrome.Size = new System.Drawing.Size(190, 30);
-            this.btnInstallChrome.TabIndex = 1;
-            this.btnInstallChrome.Text = "Install / Repair Integration";
-            this.btnInstallChrome.UseVisualStyleBackColor = true;
-            this.btnInstallChrome.Click += new System.EventHandler(this.btnInstallChrome_Click);
-            // 
-            // btnUninstallChrome
-            // 
-            this.btnUninstallChrome.Location = new System.Drawing.Point(215, 55);
-            this.btnUninstallChrome.Name = "btnUninstallChrome";
-            this.btnUninstallChrome.Size = new System.Drawing.Size(110, 30);
-            this.btnUninstallChrome.TabIndex = 2;
-            this.btnUninstallChrome.Text = "Uninstall";
-            this.btnUninstallChrome.UseVisualStyleBackColor = true;
-            this.btnUninstallChrome.Click += new System.EventHandler(this.btnUninstallChrome_Click);
-            // 
-            // btnRefreshChrome
-            // 
-            this.btnRefreshChrome.Location = new System.Drawing.Point(335, 55);
-            this.btnRefreshChrome.Name = "btnRefreshChrome";
-            this.btnRefreshChrome.Size = new System.Drawing.Size(95, 30);
-            this.btnRefreshChrome.TabIndex = 3;
-            this.btnRefreshChrome.Text = "Refresh";
-            this.btnRefreshChrome.UseVisualStyleBackColor = true;
-            this.btnRefreshChrome.Click += new System.EventHandler(this.btnRefreshChrome_Click);
-            // 
+            this.lblChromeStatus.Size = new System.Drawing.Size(91, 15);
+            this.lblChromeStatus.Text = "Chrome: ...";
+            this.lblEdgeStatus.AutoSize = true;
+            this.lblEdgeStatus.Location = new System.Drawing.Point(20, 146);
+            this.lblEdgeStatus.Name = "lblEdgeStatus";
+            this.lblEdgeStatus.Size = new System.Drawing.Size(73, 15);
+            this.lblEdgeStatus.Text = "Edge: ...";
+            //
+            // lblIntegrationHint
+            //
+            this.lblIntegrationHint.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblIntegrationHint.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lblIntegrationHint.Location = new System.Drawing.Point(20, 177);
+            this.lblIntegrationHint.Name = "lblIntegrationHint";
+            this.lblIntegrationHint.Size = new System.Drawing.Size(620, 36);
+            this.lblIntegrationHint.TabIndex = 5;
+            this.lblIntegrationHint.Text = "Install / Repair deploys the bundled proxy and registers the Native Messaging host for the current Windows user. Restart Chrome and Edge after changes.";
+            //
+            // integration buttons
+            //
+            this.btnInstallIntegration.Location = new System.Drawing.Point(20, 228);
+            this.btnInstallIntegration.Name = "btnInstallIntegration";
+            this.btnInstallIntegration.Size = new System.Drawing.Size(190, 32);
+            this.btnInstallIntegration.TabIndex = 6;
+            this.btnInstallIntegration.Text = "Install / Repair";
+            this.btnInstallIntegration.UseVisualStyleBackColor = true;
+            this.btnInstallIntegration.Click += new System.EventHandler(this.btnInstallIntegration_Click);
+            this.btnRefreshIntegration.Location = new System.Drawing.Point(220, 228);
+            this.btnRefreshIntegration.Name = "btnRefreshIntegration";
+            this.btnRefreshIntegration.Size = new System.Drawing.Size(105, 32);
+            this.btnRefreshIntegration.TabIndex = 7;
+            this.btnRefreshIntegration.Text = "Refresh";
+            this.btnRefreshIntegration.UseVisualStyleBackColor = true;
+            this.btnRefreshIntegration.Click += new System.EventHandler(this.btnRefreshIntegration_Click);
+            this.btnUninstallIntegration.Location = new System.Drawing.Point(335, 228);
+            this.btnUninstallIntegration.Name = "btnUninstallIntegration";
+            this.btnUninstallIntegration.Size = new System.Drawing.Size(105, 32);
+            this.btnUninstallIntegration.TabIndex = 8;
+            this.btnUninstallIntegration.Text = "Uninstall";
+            this.btnUninstallIntegration.UseVisualStyleBackColor = true;
+            this.btnUninstallIntegration.Click += new System.EventHandler(this.btnUninstallIntegration_Click);
+            //
+            // tabPreferences
+            //
+            this.tabPreferences.AutoScroll = true;
+            this.tabPreferences.Controls.Add(this.grpMatching);
+            this.tabPreferences.Controls.Add(this.grpDatabase);
+            this.tabPreferences.Controls.Add(this.grpNewLogins);
+            this.tabPreferences.Controls.Add(this.grpDangerZone);
+            this.tabPreferences.Location = new System.Drawing.Point(4, 24);
+            this.tabPreferences.Name = "tabPreferences";
+            this.tabPreferences.Padding = new System.Windows.Forms.Padding(14);
+            this.tabPreferences.Size = new System.Drawing.Size(688, 536);
+            this.tabPreferences.TabIndex = 1;
+            this.tabPreferences.Text = "Preferences";
+            this.tabPreferences.UseVisualStyleBackColor = true;
+            //
             // grpMatching
-            // 
-            this.grpMatching.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            //
             this.grpMatching.Controls.Add(this.credNotifyCheckbox);
             this.grpMatching.Controls.Add(this.credMatchingCheckbox);
             this.grpMatching.Controls.Add(this.unlockDatabaseCheckbox);
             this.grpMatching.Controls.Add(this.hideExpiredCheckbox);
             this.grpMatching.Controls.Add(this.matchSchemesCheckbox);
-            this.grpMatching.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.grpMatching.Location = new System.Drawing.Point(10, 125);
+            this.grpMatching.Controls.Add(this.lblSort);
+            this.grpMatching.Controls.Add(this.SortByTitleRadioButton);
+            this.grpMatching.Controls.Add(this.SortByUsernameRadioButton);
+            this.grpMatching.Location = new System.Drawing.Point(14, 14);
             this.grpMatching.Name = "grpMatching";
-            this.grpMatching.Size = new System.Drawing.Size(510, 210);
-            this.grpMatching.TabIndex = 1;
+            this.grpMatching.Size = new System.Drawing.Size(638, 218);
+            this.grpMatching.TabIndex = 0;
             this.grpMatching.TabStop = false;
-            this.grpMatching.Text = "Credential Matching & Access Rules";
-            // 
-            // credNotifyCheckbox
-            // 
+            this.grpMatching.Text = "Credential Matching";
             this.credNotifyCheckbox.AutoSize = true;
-            this.credNotifyCheckbox.Location = new System.Drawing.Point(15, 25);
+            this.credNotifyCheckbox.Location = new System.Drawing.Point(18, 28);
             this.credNotifyCheckbox.Name = "credNotifyCheckbox";
-            this.credNotifyCheckbox.Size = new System.Drawing.Size(264, 19);
-            this.credNotifyCheckbox.TabIndex = 0;
-            this.credNotifyCheckbox.Text = "Show notification when credentials are requested";
+            this.credNotifyCheckbox.Size = new System.Drawing.Size(254, 19);
+            this.credNotifyCheckbox.Text = "Notify when credentials are requested";
             this.credNotifyCheckbox.UseVisualStyleBackColor = true;
-            // 
-            // credMatchingCheckbox
-            // 
             this.credMatchingCheckbox.AutoSize = true;
-            this.credMatchingCheckbox.Location = new System.Drawing.Point(15, 55);
+            this.credMatchingCheckbox.Location = new System.Drawing.Point(18, 58);
             this.credMatchingCheckbox.Name = "credMatchingCheckbox";
-            this.credMatchingCheckbox.Size = new System.Drawing.Size(325, 19);
-            this.credMatchingCheckbox.TabIndex = 1;
-            this.credMatchingCheckbox.Text = "Return only best matching entries for an URL instead of all";
+            this.credMatchingCheckbox.Size = new System.Drawing.Size(206, 19);
+            this.credMatchingCheckbox.Text = "Return only the best URL matches";
             this.credMatchingCheckbox.UseVisualStyleBackColor = true;
-            // 
-            // unlockDatabaseCheckbox
-            // 
             this.unlockDatabaseCheckbox.AutoSize = true;
-            this.unlockDatabaseCheckbox.Location = new System.Drawing.Point(15, 85);
+            this.unlockDatabaseCheckbox.Location = new System.Drawing.Point(18, 88);
             this.unlockDatabaseCheckbox.Name = "unlockDatabaseCheckbox";
-            this.unlockDatabaseCheckbox.Size = new System.Drawing.Size(256, 19);
-            this.unlockDatabaseCheckbox.TabIndex = 2;
-            this.unlockDatabaseCheckbox.Text = "Request for unlocking the database if locked";
+            this.unlockDatabaseCheckbox.Size = new System.Drawing.Size(222, 19);
+            this.unlockDatabaseCheckbox.Text = "Request database unlock when needed";
             this.unlockDatabaseCheckbox.UseVisualStyleBackColor = true;
-            // 
-            // hideExpiredCheckbox
-            // 
             this.hideExpiredCheckbox.AutoSize = true;
-            this.hideExpiredCheckbox.Location = new System.Drawing.Point(15, 115);
+            this.hideExpiredCheckbox.Location = new System.Drawing.Point(18, 118);
             this.hideExpiredCheckbox.Name = "hideExpiredCheckbox";
-            this.hideExpiredCheckbox.Size = new System.Drawing.Size(185, 19);
-            this.hideExpiredCheckbox.TabIndex = 3;
-            this.hideExpiredCheckbox.Text = "Do not return expired entries";
+            this.hideExpiredCheckbox.Size = new System.Drawing.Size(166, 19);
+            this.hideExpiredCheckbox.Text = "Exclude expired entries";
             this.hideExpiredCheckbox.UseVisualStyleBackColor = true;
-            // 
-            // matchSchemesCheckbox
-            // 
             this.matchSchemesCheckbox.AutoSize = true;
-            this.matchSchemesCheckbox.Location = new System.Drawing.Point(15, 145);
+            this.matchSchemesCheckbox.Location = new System.Drawing.Point(18, 148);
             this.matchSchemesCheckbox.Name = "matchSchemesCheckbox";
-            this.matchSchemesCheckbox.Size = new System.Drawing.Size(258, 19);
-            this.matchSchemesCheckbox.TabIndex = 4;
-            this.matchSchemesCheckbox.Text = "Match URL schemes (http, https separation)";
+            this.matchSchemesCheckbox.Size = new System.Drawing.Size(206, 19);
+            this.matchSchemesCheckbox.Text = "Require matching URL scheme";
             this.matchSchemesCheckbox.UseVisualStyleBackColor = true;
-            // 
-            // grpSorting
-            // 
-            this.grpSorting.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpSorting.Controls.Add(this.SortByTitleRadioButton);
-            this.grpSorting.Controls.Add(this.SortByUsernameRadioButton);
-            this.grpSorting.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.grpSorting.Location = new System.Drawing.Point(10, 345);
-            this.grpSorting.Name = "grpSorting";
-            this.grpSorting.Size = new System.Drawing.Size(510, 60);
-            this.grpSorting.TabIndex = 2;
-            this.grpSorting.TabStop = false;
-            this.grpSorting.Text = "Result Sorting";
-            // 
-            // SortByTitleRadioButton
-            // 
+            this.lblSort.AutoSize = true;
+            this.lblSort.Location = new System.Drawing.Point(18, 182);
+            this.lblSort.Name = "lblSort";
+            this.lblSort.Size = new System.Drawing.Size(78, 15);
+            this.lblSort.Text = "Sort results:";
             this.SortByTitleRadioButton.AutoSize = true;
-            this.SortByTitleRadioButton.Location = new System.Drawing.Point(15, 25);
+            this.SortByTitleRadioButton.Location = new System.Drawing.Point(110, 180);
             this.SortByTitleRadioButton.Name = "SortByTitleRadioButton";
-            this.SortByTitleRadioButton.Size = new System.Drawing.Size(87, 19);
-            this.SortByTitleRadioButton.TabIndex = 0;
-            this.SortByTitleRadioButton.TabStop = true;
-            this.SortByTitleRadioButton.Text = "Sort by title";
+            this.SortByTitleRadioButton.Size = new System.Drawing.Size(61, 19);
+            this.SortByTitleRadioButton.Text = "Title";
             this.SortByTitleRadioButton.UseVisualStyleBackColor = true;
-            // 
-            // SortByUsernameRadioButton
-            // 
             this.SortByUsernameRadioButton.AutoSize = true;
-            this.SortByUsernameRadioButton.Location = new System.Drawing.Point(150, 25);
+            this.SortByUsernameRadioButton.Location = new System.Drawing.Point(190, 180);
             this.SortByUsernameRadioButton.Name = "SortByUsernameRadioButton";
-            this.SortByUsernameRadioButton.Size = new System.Drawing.Size(119, 19);
-            this.SortByUsernameRadioButton.TabIndex = 1;
-            this.SortByUsernameRadioButton.TabStop = true;
-            this.SortByUsernameRadioButton.Text = "Sort by username";
+            this.SortByUsernameRadioButton.Size = new System.Drawing.Size(83, 19);
+            this.SortByUsernameRadioButton.Text = "Username";
             this.SortByUsernameRadioButton.UseVisualStyleBackColor = true;
-            // 
-            // lblVersion
-            // 
-            this.lblVersion.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.lblVersion.AutoSize = true;
-            this.lblVersion.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblVersion.ForeColor = System.Drawing.SystemColors.GrayText;
-            this.lblVersion.Location = new System.Drawing.Point(16, 527);
-            this.lblVersion.Name = "lblVersion";
-            this.lblVersion.Size = new System.Drawing.Size(127, 13);
-            this.lblVersion.TabIndex = 3;
-            this.lblVersion.Text = "KeePassNatMsg v2.2.0.0";
-            // 
-            // tabPage2
-            // 
-            this.tabPage2.Controls.Add(this.grpSearchDb);
-            this.tabPage2.Controls.Add(this.grpDefaultGroup);
-            this.tabPage2.Controls.Add(this.grpFields);
-            this.tabPage2.Controls.Add(this.grpDangerZone);
-            this.tabPage2.Controls.Add(this.labelConnDb);
-            this.tabPage2.Controls.Add(this.comboBoxDatabases);
-            this.tabPage2.Controls.Add(this.chkUseKpxcSettingsKey);
-            this.tabPage2.Controls.Add(this.btnMigrateSettings);
-            this.tabPage2.Controls.Add(this.btnCheckForLegacyConfig);
-            this.tabPage2.Location = new System.Drawing.Point(4, 22);
-            this.tabPage2.Name = "tabPage2";
-            this.tabPage2.Padding = new System.Windows.Forms.Padding(10);
-            this.tabPage2.Size = new System.Drawing.Size(530, 472);
-            this.tabPage2.TabIndex = 1;
-            this.tabPage2.Text = "Advanced";
-            this.tabPage2.UseVisualStyleBackColor = true;
-            // 
-            // grpSearchDb
-            // 
-            this.grpSearchDb.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpSearchDb.Controls.Add(this.credOnlySearchInSelectedDatabaseRadioButton);
-            this.grpSearchDb.Controls.Add(this.credSearchInAllOpenedDatabasesRadioButton);
-            this.grpSearchDb.Controls.Add(this.credRestrictSearchInSpecificDatabaseRadioButton);
-            this.grpSearchDb.Controls.Add(this.comboBoxSearchDatabases);
-            this.grpSearchDb.Location = new System.Drawing.Point(10, 10);
-            this.grpSearchDb.Name = "grpSearchDb";
-            this.grpSearchDb.Size = new System.Drawing.Size(510, 95);
-            this.grpSearchDb.TabIndex = 0;
-            this.grpSearchDb.TabStop = false;
-            this.grpSearchDb.Text = "Database Search Scope";
-            // 
-            // credOnlySearchInSelectedDatabaseRadioButton
-            // 
+            //
+            // grpDatabase
+            //
+            this.grpDatabase.Controls.Add(this.credOnlySearchInSelectedDatabaseRadioButton);
+            this.grpDatabase.Controls.Add(this.credSearchInAllOpenedDatabasesRadioButton);
+            this.grpDatabase.Controls.Add(this.credRestrictSearchInSpecificDatabaseRadioButton);
+            this.grpDatabase.Controls.Add(this.comboBoxSearchDatabases);
+            this.grpDatabase.Controls.Add(this.labelConnDb);
+            this.grpDatabase.Controls.Add(this.comboBoxDatabases);
+            this.grpDatabase.Location = new System.Drawing.Point(14, 242);
+            this.grpDatabase.Name = "grpDatabase";
+            this.grpDatabase.Size = new System.Drawing.Size(638, 139);
+            this.grpDatabase.TabIndex = 1;
+            this.grpDatabase.TabStop = false;
+            this.grpDatabase.Text = "Database Scope";
             this.credOnlySearchInSelectedDatabaseRadioButton.AutoSize = true;
-            this.credOnlySearchInSelectedDatabaseRadioButton.Location = new System.Drawing.Point(15, 20);
+            this.credOnlySearchInSelectedDatabaseRadioButton.Location = new System.Drawing.Point(18, 26);
             this.credOnlySearchInSelectedDatabaseRadioButton.Name = "credOnlySearchInSelectedDatabaseRadioButton";
-            this.credOnlySearchInSelectedDatabaseRadioButton.Size = new System.Drawing.Size(201, 17);
-            this.credOnlySearchInSelectedDatabaseRadioButton.TabIndex = 0;
-            this.credOnlySearchInSelectedDatabaseRadioButton.TabStop = true;
-            this.credOnlySearchInSelectedDatabaseRadioButton.Text = "Search in only selected database";
+            this.credOnlySearchInSelectedDatabaseRadioButton.Size = new System.Drawing.Size(169, 19);
+            this.credOnlySearchInSelectedDatabaseRadioButton.Text = "Use the connection database";
             this.credOnlySearchInSelectedDatabaseRadioButton.UseVisualStyleBackColor = true;
             this.credOnlySearchInSelectedDatabaseRadioButton.CheckedChanged += new System.EventHandler(this.rbSearchDatabase_CheckedChanged);
-            // 
-            // credSearchInAllOpenedDatabasesRadioButton
-            // 
             this.credSearchInAllOpenedDatabasesRadioButton.AutoSize = true;
-            this.credSearchInAllOpenedDatabasesRadioButton.Location = new System.Drawing.Point(15, 42);
+            this.credSearchInAllOpenedDatabasesRadioButton.Location = new System.Drawing.Point(205, 26);
             this.credSearchInAllOpenedDatabasesRadioButton.Name = "credSearchInAllOpenedDatabasesRadioButton";
-            this.credSearchInAllOpenedDatabasesRadioButton.Size = new System.Drawing.Size(184, 17);
-            this.credSearchInAllOpenedDatabasesRadioButton.TabIndex = 1;
-            this.credSearchInAllOpenedDatabasesRadioButton.TabStop = true;
-            this.credSearchInAllOpenedDatabasesRadioButton.Text = "Search in all opened databases";
+            this.credSearchInAllOpenedDatabasesRadioButton.Size = new System.Drawing.Size(184, 19);
+            this.credSearchInAllOpenedDatabasesRadioButton.Text = "Search all open databases";
             this.credSearchInAllOpenedDatabasesRadioButton.UseVisualStyleBackColor = true;
             this.credSearchInAllOpenedDatabasesRadioButton.CheckedChanged += new System.EventHandler(this.rbSearchDatabase_CheckedChanged);
-            // 
-            // credRestrictSearchInSpecificDatabaseRadioButton
-            // 
             this.credRestrictSearchInSpecificDatabaseRadioButton.AutoSize = true;
-            this.credRestrictSearchInSpecificDatabaseRadioButton.Location = new System.Drawing.Point(15, 64);
+            this.credRestrictSearchInSpecificDatabaseRadioButton.Location = new System.Drawing.Point(18, 58);
             this.credRestrictSearchInSpecificDatabaseRadioButton.Name = "credRestrictSearchInSpecificDatabaseRadioButton";
-            this.credRestrictSearchInSpecificDatabaseRadioButton.Size = new System.Drawing.Size(187, 17);
-            this.credRestrictSearchInSpecificDatabaseRadioButton.TabIndex = 2;
-            this.credRestrictSearchInSpecificDatabaseRadioButton.TabStop = true;
-            this.credRestrictSearchInSpecificDatabaseRadioButton.Text = "Restrict search to specific DB:";
+            this.credRestrictSearchInSpecificDatabaseRadioButton.Size = new System.Drawing.Size(151, 19);
+            this.credRestrictSearchInSpecificDatabaseRadioButton.Text = "Search only this database:";
             this.credRestrictSearchInSpecificDatabaseRadioButton.UseVisualStyleBackColor = true;
             this.credRestrictSearchInSpecificDatabaseRadioButton.CheckedChanged += new System.EventHandler(this.rbSearchDatabase_CheckedChanged);
-            // 
-            // comboBoxSearchDatabases
-            // 
             this.comboBoxSearchDatabases.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxSearchDatabases.FormattingEnabled = true;
-            this.comboBoxSearchDatabases.Location = new System.Drawing.Point(210, 63);
+            this.comboBoxSearchDatabases.Location = new System.Drawing.Point(180, 56);
             this.comboBoxSearchDatabases.Name = "comboBoxSearchDatabases";
-            this.comboBoxSearchDatabases.Size = new System.Drawing.Size(280, 21);
-            this.comboBoxSearchDatabases.TabIndex = 3;
-            // 
-            // grpDefaultGroup
-            // 
-            this.grpDefaultGroup.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpDefaultGroup.Controls.Add(this.lblDefaultGroup);
-            this.grpDefaultGroup.Controls.Add(this.txtDefaultGroup);
-            this.grpDefaultGroup.Controls.Add(this.chkDefaultGroupAlwaysAllow);
-            this.grpDefaultGroup.Location = new System.Drawing.Point(10, 115);
-            this.grpDefaultGroup.Name = "grpDefaultGroup";
-            this.grpDefaultGroup.Size = new System.Drawing.Size(510, 75);
-            this.grpDefaultGroup.TabIndex = 1;
-            this.grpDefaultGroup.TabStop = false;
-            this.grpDefaultGroup.Text = "Default Group for New Logins";
-            // 
-            // lblDefaultGroup
-            // 
+            this.comboBoxSearchDatabases.Size = new System.Drawing.Size(430, 23);
+            this.labelConnDb.AutoSize = true;
+            this.labelConnDb.Location = new System.Drawing.Point(18, 101);
+            this.labelConnDb.Name = "labelConnDb";
+            this.labelConnDb.Size = new System.Drawing.Size(123, 15);
+            this.labelConnDb.Text = "Connection database:";
+            this.comboBoxDatabases.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxDatabases.FormattingEnabled = true;
+            this.comboBoxDatabases.Location = new System.Drawing.Point(180, 97);
+            this.comboBoxDatabases.Name = "comboBoxDatabases";
+            this.comboBoxDatabases.Size = new System.Drawing.Size(430, 23);
+            //
+            // grpNewLogins
+            //
+            this.grpNewLogins.Controls.Add(this.lblDefaultGroup);
+            this.grpNewLogins.Controls.Add(this.txtDefaultGroup);
+            this.grpNewLogins.Controls.Add(this.chkDefaultGroupAlwaysAllow);
+            this.grpNewLogins.Controls.Add(this.chkSearchUrls);
+            this.grpNewLogins.Location = new System.Drawing.Point(14, 391);
+            this.grpNewLogins.Name = "grpNewLogins";
+            this.grpNewLogins.Size = new System.Drawing.Size(638, 116);
+            this.grpNewLogins.TabIndex = 2;
+            this.grpNewLogins.TabStop = false;
+            this.grpNewLogins.Text = "Entries and New Logins";
             this.lblDefaultGroup.AutoSize = true;
-            this.lblDefaultGroup.Location = new System.Drawing.Point(15, 23);
+            this.lblDefaultGroup.Location = new System.Drawing.Point(18, 29);
             this.lblDefaultGroup.Name = "lblDefaultGroup";
-            this.lblDefaultGroup.Size = new System.Drawing.Size(71, 13);
-            this.lblDefaultGroup.TabIndex = 0;
-            this.lblDefaultGroup.Text = "Group Path:";
-            // 
-            // txtDefaultGroup
-            // 
-            this.txtDefaultGroup.Location = new System.Drawing.Point(95, 20);
+            this.lblDefaultGroup.Size = new System.Drawing.Size(81, 15);
+            this.lblDefaultGroup.Text = "Default group:";
+            this.txtDefaultGroup.Location = new System.Drawing.Point(115, 25);
             this.txtDefaultGroup.Name = "txtDefaultGroup";
-            this.txtDefaultGroup.Size = new System.Drawing.Size(250, 22);
-            this.txtDefaultGroup.TabIndex = 1;
-            // 
-            // chkDefaultGroupAlwaysAllow
-            // 
+            this.txtDefaultGroup.Size = new System.Drawing.Size(495, 23);
             this.chkDefaultGroupAlwaysAllow.AutoSize = true;
-            this.chkDefaultGroupAlwaysAllow.Location = new System.Drawing.Point(18, 48);
+            this.chkDefaultGroupAlwaysAllow.Location = new System.Drawing.Point(18, 58);
             this.chkDefaultGroupAlwaysAllow.Name = "chkDefaultGroupAlwaysAllow";
-            this.chkDefaultGroupAlwaysAllow.Size = new System.Drawing.Size(271, 17);
-            this.chkDefaultGroupAlwaysAllow.TabIndex = 2;
-            this.chkDefaultGroupAlwaysAllow.Text = "Always allow access for entries in default group";
+            this.chkDefaultGroupAlwaysAllow.Size = new System.Drawing.Size(293, 19);
+            this.chkDefaultGroupAlwaysAllow.Text = "Allow entries in the default group without prompting";
             this.chkDefaultGroupAlwaysAllow.UseVisualStyleBackColor = true;
-            // 
-            // grpFields
-            // 
-            this.grpFields.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpFields.Controls.Add(this.chkSearchUrls);
-            this.grpFields.Location = new System.Drawing.Point(10, 198);
-            this.grpFields.Name = "grpFields";
-            this.grpFields.Size = new System.Drawing.Size(510, 55);
-            this.grpFields.TabIndex = 2;
-            this.grpFields.TabStop = false;
-            this.grpFields.Text = "Additional URL Search";
-            // 
-            // chkSearchUrls
-            // 
             this.chkSearchUrls.AutoSize = true;
-            this.chkSearchUrls.Location = new System.Drawing.Point(15, 23);
+            this.chkSearchUrls.Location = new System.Drawing.Point(18, 86);
             this.chkSearchUrls.Name = "chkSearchUrls";
-            this.chkSearchUrls.Size = new System.Drawing.Size(250, 17);
-            this.chkSearchUrls.TabIndex = 0;
-            this.chkSearchUrls.Text = "Search custom fields starting with URL or KP2A";
+            this.chkSearchUrls.Size = new System.Drawing.Size(244, 19);
+            this.chkSearchUrls.Text = "Search additional URL and KP2A_URL fields";
             this.chkSearchUrls.UseVisualStyleBackColor = true;
-            // 
+            //
             // grpDangerZone
-            // 
-            this.grpDangerZone.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            //
+            this.grpDangerZone.Controls.Add(this.lblDangerWarning);
             this.grpDangerZone.Controls.Add(this.credAllowAccessCheckbox);
             this.grpDangerZone.Controls.Add(this.credAllowUpdatesCheckbox);
             this.grpDangerZone.Controls.Add(this.removePermissionsButton);
             this.grpDangerZone.ForeColor = System.Drawing.Color.DarkRed;
-            this.grpDangerZone.Location = new System.Drawing.Point(10, 260);
+            this.grpDangerZone.Location = new System.Drawing.Point(14, 517);
             this.grpDangerZone.Name = "grpDangerZone";
-            this.grpDangerZone.Size = new System.Drawing.Size(510, 95);
+            this.grpDangerZone.Size = new System.Drawing.Size(638, 132);
             this.grpDangerZone.TabIndex = 3;
             this.grpDangerZone.TabStop = false;
-            this.grpDangerZone.Text = "Danger Zone (Bypass Prompting)";
-            // 
-            // credAllowAccessCheckbox
-            // 
+            this.grpDangerZone.Text = "Danger Zone";
+            this.lblDangerWarning.ForeColor = System.Drawing.Color.DarkRed;
+            this.lblDangerWarning.Location = new System.Drawing.Point(18, 23);
+            this.lblDangerWarning.Name = "lblDangerWarning";
+            this.lblDangerWarning.Size = new System.Drawing.Size(600, 34);
+            this.lblDangerWarning.Text = "These options bypass confirmation prompts. Enable them only when you understand the credential exposure risk.";
             this.credAllowAccessCheckbox.AutoSize = true;
             this.credAllowAccessCheckbox.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.credAllowAccessCheckbox.Location = new System.Drawing.Point(15, 20);
+            this.credAllowAccessCheckbox.Location = new System.Drawing.Point(18, 62);
             this.credAllowAccessCheckbox.Name = "credAllowAccessCheckbox";
-            this.credAllowAccessCheckbox.Size = new System.Drawing.Size(236, 17);
-            this.credAllowAccessCheckbox.TabIndex = 0;
-            this.credAllowAccessCheckbox.Text = "Always allow access (skip confirmation)";
+            this.credAllowAccessCheckbox.Size = new System.Drawing.Size(210, 19);
+            this.credAllowAccessCheckbox.Text = "Always allow credential access";
             this.credAllowAccessCheckbox.UseVisualStyleBackColor = true;
-            // 
-            // credAllowUpdatesCheckbox
-            // 
             this.credAllowUpdatesCheckbox.AutoSize = true;
             this.credAllowUpdatesCheckbox.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.credAllowUpdatesCheckbox.Location = new System.Drawing.Point(15, 43);
+            this.credAllowUpdatesCheckbox.Location = new System.Drawing.Point(250, 62);
             this.credAllowUpdatesCheckbox.Name = "credAllowUpdatesCheckbox";
-            this.credAllowUpdatesCheckbox.Size = new System.Drawing.Size(243, 17);
-            this.credAllowUpdatesCheckbox.TabIndex = 1;
-            this.credAllowUpdatesCheckbox.Text = "Always allow updates (skip confirmation)";
+            this.credAllowUpdatesCheckbox.Size = new System.Drawing.Size(204, 19);
+            this.credAllowUpdatesCheckbox.Text = "Always allow credential updates";
             this.credAllowUpdatesCheckbox.UseVisualStyleBackColor = true;
-            // 
-            // removePermissionsButton
-            // 
             this.removePermissionsButton.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.removePermissionsButton.Location = new System.Drawing.Point(15, 65);
+            this.removePermissionsButton.Location = new System.Drawing.Point(18, 91);
             this.removePermissionsButton.Name = "removePermissionsButton";
-            this.removePermissionsButton.Size = new System.Drawing.Size(280, 23);
-            this.removePermissionsButton.TabIndex = 2;
-            this.removePermissionsButton.Text = "Remove all stored permissions from entries";
+            this.removePermissionsButton.Size = new System.Drawing.Size(250, 28);
+            this.removePermissionsButton.Text = "Reset entry access permissions...";
             this.removePermissionsButton.UseVisualStyleBackColor = true;
             this.removePermissionsButton.Click += new System.EventHandler(this.removePermissionsButton_Click);
-            // 
-            // labelConnDb
-            // 
-            this.labelConnDb.AutoSize = true;
-            this.labelConnDb.Location = new System.Drawing.Point(15, 370);
-            this.labelConnDb.Name = "labelConnDb";
-            this.labelConnDb.Size = new System.Drawing.Size(123, 13);
-            this.labelConnDb.TabIndex = 4;
-            this.labelConnDb.Text = "Connection Database:";
-            // 
-            // comboBoxDatabases
-            // 
-            this.comboBoxDatabases.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBoxDatabases.FormattingEnabled = true;
-            this.comboBoxDatabases.Location = new System.Drawing.Point(145, 366);
-            this.comboBoxDatabases.Name = "comboBoxDatabases";
-            this.comboBoxDatabases.Size = new System.Drawing.Size(210, 21);
-            this.comboBoxDatabases.TabIndex = 5;
-            // 
-            // chkUseKpxcSettingsKey
-            // 
-            this.chkUseKpxcSettingsKey.AutoSize = true;
-            this.chkUseKpxcSettingsKey.Location = new System.Drawing.Point(18, 400);
-            this.chkUseKpxcSettingsKey.Name = "chkUseKpxcSettingsKey";
-            this.chkUseKpxcSettingsKey.Size = new System.Drawing.Size(177, 17);
-            this.chkUseKpxcSettingsKey.TabIndex = 6;
-            this.chkUseKpxcSettingsKey.Text = "Use KeePassXC Settings Key";
-            this.chkUseKpxcSettingsKey.UseVisualStyleBackColor = true;
-            // 
-            // btnMigrateSettings
-            // 
-            this.btnMigrateSettings.Location = new System.Drawing.Point(215, 396);
-            this.btnMigrateSettings.Name = "btnMigrateSettings";
-            this.btnMigrateSettings.Size = new System.Drawing.Size(120, 23);
-            this.btnMigrateSettings.TabIndex = 7;
-            this.btnMigrateSettings.Text = "Migrate Settings";
-            this.btnMigrateSettings.UseVisualStyleBackColor = true;
-            this.btnMigrateSettings.Click += new System.EventHandler(this.btnMigrateSettings_Click);
-            // 
-            // btnCheckForLegacyConfig
-            // 
-            this.btnCheckForLegacyConfig.Location = new System.Drawing.Point(345, 396);
-            this.btnCheckForLegacyConfig.Name = "btnCheckForLegacyConfig";
-            this.btnCheckForLegacyConfig.Size = new System.Drawing.Size(120, 23);
-            this.btnCheckForLegacyConfig.TabIndex = 8;
-            this.btnCheckForLegacyConfig.Text = "Check Legacy";
-            this.btnCheckForLegacyConfig.UseVisualStyleBackColor = true;
-            this.btnCheckForLegacyConfig.Click += new System.EventHandler(this.btnCheckForLegacyConfig_Click);
-            // 
-            // tabPage3
-            // 
-            this.tabPage3.Controls.Add(this.scKeysMain);
-            this.tabPage3.Location = new System.Drawing.Point(4, 22);
-            this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage3.Size = new System.Drawing.Size(530, 472);
-            this.tabPage3.TabIndex = 2;
-            this.tabPage3.Text = "Keys";
-            this.tabPage3.UseVisualStyleBackColor = true;
-            // 
-            // scKeysMain
-            // 
-            this.scKeysMain.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.scKeysMain.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
-            this.scKeysMain.Location = new System.Drawing.Point(3, 3);
-            this.scKeysMain.Name = "scKeysMain";
-            this.scKeysMain.Orientation = System.Windows.Forms.Orientation.Horizontal;
-            // 
-            // scKeysMain.Panel1
-            // 
-            this.scKeysMain.Panel1.Controls.Add(this.dgvKeys);
-            // 
-            // scKeysMain.Panel2
-            // 
-            this.scKeysMain.Panel2.Controls.Add(this.btnRemoveAllKeys);
-            this.scKeysMain.Panel2.Controls.Add(this.btnRemoveSelectedKeys);
-            this.scKeysMain.Size = new System.Drawing.Size(524, 466);
-            this.scKeysMain.SplitterDistance = 425;
-            this.scKeysMain.TabIndex = 0;
-            // 
-            // dgvKeys
-            // 
+            //
+            // tabAssociations
+            //
+            this.tabAssociations.Controls.Add(this.lblKeysHint);
+            this.tabAssociations.Controls.Add(this.dgvKeys);
+            this.tabAssociations.Controls.Add(this.btnRemoveSelectedKeys);
+            this.tabAssociations.Controls.Add(this.btnRemoveAllKeys);
+            this.tabAssociations.Location = new System.Drawing.Point(4, 24);
+            this.tabAssociations.Name = "tabAssociations";
+            this.tabAssociations.Padding = new System.Windows.Forms.Padding(14);
+            this.tabAssociations.Size = new System.Drawing.Size(688, 536);
+            this.tabAssociations.TabIndex = 2;
+            this.tabAssociations.Text = "Associations";
+            this.tabAssociations.UseVisualStyleBackColor = true;
+            this.lblKeysHint.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblKeysHint.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lblKeysHint.Location = new System.Drawing.Point(14, 14);
+            this.lblKeysHint.Name = "lblKeysHint";
+            this.lblKeysHint.Size = new System.Drawing.Size(650, 36);
+            this.lblKeysHint.Text = "Associated browser identities for the active database. Only a short fingerprint is shown; secret key material is never displayed.";
             this.dgvKeys.AllowUserToAddRows = false;
             this.dgvKeys.AllowUserToDeleteRows = false;
             this.dgvKeys.AllowUserToResizeRows = false;
+            this.dgvKeys.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvKeys.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.dgvKeys.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvKeys.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.colName,
-            this.colKey});
-            this.dgvKeys.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dgvKeys.Location = new System.Drawing.Point(0, 0);
+            this.dgvKeys.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] { this.colName, this.colFingerprint });
+            this.dgvKeys.Location = new System.Drawing.Point(14, 58);
+            this.dgvKeys.MultiSelect = true;
             this.dgvKeys.Name = "dgvKeys";
             this.dgvKeys.ReadOnly = true;
             this.dgvKeys.RowHeadersVisible = false;
             this.dgvKeys.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvKeys.Size = new System.Drawing.Size(524, 425);
-            this.dgvKeys.TabIndex = 0;
-            // 
-            // colName
-            // 
+            this.dgvKeys.Size = new System.Drawing.Size(650, 420);
             this.colName.DataPropertyName = "Name";
-            this.colName.HeaderText = "Name";
+            this.colName.HeaderText = "Client name";
             this.colName.Name = "colName";
             this.colName.ReadOnly = true;
-            // 
-            // colKey
-            // 
-            this.colKey.DataPropertyName = "Key";
-            this.colKey.HeaderText = "Key";
-            this.colKey.Name = "colKey";
-            this.colKey.ReadOnly = true;
-            // 
-            // btnRemoveAllKeys
-            // 
-            this.btnRemoveAllKeys.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnRemoveAllKeys.Location = new System.Drawing.Point(400, 6);
-            this.btnRemoveAllKeys.Name = "btnRemoveAllKeys";
-            this.btnRemoveAllKeys.Size = new System.Drawing.Size(120, 25);
-            this.btnRemoveAllKeys.TabIndex = 1;
-            this.btnRemoveAllKeys.Text = "Remove All Keys";
-            this.btnRemoveAllKeys.UseVisualStyleBackColor = true;
-            this.btnRemoveAllKeys.Click += new System.EventHandler(this.btnRemoveAllKeys_Click);
-            // 
-            // btnRemoveSelectedKeys
-            // 
+            this.colFingerprint.DataPropertyName = "Fingerprint";
+            this.colFingerprint.HeaderText = "Key fingerprint";
+            this.colFingerprint.Name = "colFingerprint";
+            this.colFingerprint.ReadOnly = true;
             this.btnRemoveSelectedKeys.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnRemoveSelectedKeys.Location = new System.Drawing.Point(265, 6);
+            this.btnRemoveSelectedKeys.Location = new System.Drawing.Point(397, 490);
             this.btnRemoveSelectedKeys.Name = "btnRemoveSelectedKeys";
-            this.btnRemoveSelectedKeys.Size = new System.Drawing.Size(125, 25);
-            this.btnRemoveSelectedKeys.TabIndex = 0;
+            this.btnRemoveSelectedKeys.Size = new System.Drawing.Size(130, 30);
             this.btnRemoveSelectedKeys.Text = "Remove Selected";
             this.btnRemoveSelectedKeys.UseVisualStyleBackColor = true;
             this.btnRemoveSelectedKeys.Click += new System.EventHandler(this.btnRemoveSelectedKeys_Click);
-            // 
+            this.btnRemoveAllKeys.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnRemoveAllKeys.Location = new System.Drawing.Point(537, 490);
+            this.btnRemoveAllKeys.Name = "btnRemoveAllKeys";
+            this.btnRemoveAllKeys.Size = new System.Drawing.Size(127, 30);
+            this.btnRemoveAllKeys.Text = "Remove All";
+            this.btnRemoveAllKeys.UseVisualStyleBackColor = true;
+            this.btnRemoveAllKeys.Click += new System.EventHandler(this.btnRemoveAllKeys_Click);
+            //
+            // footer
+            //
+            this.lblVersion.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.lblVersion.AutoSize = true;
+            this.lblVersion.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lblVersion.Location = new System.Drawing.Point(16, 594);
+            this.lblVersion.Name = "lblVersion";
+            this.lblVersion.Size = new System.Drawing.Size(93, 15);
+            this.lblVersion.Text = "KeePassNatMsg";
+            this.okButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.okButton.Location = new System.Drawing.Point(531, 588);
+            this.okButton.Name = "okButton";
+            this.okButton.Size = new System.Drawing.Size(85, 30);
+            this.okButton.Text = "Save";
+            this.okButton.UseVisualStyleBackColor = true;
+            this.okButton.Click += new System.EventHandler(this.okButton_Click);
+            this.cancelButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            this.cancelButton.Location = new System.Drawing.Point(623, 588);
+            this.cancelButton.Name = "cancelButton";
+            this.cancelButton.Size = new System.Drawing.Size(85, 30);
+            this.cancelButton.Text = "Cancel";
+            this.cancelButton.UseVisualStyleBackColor = true;
+            this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
+            //
             // OptionsForm
-            // 
+            //
             this.AcceptButton = this.okButton;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.cancelButton;
-            this.ClientSize = new System.Drawing.Size(562, 558);
+            this.ClientSize = new System.Drawing.Size(720, 630);
+            this.Controls.Add(this.tabControl);
             this.Controls.Add(this.lblVersion);
-            this.Controls.Add(this.tabControl1);
             this.Controls.Add(this.okButton);
             this.Controls.Add(this.cancelButton);
-            this.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -648,83 +491,75 @@
             this.Text = "KeePassNatMsg Options";
             this.Load += new System.EventHandler(this.OptionsForm_Load);
             this.Shown += new System.EventHandler(this.OptionsForm_Shown);
-            this.tabControl1.ResumeLayout(false);
-            this.tabPage1.ResumeLayout(false);
-            this.grpChrome.ResumeLayout(false);
-            this.grpChrome.PerformLayout();
+            this.tabControl.ResumeLayout(false);
+            this.tabIntegration.ResumeLayout(false);
+            this.grpIntegration.ResumeLayout(false);
+            this.grpIntegration.PerformLayout();
+            this.tabPreferences.ResumeLayout(false);
             this.grpMatching.ResumeLayout(false);
             this.grpMatching.PerformLayout();
-            this.grpSorting.ResumeLayout(false);
-            this.grpSorting.PerformLayout();
-            this.tabPage2.ResumeLayout(false);
-            this.tabPage2.PerformLayout();
-            this.grpSearchDb.ResumeLayout(false);
-            this.grpSearchDb.PerformLayout();
-            this.grpDefaultGroup.ResumeLayout(false);
-            this.grpDefaultGroup.PerformLayout();
-            this.grpFields.ResumeLayout(false);
-            this.grpFields.PerformLayout();
+            this.grpDatabase.ResumeLayout(false);
+            this.grpDatabase.PerformLayout();
+            this.grpNewLogins.ResumeLayout(false);
+            this.grpNewLogins.PerformLayout();
             this.grpDangerZone.ResumeLayout(false);
             this.grpDangerZone.PerformLayout();
-            this.tabPage3.ResumeLayout(false);
-            this.scKeysMain.Panel1.ResumeLayout(false);
-            this.scKeysMain.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.scKeysMain)).EndInit();
-            this.scKeysMain.ResumeLayout(false);
+            this.tabAssociations.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvKeys)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
 
         #endregion
 
-        private System.Windows.Forms.Button cancelButton;
-        private System.Windows.Forms.Button okButton;
-        private System.Windows.Forms.TabControl tabControl1;
-        private System.Windows.Forms.TabPage tabPage1;
-        private System.Windows.Forms.Label lblVersion;
-        private System.Windows.Forms.TabPage tabPage2;
-        private System.Windows.Forms.TabPage tabPage3;
-        private System.Windows.Forms.SplitContainer scKeysMain;
-        private System.Windows.Forms.DataGridView dgvKeys;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colName;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colKey;
-        private System.Windows.Forms.Button btnRemoveAllKeys;
-        private System.Windows.Forms.Button btnRemoveSelectedKeys;
-        private System.Windows.Forms.GroupBox grpChrome;
+        private System.Windows.Forms.TabControl tabControl;
+        private System.Windows.Forms.TabPage tabIntegration;
+        private System.Windows.Forms.GroupBox grpIntegration;
+        private System.Windows.Forms.Label lblOverallStatus;
+        private System.Windows.Forms.Label lblProxyStatus;
+        private System.Windows.Forms.Label lblManifestStatus;
         private System.Windows.Forms.Label lblChromeStatus;
-        private System.Windows.Forms.Button btnInstallChrome;
-        private System.Windows.Forms.Button btnUninstallChrome;
-        private System.Windows.Forms.Button btnRefreshChrome;
+        private System.Windows.Forms.Label lblEdgeStatus;
+        private System.Windows.Forms.Label lblIntegrationHint;
+        private System.Windows.Forms.Button btnInstallIntegration;
+        private System.Windows.Forms.Button btnRefreshIntegration;
+        private System.Windows.Forms.Button btnUninstallIntegration;
+        private System.Windows.Forms.TabPage tabPreferences;
         private System.Windows.Forms.GroupBox grpMatching;
         private System.Windows.Forms.CheckBox credNotifyCheckbox;
         private System.Windows.Forms.CheckBox credMatchingCheckbox;
         private System.Windows.Forms.CheckBox unlockDatabaseCheckbox;
         private System.Windows.Forms.CheckBox hideExpiredCheckbox;
         private System.Windows.Forms.CheckBox matchSchemesCheckbox;
-        private System.Windows.Forms.GroupBox grpSorting;
+        private System.Windows.Forms.Label lblSort;
         private System.Windows.Forms.RadioButton SortByTitleRadioButton;
         private System.Windows.Forms.RadioButton SortByUsernameRadioButton;
-        private System.Windows.Forms.GroupBox grpSearchDb;
+        private System.Windows.Forms.GroupBox grpDatabase;
         private System.Windows.Forms.RadioButton credOnlySearchInSelectedDatabaseRadioButton;
         private System.Windows.Forms.RadioButton credSearchInAllOpenedDatabasesRadioButton;
         private System.Windows.Forms.RadioButton credRestrictSearchInSpecificDatabaseRadioButton;
         private System.Windows.Forms.ComboBox comboBoxSearchDatabases;
-        private System.Windows.Forms.GroupBox grpDefaultGroup;
+        private System.Windows.Forms.Label labelConnDb;
+        private System.Windows.Forms.ComboBox comboBoxDatabases;
+        private System.Windows.Forms.GroupBox grpNewLogins;
         private System.Windows.Forms.Label lblDefaultGroup;
         private System.Windows.Forms.TextBox txtDefaultGroup;
         private System.Windows.Forms.CheckBox chkDefaultGroupAlwaysAllow;
-        private System.Windows.Forms.GroupBox grpFields;
         private System.Windows.Forms.CheckBox chkSearchUrls;
         private System.Windows.Forms.GroupBox grpDangerZone;
+        private System.Windows.Forms.Label lblDangerWarning;
         private System.Windows.Forms.CheckBox credAllowAccessCheckbox;
         private System.Windows.Forms.CheckBox credAllowUpdatesCheckbox;
         private System.Windows.Forms.Button removePermissionsButton;
-        private System.Windows.Forms.Label labelConnDb;
-        private System.Windows.Forms.ComboBox comboBoxDatabases;
-        private System.Windows.Forms.CheckBox chkUseKpxcSettingsKey;
-        private System.Windows.Forms.Button btnMigrateSettings;
-        private System.Windows.Forms.Button btnCheckForLegacyConfig;
+        private System.Windows.Forms.TabPage tabAssociations;
+        private System.Windows.Forms.Label lblKeysHint;
+        private System.Windows.Forms.DataGridView dgvKeys;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colName;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colFingerprint;
+        private System.Windows.Forms.Button btnRemoveSelectedKeys;
+        private System.Windows.Forms.Button btnRemoveAllKeys;
+        private System.Windows.Forms.Label lblVersion;
+        private System.Windows.Forms.Button okButton;
+        private System.Windows.Forms.Button cancelButton;
     }
 }
