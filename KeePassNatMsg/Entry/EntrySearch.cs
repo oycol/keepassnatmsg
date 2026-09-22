@@ -139,13 +139,14 @@ namespace KeePassNatMsg.Entry
 
                 foreach (var entryDatabase in items)
                 {
-                    string entryUrl = string.Copy(entryDatabase.entry.Strings.ReadSafe(PwDefs.UrlField));
-                    if (string.IsNullOrEmpty(entryUrl))
-                        entryUrl = entryDatabase.entry.Strings.ReadSafe(PwDefs.TitleField);
+                    var entryUrls = GetEntryUrls(entryDatabase.entry, configOpt.SearchUrls).ToList();
+                    if (entryUrls.Count == 0)
+                    {
+                        entryUrls.Add(entryDatabase.entry.Strings.ReadSafe(PwDefs.TitleField));
+                    }
 
-                    entryUrl = entryUrl.ToLower();
-
-                    entryDatabase.entry.UsageCount = (ulong)LevenshteinDistance(uri.ToString().ToLower(), entryUrl);
+                    entryDatabase.entry.UsageCount = (ulong)UrlMatchingHelper.GetBestUrlDistance(
+                        uri.ToString(), entryUrls);
                 }
 
                 var itemsList = items.ToList();
@@ -460,7 +461,6 @@ namespace KeePassNatMsg.Entry
             var filter = new GFunc<PwEntry, bool>((PwEntry e) =>
             {
                 var title = e.Strings.ReadSafe(PwDefs.TitleField);
-                var entryUrl = e.Strings.ReadSafe(PwDefs.UrlField);
                 var c = _ext.GetEntryConfig(e);
                 if (c != null)
                 {
@@ -472,30 +472,25 @@ namespace KeePassNatMsg.Entry
                         return false;
                 }
 
-                if (IsValidUrl(entryUrl, formHost))
-                    return true;
+                if (searchUrls)
+                {
+                    foreach (var sf in e.Strings.Where(s => UrlMatchingHelper.IsAdditionalUrlField(s.Key) &&
+                        s.Key.IndexOf("regex", StringComparison.OrdinalIgnoreCase) >= 0))
+                    {
+                        var pattern = e.Strings.ReadSafe(sf.Key);
+                        if (System.Text.RegularExpressions.Regex.IsMatch(formHost, pattern)) return true;
+                    }
+                }
+
+                foreach (var entryUrl in GetEntryUrls(e, searchUrls))
+                {
+                    if (IsValidUrl(entryUrl, formHost)) return true;
+                }
 
                 if (IsValidUrl(title, formHost))
                     return true;
 
-                if (searchUrls)
-                {
-                    foreach (var sf in e.Strings.Where(s => s.Key.StartsWith("URL", StringComparison.InvariantCultureIgnoreCase) || s.Key.StartsWith("KP2A_URL_", StringComparison.InvariantCultureIgnoreCase)))
-                    {
-                        var sfv = e.Strings.ReadSafe(sf.Key);
-
-                        if (sf.Key.IndexOf("regex", StringComparison.OrdinalIgnoreCase) >= 0
-                            && System.Text.RegularExpressions.Regex.IsMatch(formHost, sfv))
-                        {
-                            return true;
-                        }
-
-                        if (IsValidUrl(sfv, formHost))
-                            return true;
-                    }
-                }
-
-                return formHost.Contains(title) || (!string.IsNullOrEmpty(entryUrl) && formHost.Contains(entryUrl));
+                return formHost.Contains(title);
             });
 
             var result = listResult.Where(e => filter(e.entry));
@@ -519,9 +514,31 @@ namespace KeePassNatMsg.Entry
             foreach (var entry in listEntries)
             {
                 if (!entry.Strings.Any(x =>
-                    x.Key.StartsWith("URL", StringComparison.InvariantCultureIgnoreCase)
-                    && x.Key.ToLowerInvariant().Contains("regex"))) continue;
+                    UrlMatchingHelper.IsAdditionalUrlField(x.Key) &&
+                    (x.Key.IndexOf("regex", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     UrlMatchingHelper.ParseUrlValues(entry.Strings.ReadSafe(x.Key)).Count > 0))) continue;
                 listResult.Add(new PwEntryDatabase(entry, db));
+            }
+        }
+
+        private static IEnumerable<string> GetEntryUrls(PwEntry entry, bool includeAdditionalFields)
+        {
+            foreach (var url in UrlMatchingHelper.ParseUrlValues(entry.Strings.ReadSafe(PwDefs.UrlField)))
+            {
+                yield return url;
+            }
+
+            if (!includeAdditionalFields) yield break;
+
+            foreach (var field in entry.Strings.Where(x =>
+                !string.Equals(x.Key, PwDefs.UrlField, StringComparison.InvariantCultureIgnoreCase) &&
+                UrlMatchingHelper.IsAdditionalUrlField(x.Key) &&
+                x.Key.IndexOf("regex", StringComparison.OrdinalIgnoreCase) < 0))
+            {
+                foreach (var url in UrlMatchingHelper.ParseUrlValues(entry.Strings.ReadSafe(field.Key)))
+                {
+                    yield return url;
+                }
             }
         }
 

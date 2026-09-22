@@ -110,6 +110,7 @@
     <Compile Include="Protocol\Crypto\Nacl.cs" />
     <Compile Include="Protocol\Crypto\Helper.cs" />
     <Compile Include="Entry\EntrySearch.cs" />
+    <Compile Include="Entry\UrlMatchingHelper.cs" />
     <Compile Include="Entry\EntryUpdate.cs" />
     <Compile Include="Protocol\Handlers.cs" />
     <Compile Include="Protocol\Crypto\KeyPair.cs" />

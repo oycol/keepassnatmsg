@@ -73,6 +73,9 @@
     <Compile Include="..\KeePassNatMsg\Entry\EntryConfig.cs">
       <Link>Entry\EntryConfig.cs</Link>
     </Compile>
+    <Compile Include="..\KeePassNatMsg\Entry\UrlMatchingHelper.cs">
+      <Link>Entry\UrlMatchingHelper.cs</Link>
+    </Compile>
     <!-- Stub for KeePassNatMsgExt - provides static members needed by Request/Response -->
     <Compile Include="Stubs\KeePassNatMsgExtStub.cs">
       <Link>Stubs\KeePassNatMsgExtStub.cs</Link>

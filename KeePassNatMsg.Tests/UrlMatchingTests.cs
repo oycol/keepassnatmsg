@@ -215,31 +215,41 @@ namespace KeePassNatMsg.Tests
         #region Additional URL Fields
 
         [Test]
+        public void MultipleUrls_CommaSeparatedPrimaryField_AreParsed()
+        {
+            var urls = KeePassNatMsg.Entry.UrlMatchingHelper.ParseUrlValues(
+                "https://login.live.com/, https://login.microsoftonline.com/");
+
+            CollectionAssert.AreEqual(new[]
+            {
+                "https://login.live.com/",
+                "https://login.microsoftonline.com/"
+            }, urls);
+        }
+
+        [Test]
         public void AdditionalUrlCandidate_RegularUrl1_IsIncluded()
         {
-            Assert.IsTrue(KeePassNatMsg.Entry.EntrySearch.IsAdditionalUrlField("URL1"));
-            Assert.IsTrue(KeePassNatMsg.Entry.EntrySearch.IsAdditionalUrlField("URL Microsoft Online"));
-            Assert.IsTrue(KeePassNatMsg.Entry.EntrySearch.IsAdditionalUrlField("KP2A_URL_1"));
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.IsAdditionalUrlField("URL1"));
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.IsAdditionalUrlField("URL Microsoft Online"));
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.IsAdditionalUrlField("KP2A_URL_1"));
         }
 
         [Test]
         public void AdditionalUrlCandidate_UnrelatedField_IsExcluded()
         {
-            Assert.IsFalse(KeePassNatMsg.Entry.EntrySearch.IsAdditionalUrlField("Notes"));
-            Assert.IsFalse(KeePassNatMsg.Entry.EntrySearch.IsAdditionalUrlField("UserName"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsAdditionalUrlField("Notes"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsAdditionalUrlField("UserName"));
         }
 
         [Test]
-        public void BestMatchingDistance_UsesAdditionalUrlInsteadOfPrimaryUrlOnly()
+        public void BestMatchingDistance_UsesAllCommaSeparatedAndAdditionalUrls()
         {
             var requestUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
-            var urls = new[]
-            {
-                "https://login.live.com/",
-                "https://login.microsoftonline.com/"
-            };
+            var urls = KeePassNatMsg.Entry.UrlMatchingHelper.ParseUrlValues(
+                "https://login.live.com/, https://login.microsoftonline.com/");
 
-            var actual = KeePassNatMsg.Entry.EntrySearch.GetBestUrlDistance(requestUrl, urls);
+            var actual = KeePassNatMsg.Entry.UrlMatchingHelper.GetBestUrlDistance(requestUrl, urls);
             var primaryOnly = LevenshteinDistance(requestUrl.ToLowerInvariant(), urls[0].ToLowerInvariant());
             var additional = LevenshteinDistance(requestUrl.ToLowerInvariant(), urls[1].ToLowerInvariant());
 
