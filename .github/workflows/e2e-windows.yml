@@ -34,6 +34,9 @@ jobs:
     timeout-minutes: 60
 
     env:
+      HTTP_PROXY: http://192.168.8.100:7897
+      HTTPS_PROXY: http://192.168.8.100:7897
+      ALL_PROXY: http://192.168.8.100:7897
       E2E_OUTPUT_DIR: e2e-artifacts
       KEEPASS_E2E_DIR: C:\KeePassNatMsg-E2E
 
@@ -48,6 +51,7 @@ jobs:
 
       - name: Ensure test environment software (Chrome and KeePass)
         run: |
+          [System.Net.WebRequest]::DefaultWebProxy = New-Object System.Net.WebProxy($env:HTTP_PROXY)
           Write-Host "Checking Chrome and KeePass..."
           $chromePath = @(
             'C:\Program Files\Google\Chrome\Application\chrome.exe',
