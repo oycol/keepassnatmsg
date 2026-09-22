@@ -14,6 +14,7 @@ namespace KeePassNatMsg.Options
         readonly ConfigOpt _config;
         private bool _restartRequired = false;
         private readonly NativeMessagingHost _host;
+        private readonly ChromeIntegrationService _chromeService = new ChromeIntegrationService();
 
         private string AssemblyVersion
         {
@@ -211,103 +212,68 @@ namespace KeePassNatMsg.Options
             this.returnStringFieldsWithKphOnlyCheckBox.Enabled = this.returnStringFieldsCheckbox.Checked;
         }
 
-        private void btnInstallNativeMessaging_Click(object sender, EventArgs e)
+        private void UpdateChromeIntegrationUi()
         {
-            var bsf = new BrowserSelectForm(_host);
-
-            if (bsf.ShowDialog(this) == DialogResult.OK)
+            var status = _chromeService.CheckStatus();
+            if (status.State == ChromeIntegrationState.Ready)
             {
-                var t = new Task(() =>
-                {
-                    _host.Install(bsf.SelectedBrowsers);
-                    _host.UpdateProxy();
-                    GetNativeMessagingStatus();
-                    Invoke(new Action(() => MessageBox.Show(this, "The native messaging host installed completed successfully.", "Install Complete", MessageBoxButtons.OK, MessageBoxIcon.Information)));
-                });
-                t.Start();
+                lblChromeStatus.Text = "Status: OK (Chrome integration is active and verified)";
+                lblChromeStatus.ForeColor = System.Drawing.Color.DarkGreen;
+            }
+            else if (status.State == ChromeIntegrationState.NeedsInstall)
+            {
+                lblChromeStatus.Text = "Status: Not Installed (Click Install to set up automatically)";
+                lblChromeStatus.ForeColor = System.Drawing.Color.DarkOrange;
+            }
+            else
+            {
+                lblChromeStatus.Text = "Status: " + status.Message;
+                lblChromeStatus.ForeColor = System.Drawing.Color.DarkRed;
             }
         }
 
-        private void CheckNativeMessagingHost()
+        private void btnInstallChrome_Click(object sender, EventArgs e)
         {
-            var t = new Task<bool>(() => _host.GetBrowserStatuses().Any(bs => bs.Value == BrowserStatus.Installed));
-
-            var t2 = t.ContinueWith((ti) =>
+            string error;
+            if (_chromeService.InstallOrRepair(out error))
             {
-                if (ti.IsCompleted && !ti.Result)
-                {
-                    Invoke(new Action(() => PromptInstall()));
-                }
-                GetNativeMessagingStatus();
-            });
-
-            SetProxyVersionText("Loading Native Messaging Status...");
-
-            t.Start();
+                UpdateChromeIntegrationUi();
+                MessageBox.Show(this, "Chrome integration installed successfully!\n\nNext steps:\n1. Restart Chrome if running.\n2. Open KeePassXC-Browser extension and click 'Connect'.", "Integration Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                UpdateChromeIntegrationUi();
+                MessageBox.Show(this, "Failed to install Chrome integration:\n\n" + error, "Installation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
-        private void PromptInstall()
+        private void btnUninstallChrome_Click(object sender, EventArgs e)
         {
-            var nmiInstall = MessageBox.Show(this, "The native messaging host was not detected. It must be installed for KeePassNatMsg to work. Do you want to install it now?", "Native Messaging Host Not Detected", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
-            if (nmiInstall == DialogResult.Yes)
+            var confirm = MessageBox.Show(this, "Are you sure you want to uninstall Chrome integration?", "Confirm Uninstall", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirm == DialogResult.Yes)
             {
-                var bsf = new BrowserSelectForm(_host);
-                if (bsf.ShowDialog(this) == DialogResult.OK)
+                string error;
+                if (_chromeService.Uninstall(out error))
                 {
-                    _host.Install(bsf.SelectedBrowsers);
-                    _host.UpdateProxy();
-                    MessageBox.Show(this, "The native messaging host installed completed successfully.", "Install Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    UpdateChromeIntegrationUi();
+                    MessageBox.Show(this, "Chrome integration has been removed.", "Uninstall Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    UpdateChromeIntegrationUi();
+                    MessageBox.Show(this, "Failed to uninstall: " + error, "Uninstall Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+        }
+
+        private void btnRefreshChrome_Click(object sender, EventArgs e)
+        {
+            UpdateChromeIntegrationUi();
         }
 
         private void OptionsForm_Shown(object sender, EventArgs e)
         {
-            CheckNativeMessagingHost();
-        }
-
-        private void GetNativeMessagingStatus()
-        {
-            var statuses = _host.GetBrowserStatuses();
-            var lst = new List<string>();
-
-            foreach (var b in statuses.Keys)
-            {
-                lst.Add(string.Format("{0}: {1}", b.GetDescription(), statuses[b].GetDescription()));
-            }
-
-            var latestVersion = _host.GetLatestProxyVersion();
-            var proxyVersion = _host.GetProxyVersion();
-            var proxyDisplay = proxyVersion == null ? "Not Installed" : proxyVersion.ToString();
-            var latestVersionDisplay = string.Empty;
-
-            if (proxyVersion != null && latestVersion != null)
-            {
-                if (latestVersion > proxyVersion)
-                {
-                    latestVersionDisplay = " New Version Available: " + latestVersion;
-                }
-                else
-                {
-                    latestVersionDisplay = " (Up To Date)";
-                }
-            }
-
-            lst.Add(string.Format("Proxy: {0}{1}", proxyDisplay, latestVersionDisplay));
-
-            SetProxyVersionText(string.Join(Environment.NewLine, lst));
-        }
-
-        private void SetProxyVersionText(string text)
-        {
-            if (lblProxyVersion.InvokeRequired)
-            {
-                lblProxyVersion.Invoke(new Action<string>((x) => SetProxyVersionText(x)), text);
-            }
-            else
-            {
-                lblProxyVersion.Text = text;
-            }
+            UpdateChromeIntegrationUi();
         }
 
         private void InitDatabasesDropdown()

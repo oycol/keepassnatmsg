@@ -87,6 +87,7 @@
     <Compile Include="NativeMessaging\NativeMessagingHost.cs" />
     <Compile Include="NativeMessaging\PosixHost.cs" />
     <Compile Include="NativeMessaging\WindowsHost.cs" />
+    <Compile Include="NativeMessaging\ChromeIntegrationService.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -139,6 +140,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <EmbeddedResource Include="Resources\keepassnatmsg-proxy.exe" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\earth_lock.png" />

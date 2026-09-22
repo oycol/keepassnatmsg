@@ -47,6 +47,10 @@
     <Compile Include="CryptoTests.cs" />
     <Compile Include="UrlMatchingTests.cs" />
     <Compile Include="NativeMessagingFramingTests.cs" />
+    <Compile Include="ChromeIntegrationTests.cs" />
+    <Compile Include="..\KeePassNatMsg\NativeMessaging\ChromeIntegrationService.cs">
+      <Link>NativeMessaging\ChromeIntegrationService.cs</Link>
+    </Compile>
     <!-- Include only standalone source files that don't depend on KeePass -->
     <Compile Include="..\KeePassNatMsg\Protocol\Actions.cs">
       <Link>Protocol\Actions.cs</Link>
