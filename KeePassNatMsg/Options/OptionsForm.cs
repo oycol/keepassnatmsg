@@ -219,7 +219,7 @@ namespace KeePassNatMsg.Options
             var status = _chromeService.CheckStatus();
             if (status.State == ChromeIntegrationState.Ready)
             {
-                lblChromeStatus.Text = "Status: OK (Chrome integration is active and verified)";
+                lblChromeStatus.Text = "Status: OK (Browser integration is active and verified)";
                 lblChromeStatus.ForeColor = System.Drawing.Color.DarkGreen;
             }
             else if (status.State == ChromeIntegrationState.NeedsInstall)

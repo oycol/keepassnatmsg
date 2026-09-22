@@ -33,7 +33,6 @@
             this.hideExpiredCheckbox = new System.Windows.Forms.CheckBox();
             this.matchSchemesCheckbox = new System.Windows.Forms.CheckBox();
             this.chkUseKpxcSettingsGeneral = new System.Windows.Forms.CheckBox();
-            this.chkUseLegacyHostMatching = new System.Windows.Forms.CheckBox();
             this.grpSorting = new System.Windows.Forms.GroupBox();
             this.SortByTitleRadioButton = new System.Windows.Forms.RadioButton();
             this.SortByUsernameRadioButton = new System.Windows.Forms.RadioButton();
@@ -204,7 +203,6 @@
             this.grpMatching.Controls.Add(this.hideExpiredCheckbox);
             this.grpMatching.Controls.Add(this.matchSchemesCheckbox);
             this.grpMatching.Controls.Add(this.chkUseKpxcSettingsGeneral);
-            this.grpMatching.Controls.Add(this.chkUseLegacyHostMatching);
             this.grpMatching.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.grpMatching.Location = new System.Drawing.Point(10, 125);
             this.grpMatching.Name = "grpMatching";
@@ -273,15 +271,7 @@
             this.chkUseKpxcSettingsGeneral.Text = "Use KeePassXC-Browser settings (recommended)";
             this.chkUseKpxcSettingsGeneral.UseVisualStyleBackColor = true;
             // 
-            // chkUseLegacyHostMatching
             // 
-            this.chkUseLegacyHostMatching.AutoSize = true;
-            this.chkUseLegacyHostMatching.Location = new System.Drawing.Point(15, 205);
-            this.chkUseLegacyHostMatching.Name = "chkUseLegacyHostMatching";
-            this.chkUseLegacyHostMatching.Size = new System.Drawing.Size(370, 19);
-            this.chkUseLegacyHostMatching.TabIndex = 6;
-            this.chkUseLegacyHostMatching.Text = "Use legacy host matching (don\'t prompt when host matches title)";
-            this.chkUseLegacyHostMatching.UseVisualStyleBackColor = true;
             // 
             // grpSorting
             // 
@@ -770,7 +760,6 @@
         private System.Windows.Forms.CheckBox hideExpiredCheckbox;
         private System.Windows.Forms.CheckBox matchSchemesCheckbox;
         private System.Windows.Forms.CheckBox chkUseKpxcSettingsGeneral;
-        private System.Windows.Forms.CheckBox chkUseLegacyHostMatching;
         private System.Windows.Forms.GroupBox grpSorting;
         private System.Windows.Forms.RadioButton SortByTitleRadioButton;
         private System.Windows.Forms.RadioButton SortByUsernameRadioButton;
