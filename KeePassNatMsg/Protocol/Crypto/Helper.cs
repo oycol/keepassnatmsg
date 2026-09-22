@@ -62,6 +62,12 @@ namespace KeePassNatMsg.Protocol.Crypto
 
         public static byte[] GenerateNonce(byte[] nonce)
         {
+            if (nonce == null)
+            {
+                var newNonce = new byte[24];
+                TweetNaCl.RandomBytes(newNonce);
+                return newNonce;
+            }
             return TweetNaCl.Increment(nonce);
         }
     }

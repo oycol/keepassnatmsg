@@ -244,11 +244,22 @@ namespace KeePassNatMsg
 
         private void Listener_MessageReceived(object sender, PipeMessageReceivedEventArgs e)
         {
-            var req = Request.FromString(e.Message);
-            var resp = _handlers.ProcessRequest(req);
-            if (resp != null)
+            try
             {
-                e.Writer.Send(resp.GetEncryptedResponse());
+                var req = Request.FromString(e.Message);
+                var resp = _handlers.ProcessRequest(req);
+                if (resp != null)
+                {
+                    e.Writer.Send(resp.GetEncryptedResponse());
+                }
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    e.Writer.Send("{\"action\":\"error\",\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}");
+                }
+                catch { }
             }
         }
 
