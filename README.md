@@ -12,13 +12,17 @@ This plugin is primarily intended for use with the [keepassxc-browser](https://g
 
 This fork adds compatibility with **KeePassXC-Browser 1.10.4** while maintaining full backward compatibility with KeePass 2.x.
 
-### What's New
-- Protocol version updated to `2.7.7` (compatible with KeePassXC-Browser 1.10.4)
-- New actions: `get-logins-count`, `request-autotype`
-- Updated `generate-password` response format (returns `password` field directly)
-- Updated `get-database-groups` with `defaultGroup` and `defaultGroupAlwaysAllow`
-- `set-login` response now includes `success` field
-- New config options: `DefaultGroup`, `DefaultGroupAlwaysAllow`
+## What's New in v2.2.0
+
+- **Zero-Script One-Click Chrome Integration**: Users no longer need to run external PowerShell scripts (`install.ps1`) or encounter PowerShell Execution Policy restrictions. Configure Native Messaging directly inside KeePass Options (`Tools -> KeePassNatMsg Options -> Install / Repair Integration`).
+- **Embedded Proxy Binary**: `keepassnatmsg-proxy.exe` is now embedded directly into the plugin. The plugin automatically extracts and validates it via SHA256 when setting up integration.
+- **Modernized Options UI**: 
+  - Restructured with clean GroupBoxes for Chrome Integration, Credential Matching & Access Rules, and Result Sorting.
+  - Eliminated text clipping and escaped character glitches (e.g., `Don\'t`).
+  - Dangerous bypass options (Always Allow Access/Updates) safely separated into a dedicated "Danger Zone".
+  - Cleaned up obsolete unmaintained browser host logs.
+- **Protocol 2.7.0 Compatibility**: Fully compatible with KeePassXC-Browser 1.10.4.
+- **CI & Real Windows E2E Verified**: 85 automated unit tests + real Windows interactive session end-to-end verified on Windows 11.
 
 ### Documentation
 - [Compatibility Matrix](COMPATIBILITY.md)
