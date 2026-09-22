@@ -189,8 +189,8 @@ jobs:
           $s1 = $service.CheckStatus()
           Write-Host "  State: $($s1.State) - $($s1.Message)"
 
-          Write-Host "`nExecuting InstallOrRepair()..."`
-          [string]$err = ""
+          Write-Host "`nExecuting InstallOrRepair()..."
+          $err = $null
           $ok = $service.InstallOrRepair([ref]$err)
           if (-not $ok) { throw "InstallOrRepair failed: $err" }
           Write-Host "InstallOrRepair returned true!" -ForegroundColor Green
