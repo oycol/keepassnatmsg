@@ -212,6 +212,43 @@ namespace KeePassNatMsg.Tests
 
         #endregion
 
+        #region Additional URL Fields
+
+        [Test]
+        public void AdditionalUrlCandidate_RegularUrl1_IsIncluded()
+        {
+            Assert.IsTrue(KeePassNatMsg.Entry.EntrySearch.IsAdditionalUrlField("URL1"));
+            Assert.IsTrue(KeePassNatMsg.Entry.EntrySearch.IsAdditionalUrlField("URL Microsoft Online"));
+            Assert.IsTrue(KeePassNatMsg.Entry.EntrySearch.IsAdditionalUrlField("KP2A_URL_1"));
+        }
+
+        [Test]
+        public void AdditionalUrlCandidate_UnrelatedField_IsExcluded()
+        {
+            Assert.IsFalse(KeePassNatMsg.Entry.EntrySearch.IsAdditionalUrlField("Notes"));
+            Assert.IsFalse(KeePassNatMsg.Entry.EntrySearch.IsAdditionalUrlField("UserName"));
+        }
+
+        [Test]
+        public void BestMatchingDistance_UsesAdditionalUrlInsteadOfPrimaryUrlOnly()
+        {
+            var requestUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
+            var urls = new[]
+            {
+                "https://login.live.com/",
+                "https://login.microsoftonline.com/"
+            };
+
+            var actual = KeePassNatMsg.Entry.EntrySearch.GetBestUrlDistance(requestUrl, urls);
+            var primaryOnly = LevenshteinDistance(requestUrl.ToLowerInvariant(), urls[0].ToLowerInvariant());
+            var additional = LevenshteinDistance(requestUrl.ToLowerInvariant(), urls[1].ToLowerInvariant());
+
+            Assert.AreEqual(additional, actual);
+            Assert.Less(actual, primaryOnly);
+        }
+
+        #endregion
+
         #region URL Parsing
 
         [Test]
