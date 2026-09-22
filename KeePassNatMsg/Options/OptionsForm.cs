@@ -90,7 +90,7 @@ namespace KeePassNatMsg.Options
             toolTip.SetToolTip(chkSearchUrls, "When checked, KeePassNatMsg will also search for URLs in custom string fields\n(e.g., URL1, URL2) in the 'Advanced' tab of your entries.");
             toolTip.SetToolTip(hideExpiredCheckbox, "When checked, entries that have passed their expiry date will not be sent to the browser.");
             toolTip.SetToolTip(matchSchemesCheckbox, "When checked, the URL protocol (http vs https) must match exactly.");
-            toolTip.SetToolTip(chkUseLegacyHostMatching, "Use older matching logic. Not recommended for modern browsers.");
+
         }
 
         private void okButton_Click(object sender, EventArgs e)

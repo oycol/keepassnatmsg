@@ -81,20 +81,6 @@ namespace KeePassNatMsg.Entry
                 {
                     var c = _ext.GetEntryConfig(e);
 
-                    if (configOpt.UseLegacyHostMatching)
-                    {
-                        var fields = new[] {PwDefs.TitleField, PwDefs.UrlField};
-                        var entryUrls = e.Strings
-                            .Where(s => fields.Contains(s.Key) && s.Value != null && !s.Value.IsEmpty)
-                            .Select(s => s.Value.ReadString())
-                            .ToList();
-
-                        var isAllowed = c != null && uris.Select(u => u.Host).Any(u => c.Allow.Contains(u));
-                        var hostMatch = uris.Select(u => u.Host).Any(u => entryUrls.Contains(u));
-
-                        return (c == null && !hostMatch) || (c != null && !hostMatch && !isAllowed);
-                    }
-
                     return c == null || (!c.Allow.Contains(hostUri.Authority)) || (submitUri != null && !c.Allow.Contains(submitUri.Authority));
                 });
 
