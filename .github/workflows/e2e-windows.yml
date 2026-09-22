@@ -343,3 +343,9 @@ jobs:
           }
 
           Write-Host "`n=== All Windows E2E Integration and IPC Protocol Tests PASSED! ===" -ForegroundColor Green
+
+      - name: Upload compiled robust proxy
+        uses: actions/upload-artifact@v4
+        with:
+          name: robust-proxy
+          path: KeePassNatMsg\Resources\keepassnatmsg-proxy.exe
