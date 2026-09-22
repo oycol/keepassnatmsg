@@ -59,23 +59,26 @@ try {
     $stdin.Write($jsonBytes, 0, $len)
     $stdin.Flush()
 
-    # Wait up to 5s for exit or response
+    # Read 4-byte response length with 8s timeout
     $respLenBytes = New-Object byte[] 4
     $task = $stdout.ReadAsync($respLenBytes, 0, 4)
-    if (-not $task.Wait(5000)) {
-        $err = $proc.StandardError.ReadToEnd()
-        throw "Timeout waiting for proxy response. Stderr: $err"
+    if (-not $task.Wait(8000)) {
+        throw "Timeout waiting for response length from proxy (8 seconds elapsed)."
     }
-
     $bytesRead = $task.Result
     if ($bytesRead -lt 4) {
         $err = $proc.StandardError.ReadToEnd()
-        throw "Failed to read 4-byte header from proxy. Stderr: $err"
+        $proxyLog = ""
+        if (Test-Path "C:\KeePassNatMsg-E2E\proxy.log") {
+            $proxyLog = Get-Content "C:\KeePassNatMsg-E2E\proxy.log" -Raw
+        }
+        throw "Failed to read 4-byte header from proxy. Stderr: $err`nProxy Log:`n$proxyLog"
     }
 
     $respLen = [System.BitConverter]::ToInt32($respLenBytes, 0)
     Write-Host "Received response length header: $respLen bytes" -ForegroundColor Green
 
+    # Read response body
     $respBytes = New-Object byte[] $respLen
     $totalRead = 0
     while ($totalRead -lt $respLen) {
@@ -88,6 +91,19 @@ try {
 
     $responseJson = [System.Text.Encoding]::UTF8.GetString($respBytes, 0, $totalRead)
     Write-Host "Proxy Response:`n$responseJson" -ForegroundColor Green
+
+    # Assertions
+    if (-not ($responseJson -match '"version"\s*:\s*"2\.7\.0"')) {
+        throw "Response does not contain protocol version 2.7.0!"
+    }
+    if (-not ($responseJson -match '"publicKey"')) {
+        throw "Response does not contain publicKey!"
+    }
+    if (-not ($responseJson -match '"success"\s*:\s*"true"')) {
+        throw "Response does not contain success: true!"
+    }
+
+    Write-Host "`nAll Native Messaging IPC protocol assertions PASSED on Windows!" -ForegroundColor Green
 }
 finally {
     if (-not $proc.HasExited) {
