@@ -180,16 +180,16 @@ jobs:
           $manifestPath = "$configDir\org.keepassxc.keepassxc_browser.chrome.json"
           $regKey = "HKCU:\Software\Google\Chrome\NativeMessagingHosts\org.keepassxc.keepassxc_browser"
 
-          # Load assembly to test in-process service logic
-          $dllPath = "$env:TEMP\kpnm-ci-build\KeePassNatMsg.dll"
-          [System.Reflection.Assembly]::LoadFrom($dllPath) | Out-Null
+          # Compile and load ChromeIntegrationService directly via Add-Type
+          $sourceFile = "$PWD\KeePassNatMsg\NativeMessaging\ChromeIntegrationService.cs"
+          Add-Type -Path $sourceFile
           $service = New-Object KeePassNatMsg.NativeMessaging.ChromeIntegrationService
 
           Write-Host "Initial status before install:"
           $s1 = $service.CheckStatus()
           Write-Host "  State: $($s1.State) - $($s1.Message)"
 
-          Write-Host "`nExecuting InstallOrRepair()..."
+          Write-Host "`nExecuting InstallOrRepair()..."`
           [string]$err = ""
           $ok = $service.InstallOrRepair([ref]$err)
           if (-not $ok) { throw "InstallOrRepair failed: $err" }

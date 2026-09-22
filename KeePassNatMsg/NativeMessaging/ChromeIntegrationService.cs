@@ -173,24 +173,45 @@ namespace KeePassNatMsg.NativeMessaging
                 }
             }
 
-            if (resourceName == null)
+            if (resourceName != null)
             {
-                return false;
-            }
-
-            using (var stream = asm.GetManifestResourceStream(resourceName))
-            {
-                if (stream == null) return false;
-                var dir = Path.GetDirectoryName(targetPath);
-                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-
-                using (var fileStream = new FileStream(targetPath, FileMode.Create, FileAccess.Write))
+                using (var stream = asm.GetManifestResourceStream(resourceName))
                 {
-                    stream.CopyTo(fileStream);
+                    if (stream != null)
+                    {
+                        var dir = Path.GetDirectoryName(targetPath);
+                        if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+                        using (var fileStream = new FileStream(targetPath, FileMode.Create, FileAccess.Write))
+                        {
+                            stream.CopyTo(fileStream);
+                        }
+                        return true;
+                    }
                 }
             }
 
-            return true;
+            // Fallback: search relative paths for keepassnatmsg-proxy.exe
+            var candidatePaths = new[]
+            {
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins", "keepassnatmsg-proxy.exe"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "keepassnatmsg-proxy.exe"),
+                Path.Combine(Environment.CurrentDirectory, "KeePassNatMsg", "Resources", "keepassnatmsg-proxy.exe"),
+                Path.Combine(Environment.CurrentDirectory, "Resources", "keepassnatmsg-proxy.exe")
+            };
+
+            foreach (var candidate in candidatePaths)
+            {
+                if (File.Exists(candidate))
+                {
+                    var dir = Path.GetDirectoryName(targetPath);
+                    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                    File.Copy(candidate, targetPath, true);
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public bool InstallOrRepair(out string errorMessage)
