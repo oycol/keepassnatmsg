@@ -137,44 +137,18 @@ namespace KeePassNatMsg.Entry
 
                 var uri = submitUri != null ? submitUri : hostUri;
 
-                foreach (var entryDatabase in items)
-                {
-                    var entryUrls = GetEntryUrls(entryDatabase.entry, configOpt.SearchUrls).ToList();
-                    if (entryUrls.Count == 0)
-                    {
-                        entryUrls.Add(entryDatabase.entry.Strings.ReadSafe(PwDefs.TitleField));
-                    }
 
-                    entryDatabase.entry.UsageCount = (ulong)UrlMatchingHelper.GetBestUrlDistance(
-                        uri.ToString(), entryUrls);
-                }
 
                 var itemsList = items.ToList();
 
-                if (configOpt.SpecificMatchingOnly)
-                {
-                    itemsList = (from e in itemsList
-                                 orderby e.entry.UsageCount ascending
-                                 select e).ToList();
-
-                    ulong lowestDistance = itemsList.Count > 0 ?
-                        itemsList[0].entry.UsageCount :
-                        0;
-
-                    itemsList = (from e in itemsList
-                                 where e.entry.UsageCount == lowestDistance
-                                 orderby e.entry.UsageCount
-                                 select e).ToList();
-                }
-
                 if (configOpt.SortResultByUsername)
                 {
-                    var items2 = from e in itemsList orderby e.entry.UsageCount ascending, _ext.GetUserPass(e)[0] ascending select e;
+                    var items2 = from e in itemsList orderby _ext.GetUserPass(e)[0] ascending select e;
                     itemsList = items2.ToList();
                 }
                 else
                 {
-                    var items2 = from e in itemsList orderby e.entry.UsageCount ascending, e.entry.Strings.ReadSafe(PwDefs.TitleField) ascending select e;
+                    var items2 = from e in itemsList orderby e.entry.Strings.ReadSafe(PwDefs.TitleField) ascending select e;
                     itemsList = items2.ToList();
                 }
 
@@ -314,46 +288,7 @@ namespace KeePassNatMsg.Entry
             return null;
         }
 
-        //http://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance#C.23
-        private static int LevenshteinDistance(string source, string target)
-        {
-            if (String.IsNullOrEmpty(source))
-            {
-                if (String.IsNullOrEmpty(target)) return 0;
-                return target.Length;
-            }
-            if (String.IsNullOrEmpty(target)) return source.Length;
 
-            if (source.Length > target.Length)
-            {
-                var temp = target;
-                target = source;
-                source = temp;
-            }
-
-            var m = target.Length;
-            var n = source.Length;
-            var distance = new int[2, m + 1];
-            // Initialize the distance 'matrix'
-            for (var j = 1; j <= m; j++) distance[0, j] = j;
-
-            var currentRow = 0;
-            for (var i = 1; i <= n; ++i)
-            {
-                currentRow = i & 1;
-                distance[currentRow, 0] = i;
-                var previousRow = currentRow ^ 1;
-                for (var j = 1; j <= m; j++)
-                {
-                    var cost = (target[j - 1] == source[i - 1] ? 0 : 1);
-                    distance[currentRow, j] = Math.Min(Math.Min(
-                                            distance[previousRow, j] + 1,
-                                            distance[currentRow, j - 1] + 1),
-                                            distance[previousRow, j - 1] + cost);
-                }
-            }
-            return distance[currentRow, m];
-        }
 
         private static IEnumerable<KeyValuePair<string, string>> GetFields(ConfigOpt configOpt, PwEntryDatabase entryDatabase)
         {
@@ -544,8 +479,17 @@ namespace KeePassNatMsg.Entry
 
         private bool IsValidUrl(string url, string host)
         {
+            if (string.IsNullOrEmpty(url)) return false;
             Uri uri;
-            return Uri.TryCreate(url, UriKind.Absolute, out uri) && _allowedSchemes.Contains(uri.Scheme) && host.EndsWith(uri.Host);
+            if (!Uri.TryCreate(url, UriKind.Absolute, out uri)) return false;
+            if (!_allowedSchemes.Contains(uri.Scheme)) return false;
+
+            // Strict suffix matching for security (Anti-Phishing)
+            // It must be exactly the host, or a subdomain of the host (ending with ".host")
+            if (string.Equals(uri.Host, host, StringComparison.InvariantCultureIgnoreCase))
+                return true;
+
+            return uri.Host.EndsWith("." + host, StringComparison.InvariantCultureIgnoreCase);
         }
 
         private static SearchParameters MakeSearchParameters(bool excludeExpired)

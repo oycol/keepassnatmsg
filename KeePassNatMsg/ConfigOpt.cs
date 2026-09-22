@@ -13,34 +13,32 @@ namespace KeePassNatMsg
 
     public class ConfigOpt
     {
-        readonly AceCustomConfig _config;
+        private readonly KeePassLib.CustomConfig _config;
+
         const string ReceiveCredentialNotificationKey = "KeePassHttp_ReceiveCredentialNotification";
         const string SpecificMatchingOnlyKey = "KeePassHttp_SpecificMatchingOnly";
         const string UnlockDatabaseRequestKey = "KeePassHttp_UnlockDatabaseRequest";
         const string AlwaysAllowAccessKey = "KeePassHttp_AlwaysAllowAccess";
         const string AlwaysAllowUpdatesKey = "KeePassHttp_AlwaysAllowUpdates";
-        const string SearchInAllOpenedDatabasesKey = "KeePassHttp_SearchInAllOpenedDatabases"; // Only for backward compatibility
         const string AllowSearchDatabaseKey = "KeePassHttp_AllowSearchDatabase";
         const string SearchDatabaseHashKey = "KeePassHttp_SearchDatabaseHash";
         const string HideExpiredKey = "KeePassHttp_HideExpired";
         const string MatchSchemesKey = "KeePassHttp_MatchSchemes";
-        const string ReturnStringFieldsKey = "KeePassHttp_ReturnStringFields";
-        const string ReturnStringFieldsWithKphOnlyKey = "KeePassHttp_ReturnStringFieldsWithKphOnly";
         const string SortResultByUsernameKey = "KeePassHttp_SortResultByUsername";
-        const string OverrideKeePassXcVersionKey = "KeePassNatMsg_OverrideKeePassXcVersion";
-		const string ConnectionDatabaseHashKey = "KeePassHttp_ConnectionDatabaseHash";
+        const string ConnectionDatabaseHashKey = "KeePassHttp_ConnectionDatabaseHash";
         const string SearchUrlsKey = "KeePassHttp_SearchUrls";
-        const string UseKeePassXcSettingsKey = "KeePassNatMsg_UseKpxcSettings";
-        private const string UseLegacyHostMatchingKey = "KeePassNatMsg_UseLegacyHostMatching";
+        const string UseKeePassXcSettingsKey = "KeePassNatMsg_UseKeePassXcSettings";
+        const string DefaultGroupKey = "KeePassNatMsg_DefaultGroup";
+        const string DefaultGroupAlwaysAllowKey = "KeePassNatMsg_DefaultGroupAlwaysAllow";
 
-		public ConfigOpt(AceCustomConfig config)
+        public ConfigOpt(KeePassLib.CustomConfig config)
         {
             _config = config;
         }
 
         public bool ReceiveCredentialNotification
         {
-            get { return _config.GetBool(ReceiveCredentialNotificationKey, true); }
+            get { return _config.GetBool(ReceiveCredentialNotificationKey, false); }
             set { _config.SetBool(ReceiveCredentialNotificationKey, value); }
         }
 
@@ -68,16 +66,9 @@ namespace KeePassNatMsg
             set { _config.SetBool(AlwaysAllowUpdatesKey, value); }
         }
 
-        public bool SearchInAllOpenedDatabases // Only for backward compatibility
-        {
-            get { return _config.GetBool(SearchInAllOpenedDatabasesKey, false); }
-            set { _config.SetBool(SearchInAllOpenedDatabasesKey, value); }
-        }
-
         public ulong AllowSearchDatabase
         {
-            get {
-                return _config.GetULong(AllowSearchDatabaseKey, 0); }
+            get { return _config.GetULong(AllowSearchDatabaseKey, 0); }
             set { _config.SetULong(AllowSearchDatabaseKey, value); }
         }
 
@@ -89,25 +80,14 @@ namespace KeePassNatMsg
 
         public bool HideExpired
         {
-            get { return _config.GetBool(HideExpiredKey, true); } // Default true
+            get { return _config.GetBool(HideExpiredKey, true); }
             set { _config.SetBool(HideExpiredKey, value); }
         }
+
         public bool MatchSchemes
         {
             get { return _config.GetBool(MatchSchemesKey, false); }
             set { _config.SetBool(MatchSchemesKey, value); }
-        }
-
-        public bool ReturnStringFields
-        {
-            get { return _config.GetBool(ReturnStringFieldsKey, false); }
-            set { _config.SetBool(ReturnStringFieldsKey, value); }
-        }
-
-        public bool ReturnStringFieldsWithKphOnly
-        {
-            get { return _config.GetBool(ReturnStringFieldsWithKphOnlyKey, true); }
-            set { _config.SetBool(ReturnStringFieldsWithKphOnlyKey, value); }
         }
 
         public bool SortResultByUsername
@@ -116,56 +96,23 @@ namespace KeePassNatMsg
             set { _config.SetBool(SortResultByUsernameKey, value); }
         }
 
-        public string OverrideKeePassXcVersion
-        {
-            get
-            {
-                return _config.GetString(OverrideKeePassXcVersionKey);
-            }
-            set
-            {
-                _config.SetString(OverrideKeePassXcVersionKey, value);
-            }
-        }
-
         public string ConnectionDatabaseHash
-		{
-			get { return _config.GetString(ConnectionDatabaseHashKey, string.Empty); }
-			set { _config.SetString(ConnectionDatabaseHashKey, value); }
-		}
+        {
+            get { return _config.GetString(ConnectionDatabaseHashKey, string.Empty); }
+            set { _config.SetString(ConnectionDatabaseHashKey, value); }
+        }
 
         public bool SearchUrls
         {
-            get
-            {
-                return _config.GetBool(SearchUrlsKey, true); // Default true for better UX
-            }
-            set
-            {
-                _config.SetBool(SearchUrlsKey, value);
-            }
+            get { return _config.GetBool(SearchUrlsKey, true); }
+            set { _config.SetBool(SearchUrlsKey, value); }
         }
 
         public bool UseKeePassXcSettings
         {
-            get
-            {
-                return _config.GetBool(UseKeePassXcSettingsKey, false);
-            }
-            set
-            {
-                _config.SetBool(UseKeePassXcSettingsKey, value);
-            }
+            get { return _config.GetBool(UseKeePassXcSettingsKey, false); }
+            set { _config.SetBool(UseKeePassXcSettingsKey, value); }
         }
-
-        public bool UseLegacyHostMatching
-        {
-            get { return _config.GetBool(UseLegacyHostMatchingKey, false); }
-            set { _config.SetBool(UseLegacyHostMatchingKey, value); }
-        }
-
-        private const string DefaultGroupKey = "KeePassNatMsg_DefaultGroup";
-        private const string DefaultGroupAlwaysAllowKey = "KeePassNatMsg_DefaultGroupAlwaysAllow";
 
         public string DefaultGroup
         {
@@ -179,4 +126,3 @@ namespace KeePassNatMsg
             set { _config.SetBool(DefaultGroupAlwaysAllowKey, value); }
         }
     }
-}
