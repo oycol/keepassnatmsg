@@ -83,7 +83,7 @@ namespace KeePassNatMsg.Options
                 Image = KeePassNatMsg.Properties.Resources.earth_lock,
                 Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right
             };
-            this.tabPageGeneral.Controls.Add(pbLogo);
+            this.tabPage1.Controls.Add(pbLogo);
             pbLogo.BringToFront();
 
             foreach (DatabaseItem item in comboBoxSearchDatabases.Items)
