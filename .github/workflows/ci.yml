@@ -117,18 +117,22 @@ jobs:
           $artifactsDir = "artifacts"
           New-Item -ItemType Directory -Force -Path $artifactsDir | Out-Null
 
-          if (Test-Path "KeePassNatMsg\bin\Release") {
-            Copy-Item -Path "KeePassNatMsg\bin\Release\*" -Destination $artifactsDir -Recurse
-          }
-
+          # 1. Primary artifact: KeePassNatMsg.plgx (single self-contained file)
           if (Test-Path "KeePassNatMsg.plgx") {
             Copy-Item "KeePassNatMsg.plgx" $artifactsDir
           }
 
-          if (Test-Path "test-results.xml") {
-            Copy-Item "test-results.xml" $artifactsDir
+          # 2. Secondary artifact: clean binary zip for manual DLL installation
+          $binDir = "KeePassNatMsg\bin\Release"
+          if (Test-Path $binDir) {
+            $zipDir = "KeePassNatMsg-binary"
+            New-Item -ItemType Directory -Force -Path $zipDir | Out-Null
+            Get-ChildItem -Path $binDir -Include "*.dll" -Recurse | Copy-Item -Destination $zipDir
+            Compress-Archive -Path "$zipDir\*" -DestinationPath "$artifactsDir\KeePassNatMsg-binary.zip" -Force
+            Remove-Item -Recurse -Force $zipDir
           }
 
+          # 3. Generate clean SHA256 checksums
           $hashes = @()
           Get-ChildItem -Path $artifactsDir -File | ForEach-Object {
             $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()

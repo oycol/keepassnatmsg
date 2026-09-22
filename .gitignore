@@ -1,7 +1,7 @@
 *.swp
 *.suo
-obj
-bin
+obj/
+bin/
 create-plgx.bat
 /#portable/
 *.cer
@@ -14,3 +14,10 @@ create-plgx.bat
 build/
 .idea/
 *.DotSettings.user
+*.user
+test-runner/
+test-results.xml
+artifacts/
+e2e-artifacts/
+KeePassNatMsg.plgx
+*.log

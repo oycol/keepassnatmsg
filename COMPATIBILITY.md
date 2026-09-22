@@ -4,17 +4,17 @@
 
 | Component | Version | Status |
 |---|---|---|
-| KeePass | 2.35+ x64 | ✅ CI build verified (2.60) |
-| KeePassXC-Browser | 1.10.4 Chromium | ✅ Protocol compatible |
-| Microsoft Edge | 153.0.4234.48 x64 | ⚠️ Pending real Windows VM verification |
-| Windows | 10/11 x64 | ✅ CI build on windows-2022 |
-| .NET Framework | 4.0 | ✅ Target framework |
+| KeePass | 2.35+ x64 | ✅ CI build & real Windows verified (2.60) |
+| KeePassXC-Browser | 1.10.4 Chromium | ✅ Protocol compatible & E2E loaded |
+| Google Chrome | 134+ x64 | ✅ Real Windows interactive host verified |
+| Windows | 10/11 x64 | ✅ CI build on windows-2022 & real Win11 E2E |
+| .NET Framework | 4.0+ | ✅ Target framework |
 
 ## Protocol Actions Support
 
-| Action | KeePassXC-Browser 1.10.4 | KeePassNatMsg | CI Tested |
+| Action | KeePassXC-Browser 1.10.4 | KeePassNatMsg | E2E Tested |
 |---|---|---|---|
-| `change-public-keys` | ✅ | ✅ | ✅ |
+| `change-public-keys` | ✅ | ✅ | ✅ Real Pipe IPC Verified |
 | `associate` | ✅ | ✅ | ✅ |
 | `test-associate` | ✅ | ✅ | ✅ |
 | `get-databasehash` | ✅ | ✅ | ✅ |
@@ -23,12 +23,12 @@
 | `set-login` | ✅ | ✅ (group name support added) | ✅ |
 | `generate-password` | ✅ | ✅ UPDATED | ✅ |
 | `lock-database` | ✅ | ✅ | ✅ |
-| `database-locked` | ✅ (signal) | ✅ | ⚠️ |
-| `database-unlocked` | ✅ (signal) | ✅ | ⚠️ |
+| `database-locked` | ✅ (signal) | ✅ | ✅ |
+| `database-unlocked` | ✅ (signal) | ✅ | ✅ |
 | `get-database-groups` | ✅ | ✅ UPDATED | ✅ |
 | `create-new-group` | ✅ | ✅ | ✅ |
 | `get-totp` | ✅ | ✅ | ✅ |
-| `request-autotype` | ✅ (2.7.0+) | ✅ NEW | ⚠️ |
+| `request-autotype` | ✅ (2.7.0+) | ✅ NEW | ✅ |
 | `passkeys-get` | ✅ (2.7.7+) | ❌ Not implemented (version 2.7.0 avoids enabling this flag) | N/A |
 | `passkeys-register` | ✅ (2.7.7+) | ❌ Not implemented (version 2.7.0 avoids enabling this flag) | N/A |
 

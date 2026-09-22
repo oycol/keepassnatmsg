@@ -1,196 +1,119 @@
-[![CI Build & Test](https://github.com/oycol/keepassnatmsg/actions/workflows/ci.yml/badge.svg)](https://github.com/oycol/keepassnatmsg/actions/workflows/ci.yml)
-
 # KeePassNatMsg
 
-is a plugin for KeePass 2.x and provides a secure means of exposing KeePass credentials to a browser via [Native Messaging](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Native_messaging).
+[![CI Build & Test](https://github.com/oycol/keepassnatmsg/actions/workflows/ci.yml/badge.svg)](https://github.com/oycol/keepassnatmsg/actions/workflows/ci.yml)
+[![Latest Release](https://img.shields.io/github/v/release/oycol/keepassnatmsg?color=blue)](https://github.com/oycol/keepassnatmsg/releases/latest)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-It is based on [KeePassHttp](https://github.com/pfn/keepasshttp).
+**KeePassNatMsg** is a modern KeePass 2.x plugin that securely exposes your KeePass credentials to browser extensions (specifically **[KeePassXC-Browser](https://github.com/keepassxreboot/keepassxc-browser)**) via Chrome Native Messaging.
 
-This plugin is primarily intended for use with the [keepassxc-browser](https://github.com/keepassxreboot/keepassxc-browser) browser extension.
+---
 
-## KeePassXC-Browser 1.10.4 Compatibility
+## 🚀 Key Features in v2.2.0
 
-This fork adds compatibility with **KeePassXC-Browser 1.10.4** while maintaining full backward compatibility with KeePass 2.x.
+- **Single-File Delivery (`KeePassNatMsg.plgx`)**:
+  - No complex packages, manual DLL extractions, or external dependencies.
+  - Simply drop `KeePassNatMsg.plgx` into your KeePass `Plugins\` folder.
+- **Zero-Script One-Click Chrome Integration**:
+  - No PowerShell execution policy issues (`PSSecurityException`).
+  - No manual `install.ps1` or `uninstall.ps1` scripts needed.
+  - Set up or remove Chrome Native Messaging host directly from KeePass UI (`Tools -> KeePassNatMsg Options -> Chrome Integration`).
+- **Embedded Proxy Engine**:
+  - `keepassnatmsg-proxy.exe` is embedded directly inside the plugin assembly.
+  - Automatically extracted to `%LOCALAPPDATA%\KeePassNatMsg` and verified via SHA256 integrity check.
+  - Fully compatible with current-user `HKCU` registry entries (no administrator privileges required).
+- **KeePassXC-Browser 1.10.4 Ready**:
+  - Declares protocol version `2.7.0` ensuring full compatibility with the latest KeePassXC-Browser without false Passkeys capability claims.
+- **Redesigned Options Interface**:
+  - Modern, spacious UI layout with structured GroupBoxes:
+    - **Chrome Browser Integration**: Real-time status display with one-click Install/Repair and Uninstall buttons.
+    - **Credential Matching & Access Rules**: Intuitive URL matching, scheme checks, and unlock behavior controls.
+    - **Result Sorting**: Sort credentials by username or title.
+    - **Danger Zone**: Clearly isolated bypass settings (Always Allow Access/Updates) preventing accidental misconfiguration.
+- **Battle-Tested & Automated E2E Regression**:
+  - 85 automated unit tests in CI.
+  - Verified on real Windows 11 interactive sessions across named pipe IPC, handshake protocols, and browser launch.
 
-## What's New in v2.2.0
+---
 
-- **Zero-Script One-Click Chrome Integration**: Users no longer need to run external PowerShell scripts (`install.ps1`) or encounter PowerShell Execution Policy restrictions. Configure Native Messaging directly inside KeePass Options (`Tools -> KeePassNatMsg Options -> Install / Repair Integration`).
-- **Embedded Proxy Binary**: `keepassnatmsg-proxy.exe` is now embedded directly into the plugin. The plugin automatically extracts and validates it via SHA256 when setting up integration.
-- **Modernized Options UI**: 
-  - Restructured with clean GroupBoxes for Chrome Integration, Credential Matching & Access Rules, and Result Sorting.
-  - Eliminated text clipping and escaped character glitches (e.g., `Don\'t`).
-  - Dangerous bypass options (Always Allow Access/Updates) safely separated into a dedicated "Danger Zone".
-  - Cleaned up obsolete unmaintained browser host logs.
-- **Protocol 2.7.0 Compatibility**: Fully compatible with KeePassXC-Browser 1.10.4.
-- **CI & Real Windows E2E Verified**: 85 automated unit tests + real Windows interactive session end-to-end verified on Windows 11.
+## 📥 Quick Installation (Windows)
 
-### Documentation
-- [Compatibility Matrix](COMPATIBILITY.md)
-- [Installation Guide](INSTALL.md)
-- [Rollback Guide](ROLLBACK.md)
+1. **Download**:
+   Grab the single `KeePassNatMsg.plgx` file from the [Latest Release](https://github.com/oycol/keepassnatmsg/releases/latest).
+2. **Install**:
+   Copy `KeePassNatMsg.plgx` to your KeePass Plugins directory:
+   - Typical path: `C:\Program Files\KeePass Password Safe 2\Plugins\`
+   - Or portable path: `<KeePass_Directory>\Plugins\`
+3. **Configure in KeePass**:
+   - Restart KeePass.
+   - Open menu: `Tools -> KeePassNatMsg Options`.
+   - In the **Chrome Integration** section, click **Install / Repair Integration**.
+   - The status indicator will turn green: `Ready (Host registered & verified)`.
+4. **Connect from Chrome**:
+   - Install [KeePassXC-Browser](https://chromewebstore.google.com/detail/keepassxc-browser/obcddimikignkfpophjabdkdggkodnnh) from Chrome Web Store.
+   - Click the extension icon and click **Connect**.
+   - Confirm association in the KeePass popup prompt. That's it!
 
-## Features
- * returns all matching entries for a given URL
- * updates entries
- * secure exchange of entries
- * notifies user if entries are delivered
- * user can allow or deny access to single entries
- * works only if the database is unlocked
- * request for unlocking the database if it is locked while connecting
- * searches in all opened databases (if user activates this feature)
- * Whenever events occur, the user is prompted either by tray notification or requesting interaction (allow/deny/remember).
+---
 
-## System requirements
- * KeePass 2.35 or higher (requires CustomData API introduced in 2.35)
- * For Windows: .NET Framework 4.0 or higher
- * For Linux: Mono 4.0 or higher
- * For Mac: Mono 4.0 or higher (untested)
+## 📦 Release Artifacts Explained
 
-## Installation
+| Artifact | Purpose | Recommended For |
+| :--- | :--- | :--- |
+| **`KeePassNatMsg.plgx`** | **Single self-contained plugin package** containing full plugin logic, embedded proxy executable, and integration services. | **All standard KeePass 2.x users (Recommended)** |
+| **`KeePassNatMsg-binary.zip`** | Clean pre-compiled plugin DLL and dependencies for environments where PLGX compilation is disabled by policy. | Advanced / enterprise environments |
+| **`SHA256SUMS`** | Cryptographic hash list to verify download integrity. | Integrity verification |
 
- 1. Download the latest [KeePassNatMsg](https://github.com/smorks/keepassnatmsg/releases) release
- 	* Arch Linux (AUR): https://aur.archlinux.org/packages/keepass-natmsg/
- 2. Unzip it into the KeePass\Plugins directory
-	* default directory in Ubuntu14.04: /usr/lib/keepass2/
-	* default directory in Arch: /usr/share/keepass
- 3. On linux systems you maybe need to install mono-complete: `$ apt-get install mono-complete` (in Debian it should be enough to install the packages libmono-system-runtime-serialization4.0-cil and libmono-posix2.0-cil)
- * Tips to run KeePassNatMsg on lastest KeePass 2.31: install packages
- 	`sudo apt-get install libmono-system-xml-linq4.0-cil libmono-system-data-datasetextensions4.0-cil libmono-system-runtime-serialization4.0-cil mono-mcs`
- 4. Restart KeePass
- 5. Go to Tools -> KeePassNatMsg Options
- 6. Click on "Install/Update Native Messaging Host", wait for message telling you it was installed.
- 7. Install the [KeePassXC-Browser](https://github.com/keepassxreboot/keepassxc-browser) extension for your browser, and Connect to the database from within the extension.
+> *Note: External helper scripts (`install.ps1`, `uninstall.ps1`, etc.) are completely deprecated and removed because all operations are handled natively inside the plugin.*
 
-#### Chocolatey 📦 
-Or you can [use Chocolatey to install](https://community.chocolatey.org/packages/keepass-plugin-keepassnatmsg#install) it in a more automated manner:
+---
 
+## ⚙️ Options Overview
+
+Open via `Tools -> KeePassNatMsg Options`:
+
+### General Tab
+- **Chrome Integration**:
+  - **Status**: Displays real-time registry and manifest configuration state.
+  - **Install / Repair**: Extracts the embedded proxy and writes current-user HKCU manifest keys.
+  - **Uninstall**: Cleanly removes registered Chrome Native Messaging host keys and files.
+- **Credential Matching**:
+  - *Only return best matching entries for URL*: Uses Levenshtein distance to prioritize exact URL path matches.
+  - *Match URL scheme*: Restricts credentials to `http` or `https` matching schemes.
+  - *Include expired entries*: Allows querying expired entries if needed.
+  - *Request unlock if database is locked*: Prompts for master password on browser connection attempt.
+- **Result Sorting**: Sort entries by username or title.
+- **Danger Zone**:
+  - *Always allow access / updates without asking*: Bypasses KeePass confirmation dialogs (use with caution).
+
+### Keys Tab
+- Manage all paired browser associations. Revoke obsolete or untrusted browser public keys with a single click.
+
+---
+
+## 🛠️ Building from Source
+
+### Prerequisites
+- Windows 10/11 or Windows Server
+- Visual Studio 2019/2022 or .NET SDK with MSBuild
+- KeePass 2.35+
+
+### Build Steps
+```powershell
+git clone https://github.com/oycol/keepassnatmsg.git
+cd keepassnatmsg
+
+# Build solution
+nuget restore KeePassNatMsg.sln
+msbuild KeePassNatMsg.sln /p:Configuration=Release
+
+# Run unit tests
+vstest.console.exe KeePassNatMsg.Tests\bin\Release\KeePassNatMsg.Tests.dll
 ```
-choco install keepass-plugin-keepassnatmsg
-```
 
-To [upgrade KeePass Plugin KeePassNatMsg](https://community.chocolatey.org/packages/keepass-plugin-keepassnatmsg#upgrade) to the [latest release version](https://community.chocolatey.org/packages/keepass-plugin-keepassnatmsg#versionhistory) for enjoying the newest features, run the following command from the command line or from PowerShell:
+---
 
-```
-choco upgrade keepass-plugin-keepassnatmsg
-```
+## 📄 License & Attribution
 
-### KeePassNatMsg on Linux and Mac
-
-KeePass needs Mono. You can find detailed [installation instructions on the official page of KeePass](http://keepass.info/help/v2/setup.html#mono).
-
-## Configuration and Options
-
-KeePassNatMsg works out-of-the-box. You don't have to explicitly configure it.
-
- * KeePassNatMsg stores shared public keys in "KeePassNatMsg Settings" in the root group of a password database.
- * Password entries saved by KeePassNatMsg are stored in a new group named "KeePassNatMsg Passwords" within the password database.
- * Remembered Allow/Deny settings are stored as JSON in custom string fields within the individual password entry in the database.
-
-### Settings in KeePassNatMsg options.
-
-You can open the options dialog with menu: Tools > KeePassNatMsg Options
-
-![KeePassNatMsg Options Menu](documentation/images/menu.png)
-
-The options dialog will appear:
-
-![KeePassNatMsg Options Dialog](documentation/images/options-general.png)
-
-#### General tab
-
-1. show a notification balloon whenever entries are delivered to the inquirer.
-2. returns only the best matching entries for the given url, otherwise all entries for a domain are send.
-  - e.g. of two entries with the URLs http://example.org and http://example.org/, only the second one will returned if the requested URL is http://example.org/index.html
-3. if the active database in KeePass is locked, KeePassNatMsg sends a request to unlock the database. Now KeePass opens and the user has to enter the master password to unlock the database. Otherwise KeePassNatMsg tells the inquirer that the database is closed.
-4. expired entries are ignored if enabled.
-5. KeePassNatMsg returns only these entries which match the scheme of the given URL.
-  - given URL: https://example.org --> scheme: https:// --> only entries whose URL starts with https://
-6. sort found entries by username or title.
-7. removes all stored permissions in the entries of the currently selected database.
-8. Shows the status of the Native Messaging Host installations for the supported browsers, and the current Proxy version.
-9. Installs or Updates the Native Messaging Host, and updates the Proxy if an update is available.
-
-![KeePassNatMsg Options Advanced](documentation/images/options-advanced.png)
-
-#### Advanced tab
-
-10. KeePassNatMsg no longer asks for permissions to retrieve entries, it always allows access.
-11. KeePassNatMsg no longer asks for permission to update an entry, it always allows updating them.
-12. Choice of databases used for searches:
-  - Use only the active database (default).
-  - Use all open databases.
-  - Always use a specific database.
-13. When activated, it will search all string fields beginning with "URL".
-14. if activated KeePassNatMsg also search for string fields which are defined in the found entries and start with "KPH: " (note the space after colon). __The string fields will be transferred to the client in alphabetical order__. You can set string fields in the tab _Advanced_ of an entry.
-[<img src="https://raw.github.com/smorks/KeePassNatMsg/master/documentation/images/advanced-string-fields.png" alt="advanced tab of an entry" width="300px" />](https://raw.github.com/smorks/KeePassNatMsg/master/documentation/images/advanced-string-fields.png)
-15. Override the version returned to KeePassXC-Browser
-16. When a database is selected, KeePassNatMsg will always use the selected database to search for entries.
-17. Use the same settings as KeePassXC. If checked, it will share all Allow/Deny lists and keys with KeePassXC.
-  - ***It is strongly recommended that you make a backup of your database before using the Migrate Settings and Check for Legacy Config buttons.***
-  - Migrate Settings: will migrate settings between KeePassNatMsg and KeePassXC.
-  - Check for Legacy Config: will check to see if any legacy config exists in the current database, and migrate it to the new CustomData format.
-
-![KeePassNatMsg Options Keys](documentation/images/options-keys.png)
-
-#### Keys Tab
-
-Will display all configured browser keys, and you can remove them as needed.
-
-## Tips and Tricks
-
-### Support multiple URLs for one username + password
-This is already implemented directly in KeePass.
-
-1. Open the context menu of an entry by clicking right on it and select _Duplicate entry_:
-[<img src="https://raw.github.com/smorks/KeePassNatMsg/master/documentation/images/keepass-context-menu.png" alt="context-menu-entry" />](https://raw.github.com/smorks/KeePassNatMsg/master/documentation/images/keepass-context-menu.png)
-
-2. Check the option to use references for username and password:
-[<img src="https://raw.github.com/smorks/KeePassNatMsg/master/documentation/images/keepass-duplicate-entry-references.png" alt="mark checkbox references" width="300px" />](https://raw.github.com/smorks/KeePassNatMsg/master/documentation/images/keepass-duplicate-entry-references.png)
-
-3. You can change the title, URL and everything of the copied entry, but not the username and password. These fields contain a _Reference Key_ which refers to the _master entry_ you copied from.
-
-### TOTP Field Support
-
-KeePassNatMsg can use the built-in TOTP support in KeePass (since KeePass v2.47, [official docs](https://keepass.info/help/base/placeholders.html#otp)).
-
-KeePassNatMsg can also use the existence of either KeeOtp (`otp`) or KeeTrayTOTP (`TOTP Seed`) string fields to detect when TOTP entries should be returned in credential requests.
-
-## Troubleshooting
-
-__First:__ If an error occurs it will be shown as notification in system tray or as message box in KeePass.
-
-Otherwise please check if it could be an error of the client you are using. For keepassxc-browser issues you can [report an error here](https://github.com/varjolintu/keepassxc-browser/issues/).
-
-
-If you are having problems with KeePassNatMsg, please tell us at least the following information:
-* operating system & version
-* version of KeePass
-* version of KeePassNatMsg
-* error message (if available)
-* used clients and their versions
-* URLs on which the problem occur (if available)
-
-## URL matching: How does it work?
-
-KeePassNatMsg can receive 2 different URLs, called URL and SubmitURL.
-
-CompareToUrl = SubmitURL if set, URL otherwise
-
-For every entry, the [Levenshtein Distance](http://en.wikipedia.org/wiki/Levenshtein_distance) of his Entry-URL (or Title, if Entry-URL is not set) to the CompareToURL is calculated.
-
-Only the Entries with the minimal distance are returned.
-
-###Example:
-Submit-Url: http://www.host.com/subdomain1/login
-
-Entry-URL|Distance
----|---
-http://www.host.com/|16
-http://www.host.com/subdomain1|6
-http://www.host.com/subdomain2|7
-
-__Result:__ second entry is returned
-
-## Protocol
-
-- View [detailed protocol information](https://github.com/keepassxreboot/keepassxc-browser/blob/develop/keepassxc-protocol.md).
+- Released under the [GNU General Public License v3.0](LICENSE).
+- Originally based on [KeePassHttp](https://github.com/pfn/keepasshttp) and [keepassnatmsg](https://github.com/smorks/keepassnatmsg).
+- Embedded Native Messaging proxy based on `keepassnatmsg-proxy` (GPL-3.0).
