@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using KeePassNatMsg.NativeMessaging;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
