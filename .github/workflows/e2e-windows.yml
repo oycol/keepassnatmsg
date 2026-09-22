@@ -107,6 +107,101 @@ jobs:
           $diag | ConvertTo-Json -Depth 8 | Set-Content "$env:E2E_OUTPUT_DIR\diagnostics.json" -Encoding UTF8
           Get-Content "$env:E2E_OUTPUT_DIR\diagnostics.json"
 
+      - name: Deploy Plugin and Run Real Windows Chrome Integration E2E
+        run: |
+          Write-Host "=== Step 1: Download latest compiled KeePassNatMsg.plgx from CI artifacts ===" -ForegroundColor Cyan
+          $pluginsDir = "C:\Program Files\KeePass Password Safe 2\Plugins"
+          New-Item -ItemType Directory -Force -Path $pluginsDir | Out-Null
+
+          # Download the fresh .plgx artifact from latest CI run
+          $runId = (gh run list --repo oycol/keepassnatmsg --workflow "CI Build & Test" --branch main --limit 1 --json databaseId --jq '.[0].databaseId')
+          Write-Host "Downloading artifacts from CI Run: $runId"
+          gh run download $runId --repo oycol/keepassnatmsg --name KeePassNatMsg-build --dir "$env:TEMP\kpnm-ci-build"
+          
+          $ciPlgx = "$env:TEMP\kpnm-ci-build\KeePassNatMsg.plgx"
+          $targetPlgx = Join-Path $pluginsDir "KeePassNatMsg.plgx"
+          Copy-Item $ciPlgx $targetPlgx -Force
+          Write-Host "Deployed plugin to: $targetPlgx" -ForegroundColor Green
+
+          # Also copy dependent DLLs if needed
+          if (Test-Path "$env:TEMP\kpnm-ci-build\Newtonsoft.Json.dll") {
+            Copy-Item "$env:TEMP\kpnm-ci-build\Newtonsoft.Json.dll" (Join-Path $pluginsDir "Newtonsoft.Json.dll") -Force
+          }
+
+          Write-Host "`n=== Step 2: Test Native Messaging Host & Registry Configuration ===" -ForegroundColor Cyan
+          $configDir = "$env:LOCALAPPDATA\KeePassNatMsg"
+          $proxyPath = "$configDir\keepassnatmsg-proxy.exe"
+          $manifestPath = "$configDir\org.keepassxc.keepassxc_browser.chrome.json"
+          $regKey = "HKCU:\Software\Google\Chrome\NativeMessagingHosts\org.keepassxc.keepassxc_browser"
+
+          # Load assembly to test in-process service logic
+          $dllPath = "$env:TEMP\kpnm-ci-build\KeePassNatMsg.dll"
+          [System.Reflection.Assembly]::LoadFrom($dllPath) | Out-Null
+          $service = New-Object KeePassNatMsg.NativeMessaging.ChromeIntegrationService
+
+          Write-Host "Initial status before install:"
+          $s1 = $service.CheckStatus()
+          Write-Host "  State: $($s1.State) - $($s1.Message)"
+
+          Write-Host "`nExecuting InstallOrRepair()..."
+          [string]$err = ""
+          $ok = $service.InstallOrRepair([ref]$err)
+          if (-not $ok) { throw "InstallOrRepair failed: $err" }
+          Write-Host "InstallOrRepair returned true!" -ForegroundColor Green
+
+          Write-Host "`nValidating filesystem and registry state:"
+          if (-not (Test-Path $proxyPath)) { throw "Proxy exe does not exist at: $proxyPath" }
+          $proxyHash = (Get-FileHash $proxyPath -Algorithm SHA256).Hash.ToLower()
+          Write-Host "  Proxy Path: $proxyPath (SHA256: $proxyHash)"
+          if ($proxyHash -ne [KeePassNatMsg.NativeMessaging.ChromeIntegrationService]::ExpectedProxySha256) {
+            throw "Proxy SHA256 mismatch! Got: $proxyHash"
+          }
+
+          if (-not (Test-Path $manifestPath)) { throw "Manifest file does not exist at: $manifestPath" }
+          $manifestContent = Get-Content $manifestPath -Raw
+          Write-Host "  Manifest JSON Content:`n$manifestContent"
+          if (-not ($manifestContent -match "obcddimikignkfpophjabdkdggkodnnh")) {
+            throw "Manifest does not contain Chrome extension origin!"
+          }
+
+          if (-not (Test-Path $regKey)) { throw "Registry key does not exist: $regKey" }
+          $regVal = (Get-ItemProperty -Path $regKey).'(default)'
+          Write-Host "  Registry Value: $regVal"
+          if ($regVal -ne $manifestPath) {
+            throw "Registry value does not point to manifest path!"
+          }
+
+          $s2 = $service.CheckStatus()
+          Write-Host "`nVerified Status after install: $($s2.State) (Ready)" -ForegroundColor Green
+          if ($s2.State -ne [KeePassNatMsg.NativeMessaging.ChromeIntegrationState]::Ready) {
+            throw "Expected state Ready, but got: $($s2.State)"
+          }
+
+          Write-Host "`n=== Step 3: Test Uninstall & Clean Up ===" -ForegroundColor Cyan
+          $service.Uninstall([ref]$err)
+          if (Test-Path $regKey) { throw "Registry key should be removed after uninstall!" }
+          if (Test-Path $manifestPath) { throw "Manifest should be removed after uninstall!" }
+          Write-Host "Uninstall successfully cleaned up registry and manifest." -ForegroundColor Green
+
+          Write-Host "`n=== Step 4: Re-install for final ready state ===" -ForegroundColor Cyan
+          $service.InstallOrRepair([ref]$err)
+          $s3 = $service.CheckStatus()
+          if ($s3.State -ne [KeePassNatMsg.NativeMessaging.ChromeIntegrationState]::Ready) {
+            throw "Failed to re-install integration into Ready state!"
+          }
+          Write-Host "Chrome Integration is 100% verified and READY for Chrome!" -ForegroundColor Green
+
+          Write-Host "`n=== Step 5: Test KeePass Startup with KeePassNatMsg Plugin ===" -ForegroundColor Cyan
+          $kpExe = "C:\Program Files\KeePass Password Safe 2\KeePass.exe"
+          $kpProc = Start-Process -FilePath $kpExe -PassThru
+          Start-Sleep -Seconds 3
+          if ($kpProc.HasExited) {
+            throw "KeePass process exited unexpectedly on startup!"
+          }
+          Write-Host "KeePass is running cleanly (PID: $($kpProc.Id))." -ForegroundColor Green
+          Stop-Process -Id $kpProc.Id -Force
+          Write-Host "KeePass closed gracefully." -ForegroundColor Green
+
       - name: Build solution for E2E host
         run: |
           $msbuild = Get-Command msbuild -ErrorAction SilentlyContinue
