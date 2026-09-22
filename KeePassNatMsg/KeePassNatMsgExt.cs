@@ -242,19 +242,34 @@ namespace KeePassNatMsg
             }
         }
 
+        private static void LogDiag(string msg)
+        {
+            try
+            {
+                var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KeePassNatMsg");
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                File.AppendAllText(Path.Combine(dir, "plugin.log"), string.Format("[{0:HH:mm:ss.fff}] {1}\r\n", DateTime.Now, msg));
+            }
+            catch { }
+        }
+
         private void Listener_MessageReceived(object sender, PipeMessageReceivedEventArgs e)
         {
             try
             {
+                LogDiag("RECV: " + e.Message);
                 var req = Request.FromString(e.Message);
                 var resp = _handlers.ProcessRequest(req);
                 if (resp != null)
                 {
-                    e.Writer.Send(resp.GetEncryptedResponse());
+                    var respStr = resp.GetEncryptedResponse();
+                    LogDiag("RESP: " + respStr);
+                    e.Writer.Send(respStr);
                 }
             }
             catch (Exception ex)
             {
+                LogDiag("ERROR: " + ex.ToString());
                 try
                 {
                     e.Writer.Send("{\"action\":\"error\",\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}");

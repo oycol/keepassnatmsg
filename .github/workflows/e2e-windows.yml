@@ -149,6 +149,19 @@ jobs:
             dotnet build KeePassNatMsg\KeePassNatMsg.csproj -c Release -o $buildDir
           }
 
+          # 1.5 Compile robust NativeProxy.exe on Windows test host
+          $csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+          $robustProxy = "$PWD\KeePassNatMsg\Resources\keepassnatmsg-proxy.exe"
+          Write-Host "Compiling robust native 64-bit keepassnatmsg-proxy.exe..."
+          & $csc /nologo /target:exe /optimize+ /out:$robustProxy "$PWD\scripts\NativeProxy.cs"
+          $proxyHash = (Get-FileHash $robustProxy -Algorithm SHA256).Hash.ToLower()
+          Write-Host "New keepassnatmsg-proxy.exe SHA256: $proxyHash" -ForegroundColor Green
+
+          # Copy to config dir for testing
+          $configDir = "$env:LOCALAPPDATA\KeePassNatMsg"
+          New-Item -ItemType Directory -Force -Path $configDir | Out-Null
+          Copy-Item $robustProxy "$configDir\keepassnatmsg-proxy.exe" -Force
+
           # Also create .plgx using the installed KeePass.exe
           $kpExe = "C:\Program Files\KeePass Password Safe 2\KeePass.exe"
           if (Test-Path $kpExe) {
@@ -303,16 +316,29 @@ jobs:
             throw "Direct Named Pipe test failed with exit code $LASTEXITCODE"
           }
 
-          # 5.6 Test launching Chrome with extension loaded and open example.com
+          # 5.6 Test launching Chrome with extension loaded and open extension options page
           $chromeExe = "C:\Program Files\Google\Chrome\Application\chrome.exe"
           $chromeUserData = "C:\KeePassNatMsg-E2E\chrome-user-data"
           Write-Host "Launching Chrome with KeePassXC-Browser extension..."
-          $chromeProc = Start-Process -FilePath $chromeExe -ArgumentList "--user-data-dir=`"$chromeUserData`" --load-extension=`"$extDir`" https://example.com/" -PassThru
-          Start-Sleep -Seconds 5
+          $chromeProc = Start-Process -FilePath $chromeExe -ArgumentList "--user-data-dir=`"$chromeUserData`" --load-extension=`"$extDir`" chrome-extension://obcddimikignkfpophjabdkdggkodnnh/options/options.html https://example.com/" -PassThru
+          Start-Sleep -Seconds 8
           Write-Host "Chrome is running with extension loaded (PID: $($chromeProc.Id))." -ForegroundColor Green
 
           # Clean up processes
           Stop-Process -Id $chromeProc.Id -Force -ErrorAction SilentlyContinue
           Stop-Process -Id $kpProc.Id -Force -ErrorAction SilentlyContinue
           Write-Host "KeePass and Chrome test processes closed cleanly." -ForegroundColor Green
+
+          # 5.7 Inspect diagnostic logs
+          $proxyLog = "$env:LOCALAPPDATA\KeePassNatMsg\proxy.log"
+          if (Test-Path $proxyLog) {
+            Write-Host "`n=== Proxy Diagnostic Log ===" -ForegroundColor Yellow
+            Get-Content $proxyLog | ForEach-Object { Write-Host "  $_" }
+          }
+          $pluginLog = "$env:LOCALAPPDATA\KeePassNatMsg\plugin.log"
+          if (Test-Path $pluginLog) {
+            Write-Host "`n=== Plugin Diagnostic Log ===" -ForegroundColor Yellow
+            Get-Content $pluginLog | ForEach-Object { Write-Host "  $_" }
+          }
+
           Write-Host "`n=== All Windows E2E Integration and IPC Protocol Tests PASSED! ===" -ForegroundColor Green

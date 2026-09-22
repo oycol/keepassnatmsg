@@ -10,9 +10,9 @@ namespace KeePassNatMsgProxy
         {
             try
             {
-                var dir = @"C:\KeePassNatMsg-E2E";
+                var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KeePassNatMsg");
                 if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-                File.AppendAllText(Path.Combine(dir, "proxy.log"), $"[{DateTime.Now:HH:mm:ss.fff}] {msg}\r\n");
+                File.AppendAllText(Path.Combine(dir, "proxy.log"), string.Format("[{0:HH:mm:ss.fff}] {1}\r\n", DateTime.Now, msg));
             }
             catch { }
         }
@@ -20,15 +20,15 @@ namespace KeePassNatMsgProxy
         static int Main(string[] args)
         {
             var pipeName = "keepassxc\\" + Environment.UserName + "\\kpxc_server";
-            Log("Proxy started. Target pipe: " + pipeName);
+            Log("Proxy started. Target pipe: " + pipeName + ", Args: " + string.Join(" ", args));
 
             try
             {
                 using (var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut))
                 {
-                    Log("Connecting to named pipe...");
+                    Log("Connecting to named pipe: " + pipeName);
                     pipe.Connect(5000);
-                    Log("Connected to pipe!");
+                    Log("Connected to pipe successfully!");
 
                     var stdin = Console.OpenStandardInput();
                     var stdout = Console.OpenStandardOutput();
@@ -49,11 +49,11 @@ namespace KeePassNatMsgProxy
                             read += r;
                         }
                         int length = BitConverter.ToInt32(header, 0);
-                        Log($"Read header length: {length} bytes");
+                        Log(string.Format("Read header length: {0} bytes", length));
 
                         if (length <= 0 || length > 10 * 1024 * 1024)
                         {
-                            Log($"Invalid length: {length}. Exiting.");
+                            Log(string.Format("Invalid length: {0}. Exiting.", length));
                             return 0;
                         }
 
@@ -70,7 +70,7 @@ namespace KeePassNatMsgProxy
                             }
                             read += r;
                         }
-                        Log("Read full message body.");
+                        Log(string.Format("Read full message body: {0} bytes", length));
 
                         // 3. Forward to named pipe
                         pipe.Write(body, 0, body.Length);
@@ -80,7 +80,7 @@ namespace KeePassNatMsgProxy
                         // 4. Read response from named pipe
                         var respBuf = new byte[65536];
                         int respLen = pipe.Read(respBuf, 0, respBuf.Length);
-                        Log($"Read {respLen} bytes from pipe.");
+                        Log(string.Format("Read {0} bytes from pipe.", respLen));
                         if (respLen <= 0)
                         {
                             Log("Zero bytes read from pipe. Exiting.");
@@ -92,13 +92,13 @@ namespace KeePassNatMsgProxy
                         stdout.Write(respHeader, 0, 4);
                         stdout.Write(respBuf, 0, respLen);
                         stdout.Flush();
-                        Log("Wrote response to stdout.");
+                        Log(string.Format("Wrote {0} response bytes to stdout.", respLen));
                     }
                 }
             }
             catch (Exception ex)
             {
-                Log($"Proxy Exception: {ex}");
+                Log("Proxy Exception: " + ex.ToString());
                 return 0;
             }
         }
