@@ -12,8 +12,6 @@ namespace KeePassNatMsg.Options
     public partial class OptionsForm : Form
     {
         readonly ConfigOpt _config;
-        private bool _restartRequired = false;
-        private readonly NativeMessagingHost _host;
         private readonly ChromeIntegrationService _chromeService = new ChromeIntegrationService();
 
         private string AssemblyVersion
@@ -32,7 +30,6 @@ namespace KeePassNatMsg.Options
 
         public OptionsForm(ConfigOpt config)
         {
-            _host = NativeMessagingHost.GetHost();
             _config = config;
             InitializeComponent();
             lblVersion.Text = string.Format("KeePassNatMsg v{0}", AssemblyVersion);
@@ -59,32 +56,22 @@ namespace KeePassNatMsg.Options
             SortByTitleRadioButton.Checked = !_config.SortResultByUsername;
             chkSearchUrls.Checked = _config.SearchUrls;
             chkUseKpxcSettingsKey.Checked = _config.UseKeePassXcSettings;
-            chkUseKpxcSettingsGeneral.Checked = _config.UseKeePassXcSettings;
             txtDefaultGroup.Text = _config.DefaultGroup;
             chkDefaultGroupAlwaysAllow.Checked = _config.DefaultGroupAlwaysAllow;
 
             InitDatabasesDropdown();
 
-            // Safely hide the legacy string fields checkboxes without breaking Designer code
-            returnStringFieldsCheckbox.Visible = false;
-            returnStringFieldsWithKphOnlyCheckBox.Visible = false;
-            txtKPXCVerOverride.Visible = false;
-            lblKPXCVerOverride.Visible = false;
-            
-            // Adjust the groupbox text since it now only holds the search URL checkbox
-            grpFields.Text = "Additional URL Search";
-            
-            // Dynamically inject the new Logo
+            // Inject Logo into non-conflicting bottom branding area
             var pbLogo = new System.Windows.Forms.PictureBox
             {
-                Location = new System.Drawing.Point(375, 20),
-                Size = new System.Drawing.Size(120, 120),
+                Location = new System.Drawing.Point(12, 518),
+                Size = new System.Drawing.Size(24, 24),
                 SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom,
                 Image = KeePassNatMsg.Properties.Resources.earth_lock,
-                Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right
+                Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left
             };
-            this.tabPage1.Controls.Add(pbLogo);
-            pbLogo.BringToFront();
+            this.Controls.Add(pbLogo);
+            lblVersion.Location = new System.Drawing.Point(40, 524);
 
             foreach (DatabaseItem item in comboBoxSearchDatabases.Items)
             {
@@ -137,27 +124,18 @@ namespace KeePassNatMsg.Options
             else
                 _config.AllowSearchDatabase = (ulong)AllowSearchDatabase.RestrictSearchInSpecificDatabase;
 
-            // Sync both checkboxes (General and Advanced tab)
-            var useKpxc = chkUseKpxcSettingsKey.Checked || chkUseKpxcSettingsGeneral.Checked;
-            chkUseKpxcSettingsKey.Checked = useKpxc;
-            chkUseKpxcSettingsGeneral.Checked = useKpxc;
+            var useKpxc = chkUseKpxcSettingsKey.Checked;
 
             if (_config.UseKeePassXcSettings != useKpxc)
             {
-                _config.UseKeePassXcSettings = useKpxc;
-                MigrateSettings(true);
-            }
-
-            _config.UseKeePassXcSettings = useKpxc;
-
-            if (_restartRequired)
-            {
-                MessageBox.Show(
-                    "You have successfully changed the port number and/or the host name.\nA restart of KeePass is required!\n\nPlease restart KeePass now.",
-                    "Restart required!",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information
-                );
+                if (MigrateSettings(true))
+                {
+                    _config.UseKeePassXcSettings = useKpxc;
+                }
+                else
+                {
+                    chkUseKpxcSettingsKey.Checked = _config.UseKeePassXcSettings;
+                }
             }
 
             DialogResult = DialogResult.OK;
@@ -493,14 +471,7 @@ namespace KeePassNatMsg.Options
 
         private void rbSearchDatabase_CheckedChanged(object sender, EventArgs e)
         {
-            if (credOnlySearchInSelectedDatabaseRadioButton.Checked)
-                _config.AllowSearchDatabase = (ulong)AllowSearchDatabase.SearchInOnlySelectedDatabase;
-            else if (credSearchInAllOpenedDatabasesRadioButton.Checked)
-                _config.AllowSearchDatabase = (ulong)AllowSearchDatabase.SearchInAllOpenedDatabases;
-             else 
-                _config.AllowSearchDatabase = (ulong)AllowSearchDatabase.RestrictSearchInSpecificDatabase;
-
-            this.comboBoxSearchDatabases.Enabled = this.credRestrictSearchInSpecificDatabaseRadioButton.Checked;
+            comboBoxSearchDatabases.Enabled = credRestrictSearchInSpecificDatabaseRadioButton.Checked;
         }
     }
 }

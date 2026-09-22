@@ -6,6 +6,8 @@ namespace KeePassNatMsg.Entry
 {
     public static class UrlMatchingHelper
     {
+        public static readonly string[] DefaultAllowedSchemes = new[] { "https", "http" };
+
         public static bool IsAdditionalUrlField(string fieldName)
         {
             if (string.IsNullOrEmpty(fieldName)) return false;
@@ -23,51 +25,68 @@ namespace KeePassNatMsg.Entry
                 .ToList();
         }
 
-        public static int GetBestUrlDistance(string requestUrl, IEnumerable<string> candidateUrls)
+        public static IEnumerable<string> GetSearchHosts(string host)
         {
-            var request = (requestUrl ?? string.Empty).ToLowerInvariant();
-            var candidates = (candidateUrls ?? Enumerable.Empty<string>())
-                .Where(x => !string.IsNullOrEmpty(x))
-                .Select(x => x.ToLowerInvariant())
-                .ToList();
+            if (string.IsNullOrWhiteSpace(host)) yield break;
 
-            if (candidates.Count == 0) return request.Length;
-            return candidates.Min(x => LevenshteinDistance(request, x));
+            var current = host.Trim().TrimEnd('.');
+            yield return current;
+
+            while (true)
+            {
+                var dotIndex = current.IndexOf('.');
+                if (dotIndex < 0) break;
+
+                current = current.Substring(dotIndex + 1);
+                if (string.IsNullOrEmpty(current) || current.IndexOf('.') < 0)
+                {
+                    // Stop at the registrable top boundary to avoid searching naked TLDs like "com" or "uk"
+                    break;
+                }
+
+                yield return current;
+            }
         }
 
-        private static int LevenshteinDistance(string source, string target)
+        public static bool MatchesUrl(string entryUrl, string requestHost, string requestScheme = null, bool matchSchemes = false, bool exactHostOnly = false)
         {
-            if (string.IsNullOrEmpty(source)) return string.IsNullOrEmpty(target) ? 0 : target.Length;
-            if (string.IsNullOrEmpty(target)) return source.Length;
+            if (string.IsNullOrWhiteSpace(entryUrl) || string.IsNullOrWhiteSpace(requestHost))
+                return false;
 
-            if (source.Length > target.Length)
+            var normalizedUrl = entryUrl.Trim();
+            if (!normalizedUrl.Contains("://"))
             {
-                var temp = target;
-                target = source;
-                source = temp;
+                normalizedUrl = "https://" + normalizedUrl;
             }
 
-            var m = target.Length;
-            var n = source.Length;
-            var distance = new int[2, m + 1];
-            for (var j = 1; j <= m; j++) distance[0, j] = j;
+            Uri uri;
+            if (!Uri.TryCreate(normalizedUrl, UriKind.Absolute, out uri))
+                return false;
 
-            var currentRow = 0;
-            for (var i = 1; i <= n; ++i)
+            if (!DefaultAllowedSchemes.Contains(uri.Scheme.ToLowerInvariant()))
+                return false;
+
+            if (matchSchemes && !string.IsNullOrWhiteSpace(requestScheme))
             {
-                currentRow = i & 1;
-                distance[currentRow, 0] = i;
-                var previousRow = currentRow ^ 1;
-                for (var j = 1; j <= m; j++)
-                {
-                    var cost = target[j - 1] == source[i - 1] ? 0 : 1;
-                    distance[currentRow, j] = Math.Min(
-                        Math.Min(distance[previousRow, j] + 1, distance[currentRow, j - 1] + 1),
-                        distance[previousRow, j - 1] + cost);
-                }
+                if (!string.Equals(uri.Scheme, requestScheme, StringComparison.OrdinalIgnoreCase))
+                    return false;
             }
 
-            return distance[currentRow, m];
+            var cleanEntryHost = (uri.Host ?? string.Empty).Trim().TrimEnd('.');
+            var cleanRequestHost = requestHost.Trim().TrimEnd('.');
+
+            if (string.Equals(cleanEntryHost, cleanRequestHost, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (exactHostOnly)
+                return false;
+
+            // Security rule: a parent domain entry (e.g. example.com) may match a subdomain request (e.g. login.example.com).
+            // A child subdomain entry MUST NOT match a parent domain request.
+            if (cleanRequestHost.EndsWith("." + cleanEntryHost, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return false;
         }
     }
 }

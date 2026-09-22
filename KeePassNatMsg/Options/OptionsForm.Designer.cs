@@ -32,7 +32,6 @@
             this.unlockDatabaseCheckbox = new System.Windows.Forms.CheckBox();
             this.hideExpiredCheckbox = new System.Windows.Forms.CheckBox();
             this.matchSchemesCheckbox = new System.Windows.Forms.CheckBox();
-            this.chkUseKpxcSettingsGeneral = new System.Windows.Forms.CheckBox();
             this.grpSorting = new System.Windows.Forms.GroupBox();
             this.SortByTitleRadioButton = new System.Windows.Forms.RadioButton();
             this.SortByUsernameRadioButton = new System.Windows.Forms.RadioButton();
@@ -48,8 +47,6 @@
             this.txtDefaultGroup = new System.Windows.Forms.TextBox();
             this.chkDefaultGroupAlwaysAllow = new System.Windows.Forms.CheckBox();
             this.grpFields = new System.Windows.Forms.GroupBox();
-            this.returnStringFieldsCheckbox = new System.Windows.Forms.CheckBox();
-            this.returnStringFieldsWithKphOnlyCheckBox = new System.Windows.Forms.CheckBox();
             this.chkSearchUrls = new System.Windows.Forms.CheckBox();
             this.grpDangerZone = new System.Windows.Forms.GroupBox();
             this.credAllowAccessCheckbox = new System.Windows.Forms.CheckBox();
@@ -58,8 +55,6 @@
             this.labelConnDb = new System.Windows.Forms.Label();
             this.comboBoxDatabases = new System.Windows.Forms.ComboBox();
             this.chkUseKpxcSettingsKey = new System.Windows.Forms.CheckBox();
-            this.txtKPXCVerOverride = new System.Windows.Forms.TextBox();
-            this.lblKPXCVerOverride = new System.Windows.Forms.Label();
             this.btnMigrateSettings = new System.Windows.Forms.Button();
             this.btnCheckForLegacyConfig = new System.Windows.Forms.Button();
             this.tabPage3 = new System.Windows.Forms.TabPage();
@@ -202,11 +197,10 @@
             this.grpMatching.Controls.Add(this.unlockDatabaseCheckbox);
             this.grpMatching.Controls.Add(this.hideExpiredCheckbox);
             this.grpMatching.Controls.Add(this.matchSchemesCheckbox);
-            this.grpMatching.Controls.Add(this.chkUseKpxcSettingsGeneral);
             this.grpMatching.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.grpMatching.Location = new System.Drawing.Point(10, 125);
             this.grpMatching.Name = "grpMatching";
-            this.grpMatching.Size = new System.Drawing.Size(510, 240);
+            this.grpMatching.Size = new System.Drawing.Size(510, 210);
             this.grpMatching.TabIndex = 1;
             this.grpMatching.TabStop = false;
             this.grpMatching.Text = "Credential Matching & Access Rules";
@@ -261,18 +255,6 @@
             this.matchSchemesCheckbox.Text = "Match URL schemes (http, https separation)";
             this.matchSchemesCheckbox.UseVisualStyleBackColor = true;
             // 
-            // chkUseKpxcSettingsGeneral
-            // 
-            this.chkUseKpxcSettingsGeneral.AutoSize = true;
-            this.chkUseKpxcSettingsGeneral.Location = new System.Drawing.Point(15, 175);
-            this.chkUseKpxcSettingsGeneral.Name = "chkUseKpxcSettingsGeneral";
-            this.chkUseKpxcSettingsGeneral.Size = new System.Drawing.Size(282, 19);
-            this.chkUseKpxcSettingsGeneral.TabIndex = 5;
-            this.chkUseKpxcSettingsGeneral.Text = "Use KeePassXC-Browser settings (recommended)";
-            this.chkUseKpxcSettingsGeneral.UseVisualStyleBackColor = true;
-            // 
-            // 
-            // 
             // grpSorting
             // 
             this.grpSorting.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
@@ -280,7 +262,7 @@
             this.grpSorting.Controls.Add(this.SortByTitleRadioButton);
             this.grpSorting.Controls.Add(this.SortByUsernameRadioButton);
             this.grpSorting.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.grpSorting.Location = new System.Drawing.Point(10, 375);
+            this.grpSorting.Location = new System.Drawing.Point(10, 345);
             this.grpSorting.Name = "grpSorting";
             this.grpSorting.Size = new System.Drawing.Size(510, 60);
             this.grpSorting.TabIndex = 2;
@@ -330,8 +312,6 @@
             this.tabPage2.Controls.Add(this.labelConnDb);
             this.tabPage2.Controls.Add(this.comboBoxDatabases);
             this.tabPage2.Controls.Add(this.chkUseKpxcSettingsKey);
-            this.tabPage2.Controls.Add(this.txtKPXCVerOverride);
-            this.tabPage2.Controls.Add(this.lblKPXCVerOverride);
             this.tabPage2.Controls.Add(this.btnMigrateSettings);
             this.tabPage2.Controls.Add(this.btnCheckForLegacyConfig);
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
@@ -367,6 +347,7 @@
             this.credOnlySearchInSelectedDatabaseRadioButton.TabStop = true;
             this.credOnlySearchInSelectedDatabaseRadioButton.Text = "Search in only selected database";
             this.credOnlySearchInSelectedDatabaseRadioButton.UseVisualStyleBackColor = true;
+            this.credOnlySearchInSelectedDatabaseRadioButton.CheckedChanged += new System.EventHandler(this.rbSearchDatabase_CheckedChanged);
             // 
             // credSearchInAllOpenedDatabasesRadioButton
             // 
@@ -378,6 +359,7 @@
             this.credSearchInAllOpenedDatabasesRadioButton.TabStop = true;
             this.credSearchInAllOpenedDatabasesRadioButton.Text = "Search in all opened databases";
             this.credSearchInAllOpenedDatabasesRadioButton.UseVisualStyleBackColor = true;
+            this.credSearchInAllOpenedDatabasesRadioButton.CheckedChanged += new System.EventHandler(this.rbSearchDatabase_CheckedChanged);
             // 
             // credRestrictSearchInSpecificDatabaseRadioButton
             // 
@@ -389,6 +371,7 @@
             this.credRestrictSearchInSpecificDatabaseRadioButton.TabStop = true;
             this.credRestrictSearchInSpecificDatabaseRadioButton.Text = "Restrict search to specific DB:";
             this.credRestrictSearchInSpecificDatabaseRadioButton.UseVisualStyleBackColor = true;
+            this.credRestrictSearchInSpecificDatabaseRadioButton.CheckedChanged += new System.EventHandler(this.rbSearchDatabase_CheckedChanged);
             // 
             // comboBoxSearchDatabases
             // 
@@ -443,45 +426,22 @@
             // 
             this.grpFields.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpFields.Controls.Add(this.returnStringFieldsCheckbox);
-            this.grpFields.Controls.Add(this.returnStringFieldsWithKphOnlyCheckBox);
             this.grpFields.Controls.Add(this.chkSearchUrls);
             this.grpFields.Location = new System.Drawing.Point(10, 198);
             this.grpFields.Name = "grpFields";
-            this.grpFields.Size = new System.Drawing.Size(510, 95);
+            this.grpFields.Size = new System.Drawing.Size(510, 55);
             this.grpFields.TabIndex = 2;
             this.grpFields.TabStop = false;
-            this.grpFields.Text = "String Fields & Custom Attributes";
-            // 
-            // returnStringFieldsCheckbox
-            // 
-            this.returnStringFieldsCheckbox.AutoSize = true;
-            this.returnStringFieldsCheckbox.Location = new System.Drawing.Point(15, 20);
-            this.returnStringFieldsCheckbox.Name = "returnStringFieldsCheckbox";
-            this.returnStringFieldsCheckbox.Size = new System.Drawing.Size(189, 17);
-            this.returnStringFieldsCheckbox.TabIndex = 0;
-            this.returnStringFieldsCheckbox.Text = "Return string fields (attributes)";
-            this.returnStringFieldsCheckbox.UseVisualStyleBackColor = true;
-
-            // 
-            // returnStringFieldsWithKphOnlyCheckBox
-            // 
-            this.returnStringFieldsWithKphOnlyCheckBox.AutoSize = true;
-            this.returnStringFieldsWithKphOnlyCheckBox.Location = new System.Drawing.Point(15, 43);
-            this.returnStringFieldsWithKphOnlyCheckBox.Name = "returnStringFieldsWithKphOnlyCheckBox";
-            this.returnStringFieldsWithKphOnlyCheckBox.Size = new System.Drawing.Size(252, 17);
-            this.returnStringFieldsWithKphOnlyCheckBox.TabIndex = 1;
-            this.returnStringFieldsWithKphOnlyCheckBox.Text = "Only return string fields with \'KPH:\' prefix";
-            this.returnStringFieldsWithKphOnlyCheckBox.UseVisualStyleBackColor = true;
+            this.grpFields.Text = "Additional URL Search";
             // 
             // chkSearchUrls
             // 
             this.chkSearchUrls.AutoSize = true;
-            this.chkSearchUrls.Location = new System.Drawing.Point(15, 66);
+            this.chkSearchUrls.Location = new System.Drawing.Point(15, 23);
             this.chkSearchUrls.Name = "chkSearchUrls";
-            this.chkSearchUrls.Size = new System.Drawing.Size(225, 17);
-            this.chkSearchUrls.TabIndex = 2;
-            this.chkSearchUrls.Text = "Search custom fields starting with URL";
+            this.chkSearchUrls.Size = new System.Drawing.Size(250, 17);
+            this.chkSearchUrls.TabIndex = 0;
+            this.chkSearchUrls.Text = "Search custom fields starting with URL or KP2A";
             this.chkSearchUrls.UseVisualStyleBackColor = true;
             // 
             // grpDangerZone
@@ -492,7 +452,7 @@
             this.grpDangerZone.Controls.Add(this.credAllowUpdatesCheckbox);
             this.grpDangerZone.Controls.Add(this.removePermissionsButton);
             this.grpDangerZone.ForeColor = System.Drawing.Color.DarkRed;
-            this.grpDangerZone.Location = new System.Drawing.Point(10, 300);
+            this.grpDangerZone.Location = new System.Drawing.Point(10, 260);
             this.grpDangerZone.Name = "grpDangerZone";
             this.grpDangerZone.Size = new System.Drawing.Size(510, 95);
             this.grpDangerZone.TabIndex = 3;
@@ -535,7 +495,7 @@
             // labelConnDb
             // 
             this.labelConnDb.AutoSize = true;
-            this.labelConnDb.Location = new System.Drawing.Point(15, 408);
+            this.labelConnDb.Location = new System.Drawing.Point(15, 370);
             this.labelConnDb.Name = "labelConnDb";
             this.labelConnDb.Size = new System.Drawing.Size(123, 13);
             this.labelConnDb.TabIndex = 4;
@@ -545,7 +505,7 @@
             // 
             this.comboBoxDatabases.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxDatabases.FormattingEnabled = true;
-            this.comboBoxDatabases.Location = new System.Drawing.Point(145, 404);
+            this.comboBoxDatabases.Location = new System.Drawing.Point(145, 366);
             this.comboBoxDatabases.Name = "comboBoxDatabases";
             this.comboBoxDatabases.Size = new System.Drawing.Size(210, 21);
             this.comboBoxDatabases.TabIndex = 5;
@@ -553,45 +513,29 @@
             // chkUseKpxcSettingsKey
             // 
             this.chkUseKpxcSettingsKey.AutoSize = true;
-            this.chkUseKpxcSettingsKey.Location = new System.Drawing.Point(18, 435);
+            this.chkUseKpxcSettingsKey.Location = new System.Drawing.Point(18, 400);
             this.chkUseKpxcSettingsKey.Name = "chkUseKpxcSettingsKey";
             this.chkUseKpxcSettingsKey.Size = new System.Drawing.Size(177, 17);
             this.chkUseKpxcSettingsKey.TabIndex = 6;
             this.chkUseKpxcSettingsKey.Text = "Use KeePassXC Settings Key";
             this.chkUseKpxcSettingsKey.UseVisualStyleBackColor = true;
             // 
-            // txtKPXCVerOverride
-            // 
-            this.txtKPXCVerOverride.Location = new System.Drawing.Point(430, 404);
-            this.txtKPXCVerOverride.Name = "txtKPXCVerOverride";
-            this.txtKPXCVerOverride.Size = new System.Drawing.Size(90, 22);
-            this.txtKPXCVerOverride.TabIndex = 8;
-            // 
-            // lblKPXCVerOverride
-            // 
-            this.lblKPXCVerOverride.AutoSize = true;
-            this.lblKPXCVerOverride.Location = new System.Drawing.Point(370, 408);
-            this.lblKPXCVerOverride.Name = "lblKPXCVerOverride";
-            this.lblKPXCVerOverride.Size = new System.Drawing.Size(53, 13);
-            this.lblKPXCVerOverride.TabIndex = 7;
-            this.lblKPXCVerOverride.Text = "Ver Over:";
-            // 
             // btnMigrateSettings
             // 
-            this.btnMigrateSettings.Location = new System.Drawing.Point(215, 432);
+            this.btnMigrateSettings.Location = new System.Drawing.Point(215, 396);
             this.btnMigrateSettings.Name = "btnMigrateSettings";
             this.btnMigrateSettings.Size = new System.Drawing.Size(120, 23);
-            this.btnMigrateSettings.TabIndex = 9;
+            this.btnMigrateSettings.TabIndex = 7;
             this.btnMigrateSettings.Text = "Migrate Settings";
             this.btnMigrateSettings.UseVisualStyleBackColor = true;
             this.btnMigrateSettings.Click += new System.EventHandler(this.btnMigrateSettings_Click);
             // 
             // btnCheckForLegacyConfig
             // 
-            this.btnCheckForLegacyConfig.Location = new System.Drawing.Point(345, 432);
+            this.btnCheckForLegacyConfig.Location = new System.Drawing.Point(345, 396);
             this.btnCheckForLegacyConfig.Name = "btnCheckForLegacyConfig";
             this.btnCheckForLegacyConfig.Size = new System.Drawing.Size(120, 23);
-            this.btnCheckForLegacyConfig.TabIndex = 10;
+            this.btnCheckForLegacyConfig.TabIndex = 8;
             this.btnCheckForLegacyConfig.Text = "Check Legacy";
             this.btnCheckForLegacyConfig.UseVisualStyleBackColor = true;
             this.btnCheckForLegacyConfig.Click += new System.EventHandler(this.btnCheckForLegacyConfig_Click);
@@ -759,7 +703,6 @@
         private System.Windows.Forms.CheckBox unlockDatabaseCheckbox;
         private System.Windows.Forms.CheckBox hideExpiredCheckbox;
         private System.Windows.Forms.CheckBox matchSchemesCheckbox;
-        private System.Windows.Forms.CheckBox chkUseKpxcSettingsGeneral;
         private System.Windows.Forms.GroupBox grpSorting;
         private System.Windows.Forms.RadioButton SortByTitleRadioButton;
         private System.Windows.Forms.RadioButton SortByUsernameRadioButton;
@@ -773,8 +716,6 @@
         private System.Windows.Forms.TextBox txtDefaultGroup;
         private System.Windows.Forms.CheckBox chkDefaultGroupAlwaysAllow;
         private System.Windows.Forms.GroupBox grpFields;
-        private System.Windows.Forms.CheckBox returnStringFieldsCheckbox;
-        private System.Windows.Forms.CheckBox returnStringFieldsWithKphOnlyCheckBox;
         private System.Windows.Forms.CheckBox chkSearchUrls;
         private System.Windows.Forms.GroupBox grpDangerZone;
         private System.Windows.Forms.CheckBox credAllowAccessCheckbox;
@@ -783,8 +724,6 @@
         private System.Windows.Forms.Label labelConnDb;
         private System.Windows.Forms.ComboBox comboBoxDatabases;
         private System.Windows.Forms.CheckBox chkUseKpxcSettingsKey;
-        private System.Windows.Forms.TextBox txtKPXCVerOverride;
-        private System.Windows.Forms.Label lblKPXCVerOverride;
         private System.Windows.Forms.Button btnMigrateSettings;
         private System.Windows.Forms.Button btnCheckForLegacyConfig;
     }

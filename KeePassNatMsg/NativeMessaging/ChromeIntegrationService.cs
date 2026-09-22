@@ -24,6 +24,8 @@ namespace KeePassNatMsg.NativeMessaging
         public bool ProxyOk { get; set; }
         public bool ManifestOk { get; set; }
         public bool RegistryOk { get; set; }
+        public bool ChromeRegistryOk { get; set; }
+        public bool EdgeRegistryOk { get; set; }
         public bool ChromeDetected { get; set; }
         public string ProxyPath { get; set; }
         public string ManifestPath { get; set; }
@@ -98,6 +100,23 @@ namespace KeePassNatMsg.NativeMessaging
             }
         }
 
+        private static bool IsRegistryKeyConfigured(string subKey, string expectedManifestPath)
+        {
+            try
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(subKey, false))
+                {
+                    if (key != null)
+                    {
+                        var val = key.GetValue(null) as string;
+                        return string.Equals(val, expectedManifestPath, StringComparison.OrdinalIgnoreCase);
+                    }
+                }
+            }
+            catch { }
+            return false;
+        }
+
         public string GenerateManifestContent(string proxyPath)
         {
             var sb = new StringBuilder();
@@ -157,26 +176,9 @@ namespace KeePassNatMsg.NativeMessaging
             }
 
             // 3. Verify Registry (check Chrome and Edge keys)
-            var regOkCount = 0;
-            foreach (var subKey in SupportedRegistryKeys)
-            {
-                try
-                {
-                    using (var key = Registry.CurrentUser.OpenSubKey(subKey, false))
-                    {
-                        if (key != null)
-                        {
-                            var val = key.GetValue(null) as string;
-                            if (string.Equals(val, status.ManifestPath, StringComparison.OrdinalIgnoreCase))
-                            {
-                                regOkCount++;
-                            }
-                        }
-                    }
-                }
-                catch { }
-            }
-            status.RegistryOk = (regOkCount > 0);
+            status.ChromeRegistryOk = IsRegistryKeyConfigured(SupportedRegistryKeys[0], status.ManifestPath);
+            status.EdgeRegistryOk = IsRegistryKeyConfigured(SupportedRegistryKeys[1], status.ManifestPath);
+            status.RegistryOk = status.ChromeRegistryOk && status.EdgeRegistryOk;
 
             // Synthesize State
             if (status.ProxyOk && status.ManifestOk && status.RegistryOk)
@@ -184,7 +186,7 @@ namespace KeePassNatMsg.NativeMessaging
                 status.State = ChromeIntegrationState.Ready;
                 status.Message = "Browser integration (Chrome & Edge) is active and verified.";
             }
-            else if (!File.Exists(status.ProxyPath) && !File.Exists(status.ManifestPath) && !status.RegistryOk)
+            else if (!File.Exists(status.ProxyPath) && !File.Exists(status.ManifestPath) && !status.ChromeRegistryOk && !status.EdgeRegistryOk)
             {
                 status.State = ChromeIntegrationState.NeedsInstall;
                 status.Message = "Integration is not installed.";
@@ -202,7 +204,12 @@ namespace KeePassNatMsg.NativeMessaging
             else
             {
                 status.State = ChromeIntegrationState.BrokenRegistry;
-                status.Message = "Registry configuration is missing or pointing to wrong path.";
+                if (!status.ChromeRegistryOk && !status.EdgeRegistryOk)
+                    status.Message = "Registry configuration missing for both Chrome and Edge.";
+                else if (!status.ChromeRegistryOk)
+                    status.Message = "Chrome registry key missing or pointing to wrong path.";
+                else
+                    status.Message = "Edge registry key missing or pointing to wrong path.";
             }
 
             return status;
@@ -289,7 +296,7 @@ namespace KeePassNatMsg.NativeMessaging
                 File.WriteAllText(manifestPath, manifestContent, new UTF8Encoding(false));
 
                 // 3. Write Registry for both Chrome and Edge (HKCU)
-                var registeredAny = false;
+                var registeredCount = 0;
                 foreach (var subKey in SupportedRegistryKeys)
                 {
                     try
@@ -299,16 +306,16 @@ namespace KeePassNatMsg.NativeMessaging
                             if (key != null)
                             {
                                 key.SetValue(null, manifestPath, RegistryValueKind.String);
-                                registeredAny = true;
+                                registeredCount++;
                             }
                         }
                     }
                     catch { }
                 }
 
-                if (!registeredAny)
+                if (registeredCount < SupportedRegistryKeys.Length)
                 {
-                    errorMessage = "Failed to write browser NativeMessagingHosts registry keys.";
+                    errorMessage = "Failed to write browser NativeMessagingHosts registry keys for all supported browsers (Chrome and Edge).";
                     return false;
                 }
 

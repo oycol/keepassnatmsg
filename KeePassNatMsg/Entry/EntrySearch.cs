@@ -23,7 +23,6 @@ namespace KeePassNatMsg.Entry
 
         private readonly IPluginHost _host;
         private readonly KeePassNatMsgExt _ext;
-        private readonly List<string> _allowedSchemes = new List<string>(new[] { "http", "https", "ftp", "sftp" });
 
         public EntrySearch()
         {
@@ -42,12 +41,14 @@ namespace KeePassNatMsg.Entry
 
             Uri hostUri;
             Uri submitUri = null;
-            var uris = new List<Uri>();
 
             if (!string.IsNullOrEmpty(url))
             {
-                hostUri = new Uri(url);
-                uris.Add(hostUri);
+                if (!Uri.TryCreate(url, UriKind.Absolute, out hostUri) ||
+                    !UrlMatchingHelper.DefaultAllowedSchemes.Contains(hostUri.Scheme.ToLowerInvariant()))
+                {
+                    return new ErrorResponse(req, ErrorType.NoUrlProvided);
+                }
             }
             else
             {
@@ -56,15 +57,16 @@ namespace KeePassNatMsg.Entry
 
             if (!string.IsNullOrEmpty(submitUrl))
             {
-                submitUri = new Uri(submitUrl);
-                // Exclude if "submitUrl" is Javascript (or anything else)
-                if (_allowedSchemes.Contains(submitUri.Scheme) && submitUri.Authority != null)
+                if (Uri.TryCreate(submitUrl, UriKind.Absolute, out submitUri))
                 {
-                    uris.Add(submitUri);
+                    if (!UrlMatchingHelper.DefaultAllowedSchemes.Contains(submitUri.Scheme.ToLowerInvariant()) ||
+                        string.IsNullOrEmpty(submitUri.Authority))
+                    {
+                        submitUri = null;
+                    }
                 }
                 else
                 {
-                    submitUrl = null;
                     submitUri = null;
                 }
             }
@@ -72,16 +74,20 @@ namespace KeePassNatMsg.Entry
             var resp = req.GetResponse();
             resp.Message.Add("id", id);
 
-            var items = FindMatchingEntries(url, null);
-            if (items.ToList().Count > 0)
+            var items = FindMatchingEntries(hostUri, null).ToList();
+            if (items.Count > 0)
             {
                 var configOpt = new ConfigOpt(_host.CustomConfig);
 
                 var filter = new GFunc<PwEntry, bool>((PwEntry e) =>
                 {
                     var c = _ext.GetEntryConfig(e);
+                    if (c == null) return true;
 
-                    return c == null || (!c.Allow.Contains(hostUri.Authority)) || (submitUri != null && !c.Allow.Contains(submitUri.Authority));
+                    if (!c.Allow.Contains(hostUri.Authority)) return true;
+                    if (submitUri != null && !c.Allow.Contains(submitUri.Authority)) return true;
+
+                    return false;
                 });
 
                 var needPrompting = items.Where(e => filter(e.entry)).ToList();
@@ -108,34 +114,28 @@ namespace KeePassNatMsg.Entry
                                     var c = _ext.GetEntryConfig(e.entry) ?? new EntryConfig();
                                     var set = f.Allowed ? c.Allow : c.Deny;
                                     set.Add(hostUri.Authority);
-                                    if (submitUri != null && submitUri.Authority != hostUri.Authority)
+                                    if (submitUri != null && !string.Equals(submitUri.Authority, hostUri.Authority, StringComparison.OrdinalIgnoreCase))
                                         set.Add(submitUri.Authority);
                                     _ext.SetEntryConfig(e.entry, c);
                                 }
                             }
                             if (!f.Allowed)
                             {
-                                items = items.Except(needPrompting);
+                                items = items.Except(needPrompting).ToList();
                             }
                         });
                     }
                 }
 
-                var uri = submitUri != null ? submitUri : hostUri;
-
-
-
                 var itemsList = items.ToList();
 
                 if (configOpt.SortResultByUsername)
                 {
-                    var items2 = from e in itemsList orderby _ext.GetUserPass(e)[0] ascending select e;
-                    itemsList = items2.ToList();
+                    itemsList = itemsList.OrderBy(e => _ext.GetUserPass(e)[0], StringComparer.CurrentCultureIgnoreCase).ToList();
                 }
                 else
                 {
-                    var items2 = from e in itemsList orderby e.entry.Strings.ReadSafe(PwDefs.TitleField) ascending select e;
-                    itemsList = items2.ToList();
+                    itemsList = itemsList.OrderBy(e => e.entry.Strings.ReadSafe(PwDefs.TitleField), StringComparer.CurrentCultureIgnoreCase).ToList();
                 }
 
                 var entries = new JArray(itemsList.Select(item =>
@@ -181,6 +181,16 @@ namespace KeePassNatMsg.Entry
             return resp;
         }
 
+        internal int CountMatchingEntries(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return 0;
+            Uri uri;
+            if (!Uri.TryCreate(url, UriKind.Absolute, out uri)) return 0;
+            if (!UrlMatchingHelper.DefaultAllowedSchemes.Contains(uri.Scheme.ToLowerInvariant())) return 0;
+
+            return FindMatchingEntries(uri, null).Count();
+        }
+
         private void CheckTotp(PwEntryDatabase item, JObject obj)
         {
             var totp = GetTotpFromEntry(item);
@@ -211,8 +221,6 @@ namespace KeePassNatMsg.Entry
 
             if (string.IsNullOrEmpty(totp) && HasTotp(item.entry))
             {
-                // add support for keepass totp
-                // https://keepass.info/help/base/placeholders.html#otp
                 totp = GenerateTotp(item, TotpPlaceholder);
             }
             return totp;
@@ -229,10 +237,6 @@ namespace KeePassNatMsg.Entry
             return entry.Strings.Any(x => x.Key.StartsWith(TotpKey));
         }
 
-        // KeeOtp support through keepassxc-browser
-        // KeeOtp stores the TOTP config in a string field "otp" and provides a placeholder "{TOTP}"
-        // KeeTrayTOTP uses by default a "TOTP Seed" string field, and the {TOTP} placeholder.
-        // keepassxc-browser needs the value in a string field named "KPH: {TOTP}"
         private static bool HasLegacyTotp(PwEntry entry)
         {
             return entry.Strings.Any(x =>
@@ -274,8 +278,6 @@ namespace KeePassNatMsg.Entry
             return null;
         }
 
-
-
         private static IEnumerable<KeyValuePair<string, string>> GetFields(ConfigOpt configOpt, PwEntryDatabase entryDatabase)
         {
             SprContext ctx = new SprContext(entryDatabase.entry, entryDatabase.database, SprCompileFlags.All, false, false);
@@ -291,33 +293,25 @@ namespace KeePassNatMsg.Entry
                 if (standardFields.Contains(sf.Key)) continue;
 
                 var sfValue = entryDatabase.entry.Strings.ReadSafe(sf.Key);
-                // follow references
                 sfValue = SprEngine.Compile(sfValue, ctx);
 
-                // Strip legacy prefix if user still has it
-                var key = sf.Key.StartsWith("KPH: ") ? sf.Key.Substring(5) : sf.Key;
+                var key = sf.Key.StartsWith("KPH: ", StringComparison.OrdinalIgnoreCase) ? sf.Key.Substring(5) : sf.Key;
                 fields.Add(new KeyValuePair<string, string>(key, sfValue));
             }
 
             if (fields.Count > 0)
             {
-                return (from e2 in fields orderby e2.Key ascending select e2).ToList();
+                return fields.OrderBy(e2 => e2.Key, StringComparer.OrdinalIgnoreCase).ToList();
             }
             return null;
         }
 
-        private IEnumerable<PwEntryDatabase> FindMatchingEntries(string url, string realm)
+        private IEnumerable<PwEntryDatabase> FindMatchingEntries(Uri hostUri, string realm)
         {
-            var listResult = new List<PwEntryDatabase>();
-            var hostUri = new Uri(url);
-
             var formHost = hostUri.Host;
-            var searchHost = hostUri.Host;
-            var origSearchHost = hostUri.Host;
-            var searchScheme = hostUri.Scheme;
+            var requestScheme = hostUri.Scheme;
 
             List<PwDatabase> listDatabases = new List<PwDatabase>();
-
             var configOpt = new ConfigOpt(_host.CustomConfig);
             if (configOpt.AllowSearchDatabase == (ulong)AllowSearchDatabase.SearchInAllOpenedDatabases)
             {
@@ -340,95 +334,103 @@ namespace KeePassNatMsg.Entry
 
             var parms = MakeSearchParameters(configOpt.HideExpired);
             var searchUrls = configOpt.SearchUrls;
-            int listCount = 0;
+            var matchSchemes = configOpt.MatchSchemes;
+            var exactHostOnly = configOpt.SpecificMatchingOnly;
+            var formAuthority = hostUri.Authority;
+            var candidates = new Dictionary<string, PwEntryDatabase>();
 
             foreach (PwDatabase db in listDatabases)
             {
-                searchHost = origSearchHost;
-                //get all possible entries for given host-name
-                while (listResult.Count == listCount && (origSearchHost == searchHost || searchHost.IndexOf(".") != -1))
+                if (db == null || !db.IsOpen || db.RootGroup == null)
+                    continue;
+
+                foreach (var searchHost in UrlMatchingHelper.GetSearchHosts(formHost))
                 {
-                    if (configOpt.MatchSchemes)
+                    if (matchSchemes)
                     {
-                        parms.SearchString = string.Format("^{0}$|{1}://{0}/?", searchHost, searchScheme);
+                        parms.SearchString = string.Format("^{0}$|{1}://{0}/?", searchHost, requestScheme);
                     }
                     else
                     {
                         parms.SearchString = string.Format("^{0}$|/{0}/?", searchHost);
                     }
+
                     var listEntries = new PwObjectList<PwEntry>();
                     db.RootGroup.SearchEntries(parms, listEntries);
-                    listResult.AddRange(listEntries.Select(x => new PwEntryDatabase(x, db)));
-                    if (searchUrls) AddURLCandidates(db, listResult, parms.RespectEntrySearchingDisabled);
-                    searchHost = searchHost.Substring(searchHost.IndexOf(".") + 1);
-
-                    //searchHost contains no dot --> prevent possible infinite loop
-                    if (searchHost == origSearchHost)
-                        break;
-                }
-                listCount = listResult.Count;
-            }
-
-            var filter = new GFunc<PwEntry, bool>((PwEntry e) =>
-            {
-                var title = e.Strings.ReadSafe(PwDefs.TitleField);
-                var c = _ext.GetEntryConfig(e);
-                if (c != null)
-                {
-                    if (c.Allow.Contains(formHost))
-                        return true;
-                    if (c.Deny.Contains(formHost))
-                        return false;
-                    if (!string.IsNullOrEmpty(realm) && c.Realm != realm)
-                        return false;
+                    foreach (var entry in listEntries)
+                    {
+                        var key = entry.Uuid.ToHexString();
+                        if (!candidates.ContainsKey(key))
+                        {
+                            candidates.Add(key, new PwEntryDatabase(entry, db));
+                        }
+                    }
                 }
 
                 if (searchUrls)
                 {
-                    foreach (var sf in e.Strings.Where(s => UrlMatchingHelper.IsAdditionalUrlField(s.Key) &&
-                        s.Key.IndexOf("regex", StringComparison.OrdinalIgnoreCase) >= 0))
+                    AddURLCandidates(db, candidates, parms.RespectEntrySearchingDisabled);
+                }
+            }
+
+            var filtered = new List<PwEntryDatabase>();
+            foreach (var item in candidates.Values)
+            {
+                var e = item.entry;
+                var c = _ext.GetEntryConfig(e);
+                if (c != null)
+                {
+                    if (c.Deny.Contains(formAuthority) || c.Deny.Contains(formHost))
+                        continue;
+                    if (!string.IsNullOrEmpty(realm) && !string.Equals(c.Realm, realm, StringComparison.OrdinalIgnoreCase))
+                        continue;
+                }
+
+                var matched = false;
+                foreach (var entryUrl in GetEntryUrls(e, searchUrls))
+                {
+                    if (UrlMatchingHelper.MatchesUrl(entryUrl, formHost, requestScheme, matchSchemes, exactHostOnly))
                     {
-                        var pattern = e.Strings.ReadSafe(sf.Key);
-                        if (System.Text.RegularExpressions.Regex.IsMatch(formHost, pattern)) return true;
+                        matched = true;
+                        break;
                     }
                 }
 
-                foreach (var entryUrl in GetEntryUrls(e, searchUrls))
+                if (matched)
                 {
-                    if (IsValidUrl(entryUrl, formHost)) return true;
+                    filtered.Add(item);
                 }
-
-                if (IsValidUrl(title, formHost))
-                    return true;
-
-                return formHost.Contains(title);
-            });
-
-            var result = listResult.Where(e => filter(e.entry));
+            }
 
             if (configOpt.HideExpired)
             {
-                result = result.Where(x => !(x.entry.Expires && x.entry.ExpiryTime <= DateTime.UtcNow));
+                filtered = filtered.Where(x => !(x.entry.Expires && x.entry.ExpiryTime <= DateTime.UtcNow)).ToList();
             }
 
-            return result;
+            return filtered;
         }
 
-        private void AddURLCandidates(PwDatabase db, List<PwEntryDatabase> listResult, bool bRespectEntrySearchingDisabled)
+        private void AddURLCandidates(PwDatabase db, Dictionary<string, PwEntryDatabase> candidates, bool bRespectEntrySearchingDisabled)
         {
-            var alreadyFound = listResult.Select(x => x.entry);
-            var listEntries = db.RootGroup.GetEntries(true)
-                .AsEnumerable()
-                .Where(x => !alreadyFound.Contains(x));
+            var listEntries = db.RootGroup.GetEntries(true).AsEnumerable();
+            if (bRespectEntrySearchingDisabled)
+            {
+                listEntries = listEntries.Where(x => x.GetSearchingEnabled());
+            }
 
-            if (bRespectEntrySearchingDisabled) listEntries = listEntries.Where(x => x.GetSearchingEnabled());
             foreach (var entry in listEntries)
             {
+                var uuid = entry.Uuid.ToHexString();
+                if (candidates.ContainsKey(uuid)) continue;
+
                 if (!entry.Strings.Any(x =>
                     UrlMatchingHelper.IsAdditionalUrlField(x.Key) &&
-                    (x.Key.IndexOf("regex", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                     UrlMatchingHelper.ParseUrlValues(entry.Strings.ReadSafe(x.Key)).Count > 0))) continue;
-                listResult.Add(new PwEntryDatabase(entry, db));
+                    UrlMatchingHelper.ParseUrlValues(entry.Strings.ReadSafe(x.Key)).Count > 0))
+                {
+                    continue;
+                }
+
+                candidates.Add(uuid, new PwEntryDatabase(entry, db));
             }
         }
 
@@ -443,8 +445,7 @@ namespace KeePassNatMsg.Entry
 
             foreach (var field in entry.Strings.Where(x =>
                 !string.Equals(x.Key, PwDefs.UrlField, StringComparison.InvariantCultureIgnoreCase) &&
-                UrlMatchingHelper.IsAdditionalUrlField(x.Key) &&
-                x.Key.IndexOf("regex", StringComparison.OrdinalIgnoreCase) < 0))
+                UrlMatchingHelper.IsAdditionalUrlField(x.Key)))
             {
                 foreach (var url in UrlMatchingHelper.ParseUrlValues(entry.Strings.ReadSafe(field.Key)))
                 {
@@ -453,29 +454,14 @@ namespace KeePassNatMsg.Entry
             }
         }
 
-        private bool IsValidUrl(string url, string host)
-        {
-            if (string.IsNullOrEmpty(url)) return false;
-            Uri uri;
-            if (!Uri.TryCreate(url, UriKind.Absolute, out uri)) return false;
-            if (!_allowedSchemes.Contains(uri.Scheme)) return false;
-
-            // Strict suffix matching for security (Anti-Phishing)
-            // It must be exactly the host, or a subdomain of the host (ending with ".host")
-            if (string.Equals(uri.Host, host, StringComparison.InvariantCultureIgnoreCase))
-                return true;
-
-            return uri.Host.EndsWith("." + host, StringComparison.InvariantCultureIgnoreCase);
-        }
-
         private static SearchParameters MakeSearchParameters(bool excludeExpired)
         {
             return new SearchParameters
             {
-                SearchInTitles = true,
+                SearchInTitles = false,
                 SearchInGroupNames = false,
                 SearchInNotes = false,
-                SearchInOther = true,
+                SearchInOther = false,
                 SearchInPasswords = false,
                 SearchInTags = false,
                 SearchInUrls = true,

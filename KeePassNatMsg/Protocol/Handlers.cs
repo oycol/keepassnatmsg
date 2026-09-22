@@ -239,7 +239,7 @@ namespace KeePassNatMsg.Protocol
 
             var db = _ext.GetConnectionDatabase();
 
-            if (db.RootGroup == null)
+            if (db == null || !db.IsOpen || db.RootGroup == null)
             {
                 return new ErrorResponse(req, ErrorType.NoGroupsFound);
             }
@@ -253,19 +253,14 @@ namespace KeePassNatMsg.Protocol
 
             var resp = req.GetResponse();
 
-            // KeePassXC-Browser 1.10.4 expects defaultGroup and defaultGroupAlwaysAllow
+            // KeePassXC-Browser 1.10.4 expects groups array, defaultGroup, and defaultGroupAlwaysAllow at top level
             var configOpt = new ConfigOpt(_host.CustomConfig);
             var defaultGroup = configOpt.DefaultGroup;
             var defaultGroupAlwaysAllow = configOpt.DefaultGroupAlwaysAllow;
 
-            var groups = new JObject
-            {
-                { "groups", new JArray { root } }
-            };
-            groups.Add("defaultGroup", string.IsNullOrEmpty(defaultGroup) ? "" : defaultGroup);
-            groups.Add("defaultGroupAlwaysAllow", defaultGroupAlwaysAllow ? "true" : "false");
-
-            resp.Message.Add("groups", groups);
+            resp.Message.Add("groups", new JArray { root });
+            resp.Message.Add("defaultGroup", string.IsNullOrEmpty(defaultGroup) ? "" : defaultGroup);
+            resp.Message.Add("defaultGroupAlwaysAllow", defaultGroupAlwaysAllow);
 
             return resp;
         }
@@ -340,17 +335,11 @@ namespace KeePassNatMsg.Protocol
             if (string.IsNullOrEmpty(url))
                 return new ErrorResponse(req, ErrorType.NoUrlProvided);
 
-            // GetLoginsCount: return count without prompting for access
+            // GetLoginsCount: return count without prompting for access or reading secret fields
             var es = new EntrySearch();
             var resp = req.GetResponse();
-            // Use the same handler logic as GetLogins but only return count
-            var getLoginsResp = es.GetLoginsHandler(req);
-            if (getLoginsResp is ErrorResponse)
-            {
-                return getLoginsResp;
-            }
-            var countStr = getLoginsResp.Message.GetString("count");
-            resp.Message.Add("count", countStr ?? "0");
+            var count = es.CountMatchingEntries(url);
+            resp.Message.Add("count", count.ToString());
             return resp;
         }
 

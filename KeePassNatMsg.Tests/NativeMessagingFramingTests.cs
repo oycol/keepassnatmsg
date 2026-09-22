@@ -178,11 +178,11 @@ namespace KeePassNatMsg.Tests
         public void JsonMessage_ResponseFormat_HasActionAndNonce()
         {
             // Every response should have action and nonce
-            var json = "{\"action\":\"change-public-keys\",\"publicKey\":\"key\",\"version\":\"2.7.7\",\"success\":\"true\"}";
+            var json = "{\"action\":\"change-public-keys\",\"publicKey\":\"key\",\"version\":\"2.7.0\",\"success\":\"true\"}";
             var obj = Newtonsoft.Json.Linq.JObject.Parse(json);
 
             Assert.AreEqual("change-public-keys", obj["action"].ToString());
-            Assert.AreEqual("2.7.7", obj["version"].ToString());
+            Assert.AreEqual("2.7.0", obj["version"].ToString());
             Assert.AreEqual("true", obj["success"].ToString());
         }
 
