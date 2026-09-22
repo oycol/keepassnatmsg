@@ -239,33 +239,65 @@ jobs:
 
           Write-Host "`n=== Step 5: Test KeePass Startup & Named Pipe with Plugin ===" -ForegroundColor Cyan
           $kpExe = "C:\Program Files\KeePass Password Safe 2\KeePass.exe"
-          $kpProc = Start-Process -FilePath $kpExe -PassThru
-          Start-Sleep -Seconds 3
+
+          # 5.1 Download & deploy KeePassXC-Browser extension to C:\KeePassNatMsg-E2E\extension
+          $extDir = "C:\KeePassNatMsg-E2E\extension"
+          New-Item -ItemType Directory -Force -Path $extDir | Out-Null
+          $extZip = "$env:TEMP\kpxc-browser.zip"
+          Invoke-WebRequest -Uri "https://github.com/oycol/keepassnatmsg/releases/download/v2.2.0/kpxc-browser.zip" -OutFile $extZip
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          [System.IO.Compression.ZipFile]::ExtractToDirectory($extZip, $extDir)
+          Write-Host "KeePassXC-Browser 1.10.4 unpacked to: $extDir" -ForegroundColor Green
+
+          # 5.2 Create dedicated test database with a credential entry
+          $testDbPath = "C:\KeePassNatMsg-E2E\test.kdbx"
+          $testDbPass = "TestPassword2026!"
+          Write-Host "Creating test database: $testDbPath"
+          [System.Reflection.Assembly]::LoadFrom($kpExe) | Out-Null
+          $db = New-Object KeePassLib.PwDatabase
+          $io = New-Object KeePassLib.Serialization.IOConnectionInfo
+          $io.Path = $testDbPath
+          $compKey = New-Object KeePassLib.Keys.CompositeKey
+          $passKey = New-Object KeePassLib.Keys.KcpPassword($testDbPass)
+          $compKey.AddUserKey($passKey)
+          $db.New($io, $compKey)
+
+          $entry = New-Object KeePassLib.PwEntry($true, $true)
+          $entry.Strings.Set("Title", (New-Object KeePassLib.Security.ProtectedString($false, "Example Site")))
+          $entry.Strings.Set("UserName", (New-Object KeePassLib.Security.ProtectedString($false, "admin_tester")))
+          $entry.Strings.Set("Password", (New-Object KeePassLib.Security.ProtectedString($true, "MySuperSecretPassword2026!")))
+          $entry.Strings.Set("URL", (New-Object KeePassLib.Security.ProtectedString($false, "https://example.com/")))
+          $db.RootGroup.AddEntry($entry, $true)
+          $db.Save($null)
+          $db.Close()
+          Write-Host "Test database created with entry for https://example.com/" -ForegroundColor Green
+
+          # 5.3 Launch KeePass and open test.kdbx
+          Write-Host "Launching KeePass with test database..."
+          $kpProc = Start-Process -FilePath $kpExe -ArgumentList "`"$testDbPath`" -pw:$testDbPass" -PassThru
+          Start-Sleep -Seconds 4
           if ($kpProc.HasExited) {
             throw "KeePass process exited unexpectedly on startup!"
           }
-          Write-Host "KeePass is running cleanly (PID: $($kpProc.Id))." -ForegroundColor Green
+          Write-Host "KeePass is running with test.kdbx unlocked (PID: $($kpProc.Id))." -ForegroundColor Green
 
-          # Check Named Pipe created by KeePassNatMsg for proxy communication
+          # 5.4 Check Named Pipe created by KeePassNatMsg for proxy communication
           $pipes = [System.IO.Directory]::GetFiles('\\.\pipe\') | Where-Object { $_ -match "keepass" }
           Write-Host "Active KeePass pipes:"
           $pipes | ForEach-Object { Write-Host "  $_" -ForegroundColor Green }
 
-          # Check Chrome KeePassXC-Browser extension status
-          $extId = "obcddimikignkfpophjabdkdggkodnnh"
-          $extDirs = @(
-            "$env:LOCALAPPDATA\Google\Chrome\User Data\Default\Extensions\$extId",
-            "$env:LOCALAPPDATA\Google\Chrome\User Data\Profile*\Extensions\$extId"
-          )
-          $foundExt = Get-ChildItem -Path $extDirs -ErrorAction SilentlyContinue | Select-Object -First 1
-          if ($foundExt) {
-            Write-Host "KeePassXC-Browser extension installed in Chrome profile: $($foundExt.FullName)" -ForegroundColor Green
-          } else {
-            Write-Host "KeePassXC-Browser extension is NOT yet installed in user profile." -ForegroundColor Yellow
-          }
+          # 5.5 Test launching Chrome with extension loaded and open example.com
+          $chromeExe = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+          $chromeUserData = "C:\KeePassNatMsg-E2E\chrome-user-data"
+          Write-Host "Launching Chrome with KeePassXC-Browser extension..."
+          $chromeProc = Start-Process -FilePath $chromeExe -ArgumentList "--user-data-dir=`"$chromeUserData`" --load-extension=`"$extDir`" https://example.com/" -PassThru
+          Start-Sleep -Seconds 5
+          Write-Host "Chrome is running with extension loaded (PID: $($chromeProc.Id))." -ForegroundColor Green
 
+          # Clean up processes
+          Stop-Process -Id $chromeProc.Id -Force -ErrorAction SilentlyContinue
           Stop-Process -Id $kpProc.Id -Force -ErrorAction SilentlyContinue
-          Write-Host "KeePass closed gracefully." -ForegroundColor Green
+          Write-Host "KeePass and Chrome test processes closed cleanly." -ForegroundColor Green
           exit 0
 
       - name: Build solution for E2E host
