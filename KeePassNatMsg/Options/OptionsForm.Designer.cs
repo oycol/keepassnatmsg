@@ -266,6 +266,14 @@
             this.chkUseKpxcSettingsGeneral.Text = "Use KeePassXC-Browser settings (recommended)";
             this.chkUseKpxcSettingsGeneral.UseVisualStyleBackColor = true;
             // 
+            // pictureBoxLogo
+            // 
+            this.pictureBoxLogo.Location = new System.Drawing.Point(400, 15);
+            this.pictureBoxLogo.Name = "pictureBoxLogo";
+            this.pictureBoxLogo.Size = new System.Drawing.Size(100, 100);
+            this.pictureBoxLogo.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.pictureBoxLogo.Image = global::KeePassNatMsg.Properties.Resources.earth_lock;
+            this.pictureBoxLogo.TabIndex = 99;
             // 
             // 
             // grpSorting
