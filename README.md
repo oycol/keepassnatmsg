@@ -46,10 +46,10 @@
 3. **Configure in KeePass**:
    - Restart KeePass.
    - Open menu: `Tools -> KeePassNatMsg Options`.
-   - In the **Chrome Integration** section, click **Install / Repair Integration**.
+   - In the **Browser Integration (Chrome & Edge)** section, click **Install / Repair Integration**.
    - The status indicator will turn green: `Ready (Host registered & verified)`.
-4. **Connect from Chrome**:
-   - Install [KeePassXC-Browser](https://chromewebstore.google.com/detail/keepassxc-browser/obcddimikignkfpophjabdkdggkodnnh) from Chrome Web Store.
+4. **Connect from your browser**:
+   - Install [KeePassXC-Browser](https://chromewebstore.google.com/detail/keepassxc-browser/oboonakemofpalcgghocfoadofidjkkk) from Chrome Web Store or Microsoft Edge Add-ons.
    - Click the extension icon and click **Connect**.
    - Confirm association in the KeePass popup prompt. That's it!
 

@@ -21,8 +21,6 @@ namespace KeePassNatMsg.Tests
         public void Constants_AreCorrectForChromeAndKeePassXcBrowser()
         {
             Assert.AreEqual("org.keepassxc.keepassxc_browser", ChromeIntegrationService.NativeHostName);
-            Assert.AreEqual("pdffhmdngciaglkoonimfcmckehcpafo", ChromeIntegrationService.ChromeExtensionId);
-            Assert.AreEqual("chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/", ChromeIntegrationService.ChromeExtensionOrigin);
             Assert.AreEqual(@"Software\Google\Chrome\NativeMessagingHosts\org.keepassxc.keepassxc_browser", ChromeIntegrationService.RegistrySubKey);
 
             // Verify both Chrome and Edge registry keys are registered
@@ -47,7 +45,8 @@ namespace KeePassNatMsg.Tests
             var origins = parsed["allowed_origins"] as JArray;
             Assert.IsNotNull(origins);
             Assert.AreEqual(ChromeIntegrationService.AllowedExtensionOrigins.Length, origins.Count);
-            Assert.AreEqual(ChromeIntegrationService.ChromeExtensionOrigin, (string)origins[0]);
+            Assert.Contains("chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/", origins.Select(o => o.ToString()).ToArray());
+            Assert.Contains("chrome-extension://oboonakemofpalcgghocfoadofidjkkk/", origins.Select(o => o.ToString()).ToArray());
         }
 
         [Test]

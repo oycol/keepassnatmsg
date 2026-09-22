@@ -211,23 +211,13 @@ namespace KeePassNatMsg.Tests
         }
 
         [Test]
-        public void Manifest_EdgeExtensionId_Correct()
+        public void Manifest_AllowedExtensionOrigins_FollowKeePassXcUpstreamAllowlist()
         {
-            var manifestJson = @"{""allowed_origins"": [""chrome-extension://usuarokccmpfpckckkfcdobhdaiglfik/""]}";
-            var obj = Newtonsoft.Json.Linq.JObject.Parse(manifestJson);
-            var origins = (Newtonsoft.Json.Linq.JArray)obj["allowed_origins"];
+            var origins = KeePassNatMsg.NativeMessaging.ChromeIntegrationService.AllowedExtensionOrigins;
 
-            Assert.Contains("chrome-extension://usuarokccmpfpckckkfcdobhdaiglfik/", origins.Select(o => o.ToString()).ToArray());
-        }
-
-        [Test]
-        public void Manifest_ChromeExtensionId_Correct()
-        {
-            var manifestJson = @"{""allowed_origins"": [""chrome-extension://obcddimikignkfpophjabdkdggkodnnh/""]}";
-            var obj = Newtonsoft.Json.Linq.JObject.Parse(manifestJson);
-            var origins = (Newtonsoft.Json.Linq.JArray)obj["allowed_origins"];
-
-            Assert.Contains("chrome-extension://obcddimikignkfpophjabdkdggkodnnh/", origins.Select(o => o.ToString()).ToArray());
+            Assert.Contains("chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/", origins);
+            Assert.Contains("chrome-extension://oboonakemofpalcgghocfoadofidjkkk/", origins);
+            Assert.AreEqual(2, origins.Length);
         }
 
         #endregion

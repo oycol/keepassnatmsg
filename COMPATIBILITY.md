@@ -81,12 +81,16 @@
 
 ## Native Messaging Extension IDs
 
-| Browser | Extension ID |
+KeePassNatMsg follows KeePassXC upstream `NativeMessageInstaller` allowlist for Chromium-family browsers:
+
+| Origin | Source |
 |---|---|
-| Microsoft Edge | `usuarokccmpfpckckkfcdobhdaiglfik` |
-| Google Chrome | `obcddimikignkfpophjabdkdggkodnnh` |
-| Firefox | `keepassxc-browser@keepassxc.org` |
-| Thunderbird | `de.kkapsner.keepassxc_mail` |
+| `chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/` | KeePassXC upstream allowlist |
+| `chrome-extension://oboonakemofpalcgghocfoadofidjkkk/` | KeePassXC upstream allowlist |
+
+Notes:
+- These IDs are extension identities, not extension versions. Normal KeePassXC-Browser upgrades keep the same ID.
+- Unpacked/development extensions may have different IDs and must not be implicitly trusted; add explicit user-controlled allowlisting if needed.
 
 ## Known Limitations
 

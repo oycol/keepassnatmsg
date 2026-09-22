@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -35,14 +34,11 @@ namespace KeePassNatMsg.NativeMessaging
     public class ChromeIntegrationService
     {
         public const string NativeHostName = "org.keepassxc.keepassxc_browser";
-        public const string ChromeExtensionId = "pdffhmdngciaglkoonimfcmckehcpafo";
-        public const string ChromeExtensionOrigin = "chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/";
-
         public static readonly string[] AllowedExtensionOrigins = new[]
         {
-            "chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/", // Official Chrome Web Store
-            "chrome-extension://oboonakemofpalcgghocfoadofidjkkk/", // Official Chromium / Edge
-            "chrome-extension://obcddimikignkfpophjabdkdggkodnnh/"  // Legacy / Dev
+            // Keep in sync with KeePassXC upstream NativeMessageInstaller ALLOWED_ORIGINS.
+            "chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/",
+            "chrome-extension://oboonakemofpalcgghocfoadofidjkkk/"
         };
 
         public const string RegistrySubKey = @"Software\Google\Chrome\NativeMessagingHosts\" + NativeHostName;
@@ -121,6 +117,16 @@ namespace KeePassNatMsg.NativeMessaging
             return sb.ToString();
         }
 
+        private static bool ContainsAllAllowedOrigins(string manifestText)
+        {
+            if (string.IsNullOrEmpty(manifestText)) return false;
+            foreach (var origin in AllowedExtensionOrigins)
+            {
+                if (!manifestText.Contains(origin)) return false;
+            }
+            return true;
+        }
+
         public ChromeIntegrationStatus CheckStatus()
         {
             var status = new ChromeIntegrationStatus
@@ -141,7 +147,7 @@ namespace KeePassNatMsg.NativeMessaging
                 {
                     var text = File.ReadAllText(status.ManifestPath);
                     status.ManifestOk = text.Contains(NativeHostName) &&
-                                        text.Contains(ChromeExtensionOrigin) &&
+                                        ContainsAllAllowedOrigins(text) &&
                                         text.Contains(status.ProxyPath.Replace(@"\", @"\\"));
                 }
                 catch

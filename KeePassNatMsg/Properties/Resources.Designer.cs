@@ -67,9 +67,8 @@ namespace KeePassNatMsg.Properties {
         ///  &quot;path&quot; : &quot;{0}&quot;,
         ///  &quot;type&quot;: &quot;stdio&quot;,
         ///  &quot;allowed_origins&quot;: [
-        ///    &quot;chrome-extension://iopaggbpplllidnfmcghoonnokmjoicf/&quot;,
-        ///    &quot;chrome-extension://oboonakemofpalcgghocfoadofidjkkk/&quot;,
-        ///    &quot;chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/&quot;
+        ///    &quot;chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/&quot;,
+        ///    &quot;chrome-extension://oboonakemofpalcgghocfoadofidjkkk/&quot;
         ///  ]
         ///}}.
         /// </summary>
@@ -96,9 +95,8 @@ namespace KeePassNatMsg.Properties {
         ///  &quot;path&quot; : &quot;{0}&quot;,
         ///  &quot;type&quot;: &quot;stdio&quot;,
         ///  &quot;allowed_origins&quot;: [
-        ///    &quot;chrome-extension://iopaggbpplllidnfmcghoonnokmjoicf/&quot;,
-        ///    &quot;chrome-extension://oboonakemofpalcgghocfoadofidjkkk/&quot;,
-        ///    &quot;chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/&quot;
+        ///    &quot;chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/&quot;,
+        ///    &quot;chrome-extension://oboonakemofpalcgghocfoadofidjkkk/&quot;
         ///  ]
         ///}}.
         /// </summary>

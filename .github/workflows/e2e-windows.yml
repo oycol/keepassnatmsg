@@ -205,8 +205,8 @@ jobs:
           if (-not (Test-Path $manifestPath)) { throw "Manifest file does not exist at: $manifestPath" }
           $manifestContent = Get-Content $manifestPath -Raw
           Write-Host "  Manifest JSON Content:`n$manifestContent"
-          if (-not ($manifestContent -match "obcddimikignkfpophjabdkdggkodnnh")) {
-            throw "Manifest does not contain Chrome extension origin!"
+          if (-not ($manifestContent -match "pdffhmdngciaglkoonimfcmckehcpafo") -or -not ($manifestContent -match "oboonakemofpalcgghocfoadofidjkkk")) {
+            throw "Manifest does not contain KeePassXC upstream extension origins!"
           }
 
           $chromeRegKey = "HKCU:\Software\Google\Chrome\NativeMessagingHosts\org.keepassxc.keepassxc_browser"
@@ -312,7 +312,7 @@ jobs:
           $chromeExe = "C:\Program Files\Google\Chrome\Application\chrome.exe"
           $chromeUserData = "C:\KeePassNatMsg-E2E\chrome-user-data"
           Write-Host "Launching Chrome with KeePassXC-Browser extension..."
-          $chromeProc = Start-Process -FilePath $chromeExe -ArgumentList "--user-data-dir=`"$chromeUserData`" --load-extension=`"$extDir`" chrome-extension://obcddimikignkfpophjabdkdggkodnnh/options/options.html https://example.com/" -PassThru
+          $chromeProc = Start-Process -FilePath $chromeExe -ArgumentList "--user-data-dir=`"$chromeUserData`" --load-extension=`"$extDir`" https://example.com/" -PassThru
           Start-Sleep -Seconds 8
           Write-Host "Chrome is running with extension loaded (PID: $($chromeProc.Id))." -ForegroundColor Green
 
