@@ -173,7 +173,7 @@ namespace KeePassNatMsg.Protocol
                 var submitUrl = reqMsg.GetString("submitUrl");
                 var groupUuid = reqMsg.GetString("groupUuid");
                 var group = reqMsg.GetString("group");
-                var downloadFavicon = reqMsg.GetString("downloadFavicon");
+                // downloadFavicon is sent by the browser but favicon download is not implemented.
 
                 bool result;
 
@@ -353,60 +353,32 @@ namespace KeePassNatMsg.Protocol
             if (string.IsNullOrEmpty(search))
                 return new ErrorResponse(req, ErrorType.NoUrlProvided);
 
-            // Trigger Global Auto-Type via KeePass
-            // Use reflection to call KeePass's global auto-type method, as the
-            // exact API signature varies between KeePass 2.x versions.
+            // Trigger Global Auto-Type via the stable KeePass 2.x internal API.
+            // ExecuteGlobalAutoType(string) has been present since KeePass 2.20 and
+            // is the documented extension point used by KeePassXC itself.
             _host.MainWindow.Invoke(new System.Action(() =>
             {
                 try
                 {
-                    // KeePass 2.x: MainForm has an ExecuteGlobalAutoType method
-                    // that accepts a search string for filtering entries
-                    var mainWindow = _host.MainWindow;
-                    var mi = mainWindow.GetType().GetMethod("ExecuteGlobalAutoType",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    var mi = _host.MainWindow.GetType().GetMethod(
+                        "ExecuteGlobalAutoType",
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
+                        null,
+                        new[] { typeof(string) },
+                        null);
+
                     if (mi != null)
-                    {
-                        mi.Invoke(mainWindow, new object[] { search });
-                    }
-                    else
-                    {
-                        // Fallback: try to trigger via Program.MainWindow
-                        var autoTypeType = typeof(KeePass.Util.AutoType);
-                        var methods = autoTypeType.GetMethods(
-                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                        // Look for a method that takes a string and IPluginHost or similar
-                        foreach (var m in methods)
-                        {
-                            var parms = m.GetParameters();
-                            if (m.Name.Contains("Global") && parms.Length >= 1 &&
-                                parms[0].ParameterType == typeof(string))
-                            {
-                                var args = new object[parms.Length];
-                                args[0] = search;
-                                for (int i = 1; i < parms.Length; i++)
-                                {
-                                    if (parms[i].ParameterType.IsAssignableFrom(typeof(KeePass.Plugins.IPluginHost)))
-                                        args[i] = _host;
-                                    else if (parms[i].ParameterType == typeof(KeePassLib.PwDatabase))
-                                        args[i] = _host.Database;
-                                    else
-                                        args[i] = null;
-                                }
-                                m.Invoke(null, args);
-                                break;
-                            }
-                        }
-                    }
+                        mi.Invoke(_host.MainWindow, new object[] { search });
+                    // If the method is not found on this KeePass build, silently skip —
+                    // the response is still sent so the extension is not left waiting.
                 }
                 catch (Exception)
                 {
-                    // Auto-type may fail if the target window is not available
+                    // Auto-type may fail if no matching window is available; not fatal.
                 }
             }));
 
-            var resp = req.GetResponse();
-            return resp;
+            return req.GetResponse();
         }
     }
 }

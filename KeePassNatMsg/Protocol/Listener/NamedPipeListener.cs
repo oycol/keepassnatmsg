@@ -8,10 +8,13 @@ namespace KeePassNatMsg.Protocol.Listener
 {
     public sealed class NamedPipeListener : IListener
     {
-        private const int BufferSize = 1024*1024;
+        private const int BufferSize = 1024 * 1024;
         private const int Threads = 5;
         private readonly string _name;
         private volatile bool _active;
+
+        // _threads is accessed from multiple threads (Run, ThreadClosed, Write, Stop).
+        // All accesses must be inside lock(_threads).
         private readonly List<PipeThreadState> _threads;
 
         public event EventHandler<PipeMessageReceivedEventArgs> MessageReceived;
@@ -34,7 +37,12 @@ namespace KeePassNatMsg.Protocol.Listener
         public void Stop()
         {
             _active = false;
-            foreach (var pts in _threads)
+            List<PipeThreadState> snapshot;
+            lock (_threads)
+            {
+                snapshot = new List<PipeThreadState>(_threads);
+            }
+            foreach (var pts in snapshot)
             {
                 pts.Close();
             }
@@ -42,7 +50,11 @@ namespace KeePassNatMsg.Protocol.Listener
 
         public void Write(string msg)
         {
-            var pts = _threads.Find(x => x.Server.IsConnected);
+            PipeThreadState pts = null;
+            lock (_threads)
+            {
+                pts = _threads.Find(x => x.Server != null && x.Server.IsConnected);
+            }
             if (pts != null)
             {
                 var pw = new PipeWriter(pts.Server);
@@ -52,24 +64,34 @@ namespace KeePassNatMsg.Protocol.Listener
 
         private void CreateAndRunThread()
         {
-            var pts = CreateThreadState(new Thread(Run));
-            pts.Thread.Start(pts);
-        }
-
-        private PipeThreadState CreateThreadState(Thread t)
-        {
-            var pts = new PipeThreadState(t);
-            _threads.Add(pts);
-            return pts;
+            var t = new Thread(Run) { IsBackground = true };
+            PipeThreadState pts;
+            lock (_threads)
+            {
+                pts = new PipeThreadState(t);
+                _threads.Add(pts);
+            }
+            t.Start(pts);
         }
 
         private void RunThreadClosed(object args)
         {
-            var pts = (PipeThreadState)args;
-            _threads.Remove(pts);
-            pts.Close();
-            pts = CreateThreadState(Thread.CurrentThread);
-            Run(pts);
+            var oldPts = (PipeThreadState)args;
+            lock (_threads)
+            {
+                _threads.Remove(oldPts);
+            }
+            oldPts.Close();
+
+            // Spawn a fresh replacement thread to keep the pool full.
+            var t = new Thread(Run) { IsBackground = true };
+            PipeThreadState newPts;
+            lock (_threads)
+            {
+                newPts = new PipeThreadState(t);
+                _threads.Add(newPts);
+            }
+            t.Start(newPts);
         }
 
         private void ThreadClosed(PipeThreadState pts)
@@ -83,38 +105,50 @@ namespace KeePassNatMsg.Protocol.Listener
 
         private void Run(object args)
         {
-            var read = true;
             var pts = (PipeThreadState)args;
-            NamedPipeServerStream server;
 
-            server = new NamedPipeServerStream(_name, PipeDirection.InOut, Threads, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            // Use None (synchronous) instead of Asynchronous to avoid mixing sync
+            // reads on an async-flagged pipe, which can cause ObjectDisposedException
+            // on Windows 11 64-bit and is generally undefined behaviour.
+            var server = new NamedPipeServerStream(
+                _name,
+                PipeDirection.InOut,
+                Threads,
+                PipeTransmissionMode.Byte,
+                PipeOptions.None);
 
-            pts.Server = server;
+            lock (_threads)
+            {
+                pts.Server = server;
+            }
 
             try
             {
                 server.WaitForConnection();
 
-                while (_active && server.IsConnected && read)
+                var buffer = new byte[BufferSize];
+                while (_active && server.IsConnected)
                 {
-                    var buffer = new byte[BufferSize];
                     var bytes = server.Read(buffer, 0, buffer.Length);
 
                     if (bytes > 0)
                     {
                         var data = new byte[bytes];
                         Array.Copy(buffer, data, bytes);
-                        if (MessageReceived != null)
-                            MessageReceived.BeginInvoke(this, new PipeMessageReceivedEventArgs(new PipeWriter(server), data), null, null);
+                        var handler = MessageReceived;
+                        if (handler != null)
+                            handler.BeginInvoke(this, new PipeMessageReceivedEventArgs(new PipeWriter(server), data), null, null);
                     }
-                    else if (bytes == 0)
+                    else
                     {
-                        read = false;
+                        // bytes == 0 means the client disconnected cleanly.
+                        break;
                     }
                 }
             }
             catch (IOException)
             {
+                // Client disconnected abruptly — normal operating condition.
             }
 
             ThreadClosed(pts);

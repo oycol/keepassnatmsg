@@ -125,20 +125,29 @@ namespace KeePassNatMsg.Entry
 
         public bool CreateEntry(string username, string password, string url, string submithost, string realm, string groupUuid)
         {
+            // Validate url before doing anything else.
+            Uri uri;
+            if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out uri))
+                return false;
+
+            // Store only the origin+path prefix (drop query/fragment) so the saved URL
+            // is still useful as a login URL without leaking search parameters.
+            // We keep the path up to the last '/' (trimming only the file part if any).
             string baseUrl = url;
-            // index bigger than https:// <-- this slash
-            if (baseUrl.LastIndexOf("/") > 9)
+            var lastSlash = url.LastIndexOf('/');
+            // lastSlash > (scheme + "://").Length  →  there is a real path segment
+            var schemeEnd = url.IndexOf("://", StringComparison.Ordinal);
+            var pathStart = schemeEnd >= 0 ? schemeEnd + 3 : 0;
+            if (lastSlash > pathStart)
             {
-                baseUrl = baseUrl.Substring(0, baseUrl.LastIndexOf("/") + 1);
+                baseUrl = url.Substring(0, lastSlash + 1);
             }
 
-            var uri = new Uri(url);
-
             PwEntry entry = new PwEntry(true, true);
-            entry.Strings.Set(PwDefs.TitleField, new ProtectedString(false, uri.Host));
-            entry.Strings.Set(PwDefs.UserNameField, new ProtectedString(false, username));
-            entry.Strings.Set(PwDefs.PasswordField, new ProtectedString(true, password));
-            entry.Strings.Set(PwDefs.UrlField, new ProtectedString(false, baseUrl));
+            entry.Strings.Set(PwDefs.TitleField, new KeePassLib.Security.ProtectedString(false, uri.Host));
+            entry.Strings.Set(PwDefs.UserNameField, new KeePassLib.Security.ProtectedString(false, username));
+            entry.Strings.Set(PwDefs.PasswordField, new KeePassLib.Security.ProtectedString(true, password));
+            entry.Strings.Set(PwDefs.UrlField, new KeePassLib.Security.ProtectedString(false, baseUrl));
 
             if ((submithost != null && uri.Host != submithost) || realm != null)
             {
@@ -158,7 +167,7 @@ namespace KeePassNatMsg.Entry
                 var db = _ext.GetConnectionDatabase();
                 if (db.RootGroup != null)
                 {
-                    var uuid = new PwUuid(MemUtil.HexStringToByteArray(groupUuid));
+                    var uuid = new PwUuid(KeePassLib.Utility.MemUtil.HexStringToByteArray(groupUuid));
                     group = db.RootGroup.FindGroup(uuid, true);
                 }
             }

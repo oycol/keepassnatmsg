@@ -332,7 +332,7 @@ namespace KeePassNatMsg.Entry
                 listDatabases.Add(_host.Database);
             }
 
-            var parms = MakeSearchParameters(configOpt.HideExpired);
+            var parms = MakeSearchParameters();
             var searchUrls = configOpt.SearchUrls;
             var matchSchemes = configOpt.MatchSchemes;
             var exactHostOnly = configOpt.SpecificMatchingOnly;
@@ -454,8 +454,12 @@ namespace KeePassNatMsg.Entry
             }
         }
 
-        private static SearchParameters MakeSearchParameters(bool excludeExpired)
+        private static SearchParameters MakeSearchParameters()
         {
+            // ExcludeExpired is intentionally NOT set here.
+            // Expired-entry filtering is applied explicitly in FindMatchingEntries after
+            // URL matching, so we retain full control over what "expired" means and avoid
+            // double-filtering if KeePass's own behaviour changes between versions.
             return new SearchParameters
             {
                 SearchInTitles = false,
@@ -467,7 +471,7 @@ namespace KeePassNatMsg.Entry
                 SearchInUrls = true,
                 SearchInUserNames = false,
                 SearchInUuids = false,
-                ExcludeExpired = excludeExpired,
+                ExcludeExpired = false,
                 SearchMode = PwSearchMode.Regular,
                 ComparisonMode = StringComparison.InvariantCultureIgnoreCase,
             };

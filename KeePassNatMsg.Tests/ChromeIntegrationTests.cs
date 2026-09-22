@@ -72,5 +72,24 @@ namespace KeePassNatMsg.Tests
                 if (File.Exists(tempFile)) File.Delete(tempFile);
             }
         }
+        [Test]
+        public void GenerateManifestContent_PathWithBackslashes_SurvivesJsonRoundTrip()
+        {
+            // Fix #13: hand-rolled JSON used Replace(@"\", @"\\") which could break UNC paths.
+            // Newtonsoft handles escaping correctly in all cases.
+            var pathWithSlashes = @"C:\Users\Test User\AppData\Local\KeePassNatMsg\keepassnatmsg-proxy.exe";
+            var json = _service.GenerateManifestContent(pathWithSlashes);
+            var parsed = JObject.Parse(json);   // must not throw
+            Assert.AreEqual(pathWithSlashes, (string)parsed["path"]);
+        }
+
+        [Test]
+        public void GenerateManifestContent_UncPath_SurvivesJsonRoundTrip()
+        {
+            var uncPath = @"\\server\share\keepassnatmsg-proxy.exe";
+            var json = _service.GenerateManifestContent(uncPath);
+            var parsed = JObject.Parse(json);
+            Assert.AreEqual(uncPath, (string)parsed["path"]);
+        }
     }
 }

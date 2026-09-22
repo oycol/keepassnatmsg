@@ -144,5 +144,63 @@ namespace KeePassNatMsg.Tests
             Assert.IsTrue(config.Allow.Contains("login.microsoftonline.com:443"));
             Assert.IsTrue(config.Deny.Contains("malicious.com:8080"));
         }
+
+        // ── CreateEntry URL baseUrl truncation (Fix #3) ────────────────────────────
+        // These tests exercise the same logic path as EntryUpdate.CreateEntry without
+        // needing a real KeePass database — they operate directly on the Uri class.
+
+        private static string ComputeBaseUrl(string url)
+        {
+            // Mirror the fixed logic from EntryUpdate.CreateEntry
+            Uri uri;
+            if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out uri))
+                return null;
+
+            string baseUrl = url;
+            var lastSlash = url.LastIndexOf('/');
+            var schemeEnd = url.IndexOf("://", StringComparison.Ordinal);
+            var pathStart = schemeEnd >= 0 ? schemeEnd + 3 : 0;
+            if (lastSlash > pathStart)
+                baseUrl = url.Substring(0, lastSlash + 1);
+            return baseUrl;
+        }
+
+        [Test]
+        public void CreateEntry_BaseUrl_HttpsWithPath_TrimsToLastSlash()
+        {
+            Assert.AreEqual("https://example.com/login/",
+                ComputeBaseUrl("https://example.com/login/submit?user=x"));
+        }
+
+        [Test]
+        public void CreateEntry_BaseUrl_HttpsRootOnly_Unchanged()
+        {
+            // No path beyond the authority → keep as-is
+            Assert.AreEqual("https://example.com",
+                ComputeBaseUrl("https://example.com"));
+        }
+
+        [Test]
+        public void CreateEntry_BaseUrl_TrailingSlashRoot_Unchanged()
+        {
+            Assert.AreEqual("https://example.com/",
+                ComputeBaseUrl("https://example.com/"));
+        }
+
+        [Test]
+        public void CreateEntry_BaseUrl_HttpScheme_HandledCorrectly()
+        {
+            // http:// has 7 chars; pathStart = 10; lastSlash at 21 → trim
+            Assert.AreEqual("http://example.com/path/",
+                ComputeBaseUrl("http://example.com/path/page.html"));
+        }
+
+        [Test]
+        public void CreateEntry_BaseUrl_InvalidUrl_ReturnsNull()
+        {
+            Assert.IsNull(ComputeBaseUrl("not-a-url"));
+            Assert.IsNull(ComputeBaseUrl(""));
+            Assert.IsNull(ComputeBaseUrl(null));
+        }
     }
 }

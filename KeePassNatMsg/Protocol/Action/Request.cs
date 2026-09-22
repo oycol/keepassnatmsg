@@ -84,12 +84,26 @@ namespace KeePassNatMsg.Protocol.Action
             return new Response(this, createMessage);
         }
 
+        /// <summary>
+        /// Attempts to decrypt the encrypted "message" payload.
+        /// Returns false if the clientId is unknown, any field is missing/empty,
+        /// or decryption fails for any reason (crypto error, bad nonce, …).
+        /// </summary>
         public bool TryDecrypt()
         {
             try
             {
-                _msg = KeePassNatMsgExt.CryptoHelper.DecryptMessage(ClientId, GetBytes("message"), GetBytes("nonce"));
-                return true;
+                var msgBytes   = GetBytes("message");
+                var nonceBytes = GetBytes("nonce");
+
+                // Empty fields mean the request is malformed — treat as failure.
+                if (msgBytes.Length == 0 || nonceBytes.Length == 0)
+                    return false;
+
+                _msg = KeePassNatMsgExt.CryptoHelper.DecryptMessage(ClientId, msgBytes, nonceBytes);
+
+                // DecryptMessage returns null when the clientId has no registered key pair.
+                return _msg != null;
             }
             catch (Exception)
             {

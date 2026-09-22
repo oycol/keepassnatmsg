@@ -15,6 +15,10 @@ namespace KeePassNatMsg
     {
         private readonly AceCustomConfig _config;
 
+        // NOTE: Most config key names intentionally retain the "KeePassHttp_" prefix for
+        // backwards compatibility — upgrading users keep their existing settings without
+        // any migration step.  New keys introduced after the KeePassHttp era use the
+        // "KeePassNatMsg_" prefix instead.
         const string ReceiveCredentialNotificationKey = "KeePassHttp_ReceiveCredentialNotification";
         const string SpecificMatchingOnlyKey = "KeePassHttp_SpecificMatchingOnly";
         const string UnlockDatabaseRequestKey = "KeePassHttp_UnlockDatabaseRequest";

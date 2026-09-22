@@ -30,8 +30,8 @@ namespace KeePassNatMsg
             Close();
         }
 
-        public bool Allowed = false;
-        public bool Denied = false;
+        public bool Allowed { get; private set; }
+        public bool Denied  { get; private set; }
 
         public bool Remember
         {

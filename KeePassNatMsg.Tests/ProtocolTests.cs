@@ -93,9 +93,38 @@ namespace KeePassNatMsg.Tests
             Assert.AreEqual("test", jb.GetString("action"));
         }
 
-        #endregion
+        [Test]
+        public void JsonBase_GetBytes_MissingKey_ReturnsEmptyArray()
+        {
+            // Fix #2: GetBytes must not throw on missing/null key
+            var jb = new JsonBase();
+            var result = jb.GetBytes("nonexistent");
+            Assert.IsNotNull(result);
+            Assert.AreEqual(0, result.Length);
+        }
 
-        #region Errors
+        [Test]
+        public void JsonBase_GetBytes_NullValue_ReturnsEmptyArray()
+        {
+            // Fix #2: GetBytes must not throw when the stored value is null
+            var jb = new JsonBase();
+            jb.Add("key", (string)null);
+            var result = jb.GetBytes("key");
+            Assert.IsNotNull(result);
+            Assert.AreEqual(0, result.Length);
+        }
+
+        [Test]
+        public void JsonBase_GetBytes_EmptyString_ReturnsEmptyArray()
+        {
+            var jb = new JsonBase();
+            jb.Add("key", "");
+            var result = jb.GetBytes("key");
+            Assert.IsNotNull(result);
+            Assert.AreEqual(0, result.Length);
+        }
+
+        #endregion
 
         [Test]
         public void ErrorType_AllExpectedValuesExist()
@@ -227,6 +256,28 @@ namespace KeePassNatMsg.Tests
 
             Assert.AreEqual(1, incremented[0]);
             Assert.AreEqual(0, incremented[1]);
+        }
+
+        [Test]
+        public void Request_TryDecrypt_ReturnsFalse_WhenMessageFieldMissing()
+        {
+            // Fix #4: TryDecrypt must return false (not true) when message/nonce fields are absent.
+            // Previously: DecryptMessage returned null → TryDecrypt returned true → NPE later.
+            var json = "{\"action\":\"get-logins\",\"clientID\":\"cid\",\"nonce\":\"tZvLrBzkQ9GxXq9PvKJj4iAnfPT0VZ3Q\"}";
+            var req = Request.FromString(json);
+            // No "message" field → GetBytes("message") returns empty array → TryDecrypt = false
+            Assert.IsFalse(req.TryDecrypt());
+            Assert.IsNull(req.Message);
+        }
+
+        [Test]
+        public void Request_TryDecrypt_ReturnsFalse_WhenBothFieldsMissing()
+        {
+            // Fix #4: no message and no nonce → false
+            var json = "{\"action\":\"get-logins\",\"clientID\":\"cid\"}";
+            var req = Request.FromString(json);
+            Assert.IsFalse(req.TryDecrypt());
+            Assert.IsNull(req.Message);
         }
 
         #endregion

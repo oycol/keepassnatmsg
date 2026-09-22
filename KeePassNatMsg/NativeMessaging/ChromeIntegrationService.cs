@@ -119,21 +119,18 @@ namespace KeePassNatMsg.NativeMessaging
 
         public string GenerateManifestContent(string proxyPath)
         {
-            var sb = new StringBuilder();
-            sb.AppendLine("{");
-            sb.AppendLine("  \"name\": \"" + NativeHostName + "\",");
-            sb.AppendLine("  \"description\": \"KeePassXC-Browser native messaging host (KeePassNatMsg)\",");
-            sb.AppendLine("  \"type\": \"stdio\",");
-            sb.AppendLine("  \"path\": \"" + proxyPath.Replace(@"\", @"\\") + "\",");
-            sb.AppendLine("  \"allowed_origins\": [");
-            for (var i = 0; i < AllowedExtensionOrigins.Length; i++)
+            // Build via JObject so path escaping and JSON formatting are always correct,
+            // even for UNC paths or paths containing backslashes / special characters.
+            var obj = new Newtonsoft.Json.Linq.JObject
             {
-                var comma = (i < AllowedExtensionOrigins.Length - 1) ? "," : "";
-                sb.AppendLine("    \"" + AllowedExtensionOrigins[i] + "\"" + comma);
-            }
-            sb.AppendLine("  ]");
-            sb.AppendLine("}");
-            return sb.ToString();
+                ["name"]        = NativeHostName,
+                ["description"] = "KeePassXC-Browser native messaging host (KeePassNatMsg)",
+                ["type"]        = "stdio",
+                ["path"]        = proxyPath,
+                ["allowed_origins"] = new Newtonsoft.Json.Linq.JArray(
+                    (object[])AllowedExtensionOrigins)
+            };
+            return obj.ToString(Newtonsoft.Json.Formatting.Indented) + Environment.NewLine;
         }
 
         private static bool ContainsAllAllowedOrigins(string manifestText)
