@@ -137,7 +137,7 @@ namespace KeePassNatMsg.Protocol.Listener
                         Array.Copy(buffer, data, bytes);
                         var handler = MessageReceived;
                         if (handler != null)
-                            handler.BeginInvoke(this, new PipeMessageReceivedEventArgs(new PipeWriter(server), data), null, null);
+                            handler(this, new PipeMessageReceivedEventArgs(new PipeWriter(server), data));
                     }
                     else
                     {
