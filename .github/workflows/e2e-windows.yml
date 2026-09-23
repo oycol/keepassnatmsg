@@ -124,11 +124,20 @@ jobs:
               }
             }
           }
+          if (-not $msbuild) {
+            $fxMsbuild = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe"
+            if (Test-Path $fxMsbuild) {
+              $msbuild = $fxMsbuild
+            }
+          }
 
           if ($msbuild) {
-            Write-Host "Building fresh KeePassNatMsg.dll with MSBuild..."
+            Write-Host "Building fresh KeePassNatMsg.dll with MSBuild ($msbuild)..."
             & $msbuild KeePassNatMsg\KeePassNatMsg.csproj /p:Configuration=Release /verbosity:minimal
             Copy-Item "KeePassNatMsg\bin\Release\*" $buildDir -Recurse -Force
+            if (Test-Path "KeePassNatMsg\lib\Newtonsoft.Json.dll") {
+              Copy-Item "KeePassNatMsg\lib\Newtonsoft.Json.dll" $buildDir -Force
+            }
           } else {
             # Fallback to dotnet build
             Write-Host "Building fresh KeePassNatMsg.dll with dotnet build..."
