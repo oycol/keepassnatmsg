@@ -101,11 +101,29 @@ namespace KeePassNatMsg.Options
             toolTip.InitialDelay = 500;
             toolTip.ReshowDelay = 500;
             toolTip.ShowAlways = true;
+
+            // Add native interactive tip icons
+            var tips = new System.Collections.Generic.Dictionary<Control, string> {
+                { credNotifyCheckbox, "Shows a system tray notification whenever a browser extension queries entries." },
+                { credMatchingCheckbox, "Filters out broader domain entries when a more specific path or subdomain matches." },
+                { unlockDatabaseCheckbox, "Prompts KeePass to request master password unlock if queried while locked." },
+                { hideExpiredCheckbox, "Do not return credentials that have reached their configured expiration date." },
+                { matchSchemesCheckbox, "Separates HTTP and HTTPS logins. Recommended to prevent leakage to cleartext sites." },
+                { chkSearchUrls, "Also checks custom string attributes (URL1, URL2, KP2A_URL_1) for alternative login URLs." },
+                { credAllowAccessCheckbox, "Automatically grants browser access to entries saved under this group without confirmation." }
+            };
             
-            toolTip.SetToolTip(credMatchingCheckbox, "When checked, only entries with the most precise URL match are returned.\nUncheck this if you want all matching entries (including those with only the root domain) to be displayed.");
-            toolTip.SetToolTip(chkSearchUrls, "When checked, KeePassNatMsg will also search for URLs in custom string fields\n(e.g., URL1, URL2) in the 'Advanced' tab of your entries.");
-            toolTip.SetToolTip(hideExpiredCheckbox, "When checked, entries that have passed their expiry date will not be sent to the browser.");
-            toolTip.SetToolTip(matchSchemesCheckbox, "When checked, the URL protocol (http vs https) must match exactly.");
+            foreach (var kvp in tips) {
+                var pb = new PictureBox {
+                    Image = SystemIcons.Information.ToBitmap(),
+                    SizeMode = PictureBoxSizeMode.Zoom,
+                    Size = new Size(16, 16),
+                    Location = new Point(kvp.Key.Right + 5, kvp.Key.Top + (kvp.Key.Height - 16) / 2),
+                    Cursor = Cursors.Help
+                };
+                kvp.Key.Parent.Controls.Add(pb);
+                _toolTip.SetToolTip(pb, kvp.Value);
+            }
 
         }
 
