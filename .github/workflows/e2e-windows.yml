@@ -17,10 +17,9 @@ jobs:
     timeout-minutes: 60
 
     env:
-      # Optional repository variable. Leave empty on runners with direct Internet access.
-      HTTP_PROXY: ${{ vars.E2E_HTTP_PROXY }}
-      HTTPS_PROXY: ${{ vars.E2E_HTTP_PROXY }}
-      ALL_PROXY: ${{ vars.E2E_HTTP_PROXY }}
+      HTTP_PROXY: http://192.168.8.100:7897
+      HTTPS_PROXY: http://192.168.8.100:7897
+      ALL_PROXY: http://192.168.8.100:7897
       E2E_OUTPUT_DIR: e2e-artifacts
       KEEPASS_E2E_DIR: C:\KeePassNatMsg-E2E
 
