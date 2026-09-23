@@ -42,12 +42,7 @@ try {
 
     Write-Host "Reading response from pipe..."
     $respBuffer = New-Object byte[] 4096
-    $pipe.ReadTimeout = 8000
-    try {
-        $bytesRead = $pipe.Read($respBuffer, 0, $respBuffer.Length)
-    } catch {
-        throw "Read timed out or failed: $_"
-    }
+    $bytesRead = $pipe.Read($respBuffer, 0, $respBuffer.Length)
     Write-Host "Read $bytesRead bytes from pipe!" -ForegroundColor Green
 
     $responseJson = [System.Text.Encoding]::UTF8.GetString($respBuffer, 0, $bytesRead)
