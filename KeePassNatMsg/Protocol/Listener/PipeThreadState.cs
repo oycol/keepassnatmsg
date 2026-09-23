@@ -15,8 +15,26 @@ namespace KeePassNatMsg.Protocol.Listener
 
         public void Close()
         {
-            Server.Close();
-            Thread.Join();
+            try
+            {
+                if (Server != null)
+                {
+                    Server.Close();
+                    Server.Dispose();
+                }
+            }
+            catch { }
+
+            // Do not block indefinitely on Thread.Join() while shutting down,
+            // which risks deadlock if the thread is completing an event dispatch.
+            try
+            {
+                if (Thread != null && Thread.IsAlive && Thread != System.Threading.Thread.CurrentThread)
+                {
+                    Thread.Join(500);
+                }
+            }
+            catch { }
         }
     }
 }

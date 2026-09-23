@@ -281,6 +281,12 @@ namespace KeePassNatMsg.Tests
             Assert.IsFalse(req.TryDecrypt());
             Assert.IsNull(req.Message);
         }
+        [Test]
+        public void PipeThreadState_Close_DoesNotThrowWhenServerIsNull()
+        {
+            var pts = new KeePassNatMsg.Protocol.Listener.PipeThreadState(null);
+            Assert.DoesNotThrow(() => pts.Close());
+        }
 
         #endregion
     }

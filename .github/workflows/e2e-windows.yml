@@ -2,23 +2,6 @@ name: Windows Interactive E2E
 
 on:
   workflow_dispatch:
-    inputs:
-      run_fla_ui:
-        description: 'Run FlaUI KeePass desktop UI tests'
-        required: true
-        default: 'true'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
-      run_playwright:
-        description: 'Run Playwright Chrome/KeePassXC-Browser tests'
-        required: true
-        default: 'true'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
 
 permissions:
   contents: read
@@ -34,9 +17,10 @@ jobs:
     timeout-minutes: 60
 
     env:
-      HTTP_PROXY: http://192.168.8.100:7897
-      HTTPS_PROXY: http://192.168.8.100:7897
-      ALL_PROXY: http://192.168.8.100:7897
+      # Optional repository variable. Leave empty on runners with direct Internet access.
+      HTTP_PROXY: ${{ vars.E2E_HTTP_PROXY }}
+      HTTPS_PROXY: ${{ vars.E2E_HTTP_PROXY }}
+      ALL_PROXY: ${{ vars.E2E_HTTP_PROXY }}
       E2E_OUTPUT_DIR: e2e-artifacts
       KEEPASS_E2E_DIR: C:\KeePassNatMsg-E2E
 
@@ -51,7 +35,9 @@ jobs:
 
       - name: Ensure test environment software (Chrome and KeePass)
         run: |
-          [System.Net.WebRequest]::DefaultWebProxy = New-Object System.Net.WebProxy($env:HTTP_PROXY)
+          if ($env:HTTP_PROXY) {
+            [System.Net.WebRequest]::DefaultWebProxy = New-Object System.Net.WebProxy($env:HTTP_PROXY)
+          }
           Write-Host "Checking Chrome and KeePass..."
           $chromePath = @(
             'C:\Program Files\Google\Chrome\Application\chrome.exe',
@@ -176,9 +162,19 @@ jobs:
 
           Write-Host "`n=== Step 2: Test Native Messaging Host & Registry Configuration ===" -ForegroundColor Cyan
           $configDir = "$env:LOCALAPPDATA\KeePassNatMsg"
-          # Compile and load ChromeIntegrationService directly via Add-Type
-          $sourceFile = "$PWD\KeePassNatMsg\NativeMessaging\ChromeIntegrationService.cs"
-          Add-Type -Path $sourceFile
+          # Exercise the exact compiled plugin assembly, not a separately compiled source file.
+          # Compiling ChromeIntegrationService.cs alone previously produced a false E2E failure
+          # because its Newtonsoft.Json dependency was not referenced by Add-Type.
+          if (-not (Test-Path $ciDll)) {
+            throw "Built KeePassNatMsg.dll was not found at: $ciDll"
+          }
+          [System.Reflection.Assembly]::LoadFrom($kpExe) | Out-Null
+          $newtonsoftDll = Join-Path $buildDir "Newtonsoft.Json.dll"
+          if (-not (Test-Path $newtonsoftDll)) {
+            throw "Newtonsoft.Json.dll was not found next to the built plugin: $newtonsoftDll"
+          }
+          [System.Reflection.Assembly]::LoadFrom($newtonsoftDll) | Out-Null
+          [System.Reflection.Assembly]::LoadFrom($ciDll) | Out-Null
           $service = New-Object KeePassNatMsg.NativeMessaging.ChromeIntegrationService
           $manifestPath = $service.GetManifestPath()
           $proxyPath = $service.GetProxyPath()
