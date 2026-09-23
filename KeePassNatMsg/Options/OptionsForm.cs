@@ -25,13 +25,7 @@ namespace KeePassNatMsg.Options
             {
                 try
                 {
-                    var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                    // Trim trailing zero components: 2.3.1.0 → 2.3.1, 2.3.0.0 → 2.3
-                    if (v.Revision == 0 && v.Build == 0)
-                        return string.Format("{0}.{1}", v.Major, v.Minor);
-                    if (v.Revision == 0)
-                        return string.Format("{0}.{1}.{2}", v.Major, v.Minor, v.Build);
-                    return v.ToString();
+                    return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
                 }
                 catch { }
 
