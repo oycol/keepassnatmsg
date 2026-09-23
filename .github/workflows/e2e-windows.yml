@@ -154,17 +154,18 @@ jobs:
             }
           }
 
-          $ciPlgx = "$buildDir\KeePassNatMsg.plgx"
+          $targetPlgx = Join-Path $pluginsDir "KeePassNatMsg.plgx"
+          $targetDll = Join-Path $pluginsDir "KeePassNatMsg.dll"
           if (Test-Path $ciPlgx) {
-            $targetPlgx = Join-Path $pluginsDir "KeePassNatMsg.plgx"
+            Remove-Item $targetDll -Force -ErrorAction SilentlyContinue
             Copy-Item $ciPlgx $targetPlgx -Force
             Write-Host "Deployed fresh plugin .plgx to: $targetPlgx" -ForegroundColor Green
-          }
-
-          $ciDll = "$buildDir\KeePassNatMsg.dll"
-          if (Test-Path $ciDll) {
-            $targetDll = Join-Path $pluginsDir "KeePassNatMsg.dll"
+          } elseif (Test-Path $ciDll) {
+            Remove-Item $targetPlgx -Force -ErrorAction SilentlyContinue
             Copy-Item $ciDll $targetDll -Force
+            if (Test-Path "$buildDir\Newtonsoft.Json.dll") {
+              Copy-Item "$buildDir\Newtonsoft.Json.dll" $pluginsDir -Force
+            }
             Write-Host "Deployed fresh plugin .dll to: $targetDll" -ForegroundColor Green
           }
 
