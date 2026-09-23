@@ -175,6 +175,7 @@ namespace KeePassNatMsg
             CryptoHelper = new Helper();
 
             var optionsMenu = new ToolStripMenuItem("KeePassNatMsg Options...");
+            optionsMenu.Image = KeePassNatMsg.Properties.Resources.icon_16;
             optionsMenu.Click += OnOptions_Click;
             HostInstance.MainWindow.ToolsMenu.DropDownItems.Add(optionsMenu);
 

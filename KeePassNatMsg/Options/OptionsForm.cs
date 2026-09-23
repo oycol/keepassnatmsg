@@ -25,11 +25,18 @@ namespace KeePassNatMsg.Options
             {
                 try
                 {
-                    return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                    var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                    if (v.Revision == 0)
+                    {
+                        if (v.Build == 0)
+                            return string.Format("{0}.{1}", v.Major, v.Minor);
+                        return string.Format("{0}.{1}.{2}", v.Major, v.Minor, v.Build);
+                    }
+                    return v.ToString();
                 }
                 catch { }
 
-                return "unknown";
+                return "2.3.1";
             }
         }
 
@@ -67,6 +74,12 @@ namespace KeePassNatMsg.Options
             _initialDefaultGroupAlwaysAllow = chkDefaultGroupAlwaysAllow.Checked;
 
             InitDatabasesDropdown();
+
+            try
+            {
+                picFormLogo.Image = KeePassNatMsg.Properties.Resources.icon_16;
+            }
+            catch { }
 
             foreach (DatabaseItem item in comboBoxSearchDatabases.Items)
             {
@@ -290,6 +303,11 @@ namespace KeePassNatMsg.Options
 
         private void InitDatabasesDropdown()
         {
+            comboBoxSearchDatabases.DisplayMember = "Id";
+            comboBoxSearchDatabases.ValueMember = "DbHash";
+            comboBoxDatabases.DisplayMember = "Id";
+            comboBoxDatabases.ValueMember = "DbHash";
+
             foreach (var item in KeePass.Program.MainForm.DocumentManager.Documents)
             {
                 if (!item.Database.IsOpen)

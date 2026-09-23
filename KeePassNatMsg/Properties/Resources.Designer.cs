@@ -96,6 +96,16 @@ namespace KeePassNatMsg.Properties {
                 return ResourceManager.GetString("edge_json", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap icon_16 {
+            get {
+                object obj = ResourceManager.GetObject("icon_16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to {{
