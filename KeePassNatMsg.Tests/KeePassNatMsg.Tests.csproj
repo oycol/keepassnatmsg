@@ -91,6 +91,9 @@
     <Compile Include="..\KeePassNatMsg\Protocol\Crypto\Helper.cs">
       <Link>Protocol\Crypto\Helper.cs</Link>
     </Compile>
+    <Compile Include="..\KeePassNatMsg\Protocol\Listener\PipeThreadState.cs">
+      <Link>Protocol\Listener\PipeThreadState.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
