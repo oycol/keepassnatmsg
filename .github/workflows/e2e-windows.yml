@@ -154,6 +154,8 @@ jobs:
             }
           }
 
+          $ciPlgx = "$buildDir\KeePassNatMsg.plgx"
+          $ciDll = "$buildDir\KeePassNatMsg.dll"
           $targetPlgx = Join-Path $pluginsDir "KeePassNatMsg.plgx"
           $targetDll = Join-Path $pluginsDir "KeePassNatMsg.dll"
           if (Test-Path $ciPlgx) {
