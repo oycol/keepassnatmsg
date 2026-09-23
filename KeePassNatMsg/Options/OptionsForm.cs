@@ -102,7 +102,19 @@ namespace KeePassNatMsg.Options
             toolTip.ReshowDelay = 500;
             toolTip.ShowAlways = true;
 
-            // Add native interactive tip icons
+            // Add native interactive tip icons (High-DPI aware for 4K/2K mixed scaling)
+            float dpiScale = 1.0f;
+            using (var g = this.CreateGraphics()) {
+                dpiScale = g.DpiX / 96f;
+            }
+            int scaledIconSize = (int)Math.Round(16 * dpiScale);
+            int scaledOffset = (int)Math.Round(8 * dpiScale);
+            
+            // Adjust the logo size for High DPI as well (Designer might not fully scale fixed 16x16 size)
+            if (dpiScale > 1.05f) {
+                picFormLogo.Size = new Size(scaledIconSize, scaledIconSize);
+            }
+
             var tips = new System.Collections.Generic.Dictionary<Control, string> {
                 { credNotifyCheckbox, "Shows a system tray notification whenever a browser extension queries entries." },
                 { credMatchingCheckbox, "Filters out broader domain entries when a more specific path or subdomain matches." },
@@ -117,8 +129,8 @@ namespace KeePassNatMsg.Options
                 var pb = new PictureBox {
                     Image = SystemIcons.Information.ToBitmap(),
                     SizeMode = PictureBoxSizeMode.Zoom,
-                    Size = new Size(16, 16),
-                    Location = new Point(kvp.Key.Right + 5, kvp.Key.Top + (kvp.Key.Height - 16) / 2),
+                    Size = new Size(scaledIconSize, scaledIconSize),
+                    Location = new Point(kvp.Key.Right + scaledOffset, kvp.Key.Top + (kvp.Key.Height - scaledIconSize) / 2),
                     Cursor = Cursors.Help
                 };
                 kvp.Key.Parent.Controls.Add(pb);
