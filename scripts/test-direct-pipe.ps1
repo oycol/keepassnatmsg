@@ -8,7 +8,7 @@ Write-Host "=== Direct Named Pipe Test with KeePassNatMsg ===" -ForegroundColor 
 $pipeName = "keepassxc\$env:USERNAME\kpxc_server"
 Write-Host "Connecting to named pipe: $pipeName"
 
-$pipe = New-Object System.IO.Pipes.NamedPipeClientStream(".", $pipeName, [System.IO.Pipes.PipeDirection]::InOut, [System.IO.Pipes.PipeOptions]::Asynchronous)
+$pipe = New-Object System.IO.Pipes.NamedPipeClientStream(".", $pipeName, [System.IO.Pipes.PipeDirection]::InOut, [System.IO.Pipes.PipeOptions]::None)
 
 try {
     $pipe.Connect(5000)
@@ -42,11 +42,12 @@ try {
 
     Write-Host "Reading response from pipe..."
     $respBuffer = New-Object byte[] 4096
-    $readTask = $pipe.ReadAsync($respBuffer, 0, $respBuffer.Length)
-    if (-not $readTask.Wait(8000)) {
-        throw "Timeout waiting for response from KeePassNatMsg named pipe."
+    $pipe.ReadTimeout = 8000
+    try {
+        $bytesRead = $pipe.Read($respBuffer, 0, $respBuffer.Length)
+    } catch {
+        throw "Read timed out or failed: $_"
     }
-    $bytesRead = $readTask.Result
     Write-Host "Read $bytesRead bytes from pipe!" -ForegroundColor Green
 
     $responseJson = [System.Text.Encoding]::UTF8.GetString($respBuffer, 0, $bytesRead)
@@ -66,5 +67,12 @@ try {
     Write-Host "`nDIRECT NAMED PIPE PROTOCOL ROUNDTRIP: 100% PASSED!" -ForegroundColor Green
 }
 finally {
-    $pipe.Dispose()
+    if ($pipe) {
+        $pipe.Dispose()
+    }
+    $logPath = "$env:LOCALAPPDATA\KeePassNatMsg\plugin.log"
+    if (Test-Path $logPath) {
+        Write-Host "`n--- plugin.log from test-direct-pipe ---" -ForegroundColor Yellow
+        Get-Content $logPath -Tail 30 | ForEach-Object { Write-Host "  $_" }
+    }
 }
