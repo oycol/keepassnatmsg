@@ -148,7 +148,9 @@ jobs:
           if (Test-Path $kpExe) {
             Write-Host "Building fresh .plgx using KeePass.exe..."
             $p = Start-Process -FilePath $kpExe -ArgumentList "--plgx-create","$PWD\KeePassNatMsg" -PassThru
-            $p.WaitForExit()
+            if (-not $p.WaitForExit(30000)) {
+              Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+            }
             if (Test-Path "KeePassNatMsg.plgx") {
               Copy-Item "KeePassNatMsg.plgx" "$buildDir\KeePassNatMsg.plgx" -Force
             }
