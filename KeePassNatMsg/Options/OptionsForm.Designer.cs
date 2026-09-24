@@ -37,6 +37,13 @@ namespace KeePassNatMsg.Options
             this.hideExpiredCheckbox = new System.Windows.Forms.CheckBox();
             this.matchSchemesCheckbox = new System.Windows.Forms.CheckBox();
             this.chkSearchUrls = new System.Windows.Forms.CheckBox();
+            this.lblTipNotify = new System.Windows.Forms.Label();
+            this.lblTipMatching = new System.Windows.Forms.Label();
+            this.lblTipUnlock = new System.Windows.Forms.Label();
+            this.lblTipExpired = new System.Windows.Forms.Label();
+            this.lblTipSchemes = new System.Windows.Forms.Label();
+            this.lblTipSearchUrls = new System.Windows.Forms.Label();
+            this.lblTipGroupAllow = new System.Windows.Forms.Label();
             this.grpSorting = new System.Windows.Forms.GroupBox();
             this.SortByTitleRadioButton = new System.Windows.Forms.RadioButton();
             this.SortByUsernameRadioButton = new System.Windows.Forms.RadioButton();
@@ -186,7 +193,7 @@ namespace KeePassNatMsg.Options
             this.lblIntegrationHint.Size = new System.Drawing.Size(620, 48);
             this.lblIntegrationHint.TabIndex = 1;
             this.lblIntegrationHint.Text = "Install / Repair deploys the bundled proxy to %LOCALAPPDATA%\\KeePassNatMsg and configures user-level registry keys for Chrome & Edge. No admin rights or external scripts required. Restart browsers after install.";
-            // 
+            //
             // btnInstallIntegration
             //
             this.btnInstallIntegration.Location = new System.Drawing.Point(20, 246);
@@ -234,14 +241,20 @@ namespace KeePassNatMsg.Options
             this.grpMatching.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.grpMatching.Controls.Add(this.credNotifyCheckbox);
+            this.grpMatching.Controls.Add(this.lblTipNotify);
             this.grpMatching.Controls.Add(this.credMatchingCheckbox);
+            this.grpMatching.Controls.Add(this.lblTipMatching);
             this.grpMatching.Controls.Add(this.unlockDatabaseCheckbox);
+            this.grpMatching.Controls.Add(this.lblTipUnlock);
             this.grpMatching.Controls.Add(this.hideExpiredCheckbox);
+            this.grpMatching.Controls.Add(this.lblTipExpired);
             this.grpMatching.Controls.Add(this.matchSchemesCheckbox);
+            this.grpMatching.Controls.Add(this.lblTipSchemes);
             this.grpMatching.Controls.Add(this.chkSearchUrls);
+            this.grpMatching.Controls.Add(this.lblTipSearchUrls);
             this.grpMatching.Location = new System.Drawing.Point(14, 14);
             this.grpMatching.Name = "grpMatching";
-            this.grpMatching.Size = new System.Drawing.Size(660, 220);
+            this.grpMatching.Size = new System.Drawing.Size(660, 360);
             this.grpMatching.TabIndex = 0;
             this.grpMatching.TabStop = false;
             this.grpMatching.Text = "Credential & URL Matching";
@@ -256,7 +269,7 @@ namespace KeePassNatMsg.Options
             this.credNotifyCheckbox.TabIndex = 0;
             this.credNotifyCheckbox.Text = "Notify when credentials are requested";
             this.credNotifyCheckbox.UseVisualStyleBackColor = true;
-            // 
+            //
             // credMatchingCheckbox
             //
             this.credMatchingCheckbox.AutoSize = true;
@@ -267,7 +280,7 @@ namespace KeePassNatMsg.Options
             this.credMatchingCheckbox.TabIndex = 2;
             this.credMatchingCheckbox.Text = "Return only the best URL matches";
             this.credMatchingCheckbox.UseVisualStyleBackColor = true;
-            // 
+            //
             // unlockDatabaseCheckbox
             //
             this.unlockDatabaseCheckbox.AutoSize = true;
@@ -278,7 +291,7 @@ namespace KeePassNatMsg.Options
             this.unlockDatabaseCheckbox.TabIndex = 4;
             this.unlockDatabaseCheckbox.Text = "Request database unlock when needed";
             this.unlockDatabaseCheckbox.UseVisualStyleBackColor = true;
-            // 
+            //
             // hideExpiredCheckbox
             //
             this.hideExpiredCheckbox.AutoSize = true;
@@ -289,7 +302,7 @@ namespace KeePassNatMsg.Options
             this.hideExpiredCheckbox.TabIndex = 6;
             this.hideExpiredCheckbox.Text = "Exclude expired entries";
             this.hideExpiredCheckbox.UseVisualStyleBackColor = true;
-            // 
+            //
             // matchSchemesCheckbox
             //
             this.matchSchemesCheckbox.AutoSize = true;
@@ -300,7 +313,7 @@ namespace KeePassNatMsg.Options
             this.matchSchemesCheckbox.TabIndex = 8;
             this.matchSchemesCheckbox.Text = "Require matching URL scheme";
             this.matchSchemesCheckbox.UseVisualStyleBackColor = true;
-            // 
+            //
             // chkSearchUrls
             //
             this.chkSearchUrls.AutoSize = true;
@@ -311,14 +324,68 @@ namespace KeePassNatMsg.Options
             this.chkSearchUrls.TabIndex = 10;
             this.chkSearchUrls.Text = "Search additional URL and KP2A_URL fields";
             this.chkSearchUrls.UseVisualStyleBackColor = true;
-            // 
+            //
+            // lblTipNotify
+            //
+            this.lblTipNotify.AutoSize = true;
+            this.lblTipNotify.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lblTipNotify.Location = new System.Drawing.Point(36, 45);
+            this.lblTipNotify.Name = "lblTipNotify";
+            this.lblTipNotify.Size = new System.Drawing.Size(434, 15);
+            this.lblTipNotify.Text = "Shows a system tray notification whenever a browser extension queries entries.";
+            //
+            // lblTipMatching
+            //
+            this.lblTipMatching.AutoSize = true;
+            this.lblTipMatching.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lblTipMatching.Location = new System.Drawing.Point(36, 77);
+            this.lblTipMatching.Name = "lblTipMatching";
+            this.lblTipMatching.Size = new System.Drawing.Size(472, 15);
+            this.lblTipMatching.Text = "Returns only entries matching the exact path or subdomain. Uncheck to return all domain entries.";
+            //
+            // lblTipUnlock
+            //
+            this.lblTipUnlock.AutoSize = true;
+            this.lblTipUnlock.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lblTipUnlock.Location = new System.Drawing.Point(36, 109);
+            this.lblTipUnlock.Name = "lblTipUnlock";
+            this.lblTipUnlock.Size = new System.Drawing.Size(448, 15);
+            this.lblTipUnlock.Text = "Prompts KeePass to request master password unlock if queried while locked.";
+            //
+            // lblTipExpired
+            //
+            this.lblTipExpired.AutoSize = true;
+            this.lblTipExpired.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lblTipExpired.Location = new System.Drawing.Point(36, 141);
+            this.lblTipExpired.Name = "lblTipExpired";
+            this.lblTipExpired.Size = new System.Drawing.Size(418, 15);
+            this.lblTipExpired.Text = "Do not return credentials that have reached their configured expiration date.";
+            //
+            // lblTipSchemes
+            //
+            this.lblTipSchemes.AutoSize = true;
+            this.lblTipSchemes.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lblTipSchemes.Location = new System.Drawing.Point(36, 173);
+            this.lblTipSchemes.Name = "lblTipSchemes";
+            this.lblTipSchemes.Size = new System.Drawing.Size(477, 15);
+            this.lblTipSchemes.Text = "Separates HTTP and HTTPS logins. Recommended to prevent leakage to cleartext sites.";
+            //
+            // lblTipSearchUrls
+            //
+            this.lblTipSearchUrls.AutoSize = true;
+            this.lblTipSearchUrls.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lblTipSearchUrls.Location = new System.Drawing.Point(36, 205);
+            this.lblTipSearchUrls.Name = "lblTipSearchUrls";
+            this.lblTipSearchUrls.Size = new System.Drawing.Size(512, 15);
+            this.lblTipSearchUrls.Text = "Also checks custom string attributes (URL1, URL2, KP2A_URL_1) for alternative login URLs.";
+            //
             // grpSorting
             //
             this.grpSorting.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.grpSorting.Controls.Add(this.SortByTitleRadioButton);
             this.grpSorting.Controls.Add(this.SortByUsernameRadioButton);
-            this.grpSorting.Location = new System.Drawing.Point(14, 246);
+            this.grpSorting.Location = new System.Drawing.Point(14, 386);
             this.grpSorting.Name = "grpSorting";
             this.grpSorting.Size = new System.Drawing.Size(660, 68);
             this.grpSorting.TabIndex = 1;
@@ -447,9 +514,10 @@ namespace KeePassNatMsg.Options
             this.grpNewLogins.Controls.Add(this.lblDefaultGroup);
             this.grpNewLogins.Controls.Add(this.txtDefaultGroup);
             this.grpNewLogins.Controls.Add(this.chkDefaultGroupAlwaysAllow);
+            this.grpNewLogins.Controls.Add(this.lblTipGroupAllow);
             this.grpNewLogins.Location = new System.Drawing.Point(14, 164);
             this.grpNewLogins.Name = "grpNewLogins";
-            this.grpNewLogins.Size = new System.Drawing.Size(660, 116);
+            this.grpNewLogins.Size = new System.Drawing.Size(660, 132);
             this.grpNewLogins.TabIndex = 1;
             this.grpNewLogins.TabStop = false;
             this.grpNewLogins.Text = "New Logins & Default Group";
@@ -479,7 +547,16 @@ namespace KeePassNatMsg.Options
             this.chkDefaultGroupAlwaysAllow.TabIndex = 2;
             this.chkDefaultGroupAlwaysAllow.Text = "Allow entries in the default group without prompting";
             this.chkDefaultGroupAlwaysAllow.UseVisualStyleBackColor = true;
-            // 
+            //
+            // lblTipGroupAllow
+            //
+            this.lblTipGroupAllow.AutoSize = true;
+            this.lblTipGroupAllow.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lblTipGroupAllow.Location = new System.Drawing.Point(40, 82);
+            this.lblTipGroupAllow.Name = "lblTipGroupAllow";
+            this.lblTipGroupAllow.Size = new System.Drawing.Size(489, 15);
+            this.lblTipGroupAllow.Text = "Automatically grants browser access to entries saved under this group without confirmation.";
+            //
             // grpDangerZone
             //
             this.grpDangerZone.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
@@ -489,7 +566,7 @@ namespace KeePassNatMsg.Options
             this.grpDangerZone.Controls.Add(this.credAllowUpdatesCheckbox);
             this.grpDangerZone.Controls.Add(this.removePermissionsButton);
             this.grpDangerZone.ForeColor = System.Drawing.Color.DarkRed;
-            this.grpDangerZone.Location = new System.Drawing.Point(14, 292);
+            this.grpDangerZone.Location = new System.Drawing.Point(14, 308);
             this.grpDangerZone.Name = "grpDangerZone";
             this.grpDangerZone.Size = new System.Drawing.Size(660, 150);
             this.grpDangerZone.TabIndex = 2;
@@ -669,7 +746,7 @@ namespace KeePassNatMsg.Options
             //
             this.AcceptButton = this.okButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.CancelButton = this.cancelButton;
             this.ClientSize = new System.Drawing.Size(720, 590);
             this.Controls.Add(this.tabControl);
@@ -678,9 +755,10 @@ namespace KeePassNatMsg.Options
             this.Controls.Add(this.okButton);
             this.Controls.Add(this.cancelButton);
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
+            this.MaximizeBox = true;
+            this.MinimizeBox = true;
+            this.MinimumSize = new System.Drawing.Size(560, 480);
             this.Name = "OptionsForm";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
@@ -695,6 +773,7 @@ namespace KeePassNatMsg.Options
             this.tabMatching.ResumeLayout(false);
             this.grpMatching.ResumeLayout(false);
             this.grpMatching.PerformLayout();
+            this.grpNewLogins.PerformLayout();
             this.grpSorting.ResumeLayout(false);
             this.grpSorting.PerformLayout();
             this.tabDatabase.ResumeLayout(false);
@@ -733,6 +812,13 @@ namespace KeePassNatMsg.Options
         private System.Windows.Forms.CheckBox hideExpiredCheckbox;
         private System.Windows.Forms.CheckBox matchSchemesCheckbox;
         private System.Windows.Forms.CheckBox chkSearchUrls;
+        private System.Windows.Forms.Label lblTipNotify;
+        private System.Windows.Forms.Label lblTipMatching;
+        private System.Windows.Forms.Label lblTipUnlock;
+        private System.Windows.Forms.Label lblTipExpired;
+        private System.Windows.Forms.Label lblTipSchemes;
+        private System.Windows.Forms.Label lblTipSearchUrls;
+        private System.Windows.Forms.Label lblTipGroupAllow;
         private System.Windows.Forms.GroupBox grpSorting;
         private System.Windows.Forms.RadioButton SortByTitleRadioButton;
         private System.Windows.Forms.RadioButton SortByUsernameRadioButton;

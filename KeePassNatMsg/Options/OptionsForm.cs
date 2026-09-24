@@ -18,7 +18,6 @@ namespace KeePassNatMsg.Options
         private bool _initialAlwaysAllowAccess;
         private bool _initialAlwaysAllowUpdates;
         private bool _initialDefaultGroupAlwaysAllow;
-        private ToolTip _toolTip;
 
         private string AssemblyVersion
         {
@@ -96,48 +95,6 @@ namespace KeePassNatMsg.Options
                     comboBoxDatabases.SelectedItem = item;
                 }
             }
-
-            var toolTip = _toolTip = new ToolTip();
-            toolTip.AutoPopDelay = 10000;
-            toolTip.InitialDelay = 500;
-            toolTip.ReshowDelay = 500;
-            toolTip.ShowAlways = true;
-
-            // Add native interactive tip icons (High-DPI aware for 4K/2K mixed scaling)
-            float dpiScale = 1.0f;
-            using (var g = this.CreateGraphics()) {
-                dpiScale = g.DpiX / 96f;
-            }
-            int scaledIconSize = (int)Math.Round(16 * dpiScale);
-            int scaledOffset = (int)Math.Round(8 * dpiScale);
-            
-            // Adjust the logo size for High DPI as well (Designer might not fully scale fixed 16x16 size)
-            if (dpiScale > 1.05f) {
-                picFormLogo.Size = new Size(scaledIconSize, scaledIconSize);
-            }
-
-            var tips = new System.Collections.Generic.Dictionary<Control, string> {
-                { credNotifyCheckbox, "Shows a system tray notification whenever a browser extension queries entries." },
-                { credMatchingCheckbox, "Filters out broader domain entries when a more specific path or subdomain matches." },
-                { unlockDatabaseCheckbox, "Prompts KeePass to request master password unlock if queried while locked." },
-                { hideExpiredCheckbox, "Do not return credentials that have reached their configured expiration date." },
-                { matchSchemesCheckbox, "Separates HTTP and HTTPS logins. Recommended to prevent leakage to cleartext sites." },
-                { chkSearchUrls, "Also checks custom string attributes (URL1, URL2, KP2A_URL_1) for alternative login URLs." },
-                { credAllowAccessCheckbox, "Automatically grants browser access to entries saved under this group without confirmation." }
-            };
-            
-            foreach (var kvp in tips) {
-                var pb = new PictureBox {
-                    Image = SystemIcons.Information.ToBitmap(),
-                    SizeMode = PictureBoxSizeMode.Zoom,
-                    Size = new Size(scaledIconSize, scaledIconSize),
-                    Location = new Point(kvp.Key.Right + scaledOffset, kvp.Key.Top + (kvp.Key.Height - scaledIconSize) / 2),
-                    Cursor = Cursors.Help
-                };
-                kvp.Key.Parent.Controls.Add(pb);
-                _toolTip.SetToolTip(pb, kvp.Value);
-            }
-
         }
 
         private void okButton_Click(object sender, EventArgs e)
