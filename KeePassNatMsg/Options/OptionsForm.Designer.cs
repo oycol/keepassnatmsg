@@ -755,10 +755,10 @@ namespace KeePassNatMsg.Options
             this.Controls.Add(this.okButton);
             this.Controls.Add(this.cancelButton);
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
-            this.MaximizeBox = true;
-            this.MinimizeBox = true;
-            this.MinimumSize = new System.Drawing.Size(560, 480);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.MaximumSize = new System.Drawing.Size(900, 700);
             this.Name = "OptionsForm";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
