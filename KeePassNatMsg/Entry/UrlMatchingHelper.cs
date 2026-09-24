@@ -8,6 +8,14 @@ namespace KeePassNatMsg.Entry
     public static class UrlMatchingHelper
     {
         public static readonly string[] DefaultAllowedSchemes = new[] { "https", "http" };
+        private const string RegexPrefix = "Regex:";
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(200);
+
+        public static bool IsRegexUrl(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            return value.Trim().StartsWith(RegexPrefix, StringComparison.OrdinalIgnoreCase);
+        }
 
         public static bool IsAdditionalUrlField(string fieldName)
         {
@@ -19,6 +27,12 @@ namespace KeePassNatMsg.Entry
         public static IList<string> ParseUrlValues(string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return new List<string>();
+
+            var trimmed = value.Trim();
+            if (IsRegexUrl(trimmed))
+            {
+                return new List<string> { trimmed };
+            }
 
             return value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(x => x.Trim())
@@ -57,20 +71,31 @@ namespace KeePassNatMsg.Entry
             var normalizedUrl = entryUrl.Trim();
 
             // Support standard KeePass Regex: prefix for advanced IP/Host wildcard matching
-            if (normalizedUrl.StartsWith("Regex:", StringComparison.OrdinalIgnoreCase))
+            if (IsRegexUrl(normalizedUrl))
             {
-                var regexPattern = normalizedUrl.Substring(6).Trim();
+                var regexPattern = normalizedUrl.Substring(RegexPrefix.Length).Trim();
                 if (string.IsNullOrEmpty(regexPattern)) return false;
 
                 try
                 {
-                    // Construct a full request URL to allow regex to match scheme if provided
-                    string fullRequestUrl = (!string.IsNullOrEmpty(requestScheme) ? requestScheme : "https") + "://" + requestHost;
-                    
-                    var regex = new Regex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-                    
-                    // Allow the regex to match either the full URL (e.g. ^https?://10\.\d+\.\d+\.\d+) or just the host
-                    if (regex.IsMatch(requestHost) || regex.IsMatch(fullRequestUrl))
+                    var regex = new Regex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
+                    var scheme = !string.IsNullOrEmpty(requestScheme) ? requestScheme : "https";
+                    var fullRequestUrl = scheme + "://" + requestHost;
+
+                    if (regex.IsMatch(requestHost))
+                    {
+                        if (matchSchemes && !string.IsNullOrWhiteSpace(requestScheme))
+                        {
+                            if (regexPattern.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                                regexPattern.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return regex.IsMatch(fullRequestUrl);
+                            }
+                        }
+                        return true;
+                    }
+
+                    if (regex.IsMatch(fullRequestUrl))
                         return true;
                 }
                 catch (ArgumentException)
@@ -78,8 +103,12 @@ namespace KeePassNatMsg.Entry
                     // Invalid regex syntax in the entry
                     return false;
                 }
-                
-                // If it's a regex URL and it failed to match, we stop here. We don't want to parse "Regex:" as a domain.
+                catch (RegexMatchTimeoutException)
+                {
+                    // Protection against catastrophic backtracking
+                    return false;
+                }
+
                 return false;
             }
             if (!normalizedUrl.Contains("://"))

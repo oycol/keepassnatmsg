@@ -54,6 +54,18 @@ jobs:
           7z x -o"build" KeePass.zip KeePass.exe
           if (-not (Test-Path "build\KeePass.exe")) { throw "KeePass.exe not found" }
 
+      - name: Verify Tag and Assembly Version Match
+        shell: pwsh
+        run: |
+          $tag = "$($env:GITHUB_REF -replace 'refs/tags/', '')"
+          $expectedVer = $tag.TrimStart('v')
+          $asmFile = "KeePassNatMsg\Properties\AssemblyInfo.cs"
+          $asmContent = Get-Content $asmFile -Raw
+          if ($asmContent -notmatch "AssemblyVersion\(\`"$expectedVer\`"\)") {
+            throw "Version mismatch! Tag is '$tag' but AssemblyInfo.cs does not contain AssemblyVersion('$expectedVer')"
+          }
+          Write-Host "Version check passed: Tag $tag matches AssemblyVersion $expectedVer" -ForegroundColor Green
+
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2
 
@@ -132,6 +144,12 @@ jobs:
           
           $notes = "### KeePassNatMsg $tagName`n`n"
           $notes += "KeePass 2.x Native Messaging bridge plugin for KeePassXC-Browser.`n`n"
+          $notes += "#### Changes in this release`n"
+          $notes += "- **Options UI**: Redesigned clean and modern info tip icons with native tooltips.`n"
+          $notes += "- **Layout Fixes**: Vertical layout for Database Search Scope radio buttons to eliminate overlap; Danger Zone warning fully visible.`n"
+          $notes += "- **Footer**: Centered logo and version display ('KeePassNatMsg v2.3.7') without button overlap.`n"
+          $notes += "- **Regex URL Matching**: Full candidate recall, comma-quantifier preservation, and 200ms ReDoS timeout protection.`n"
+          $notes += "- **Version Sync**: Synchronized AssemblyVersion and UI versioning across all components.`n`n"
           $notes += "#### Installation`n"
           $notes += "1. Download KeePassNatMsg.plgx`n"
           $notes += "2. Copy to KeePass Plugins directory`n"

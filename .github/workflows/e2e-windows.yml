@@ -342,4 +342,18 @@ jobs:
             Get-Content $pluginLog | ForEach-Object { Write-Host "  $_" }
           }
 
-          Write-Host "`n=== All Windows E2E Integration and IPC Protocol Tests PASSED! ===" -ForegroundColor Green
+          Write-Host "`n=== Step 5.8: Real Interactive Windows GUI OptionsForm Layout & Screenshot Verification ===" -ForegroundColor Cyan
+          & powershell -ExecutionPolicy Bypass -File "$PWD\scripts\verify-options-gui.ps1" -kpExe $kpExe -newtonsoftDll $newtonsoftDll -ciDll $ciDll -outputDir $env:E2E_OUTPUT_DIR
+          if ($LASTEXITCODE -ne 0) {
+            throw "GUI OptionsForm verification failed with exit code $LASTEXITCODE"
+          }
+
+          Write-Host "`n=== All Windows E2E Integration, IPC Protocol, and GUI Tests PASSED! ===" -ForegroundColor Green
+
+      - name: Upload E2E Test Artifacts and GUI Screenshot
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-windows-evidence
+          path: e2e-artifacts/
+          retention-days: 14

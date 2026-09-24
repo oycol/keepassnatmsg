@@ -44,6 +44,57 @@ namespace KeePassNatMsg.Tests
         }
 
         [Test]
+        public void RegexUrl_HostPattern_MatchesRequestedHost()
+        {
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(
+                @"Regex:^192\.168\.1\.\d+$",
+                "192.168.1.42",
+                requestScheme: "https"));
+        }
+
+        [Test]
+        public void RegexUrl_FullUrlPattern_RespectsRequestedScheme()
+        {
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(
+                @"Regex:^https://10\.0\.0\.\d+$",
+                "10.0.0.8",
+                requestScheme: "https"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(
+                @"Regex:^https://10\.0\.0\.\d+$",
+                "10.0.0.8",
+                requestScheme: "http"));
+        }
+
+        [Test]
+        public void RegexUrl_InvalidPattern_ReturnsFalse()
+        {
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(
+                "Regex:(unclosed",
+                "example.com",
+                requestScheme: "https"));
+        }
+
+        [Test]
+        public void RegexUrl_WithCommaQuantifier_IsNotSplitAsMultipleUrls()
+        {
+            var urls = KeePassNatMsg.Entry.UrlMatchingHelper.ParseUrlValues(
+                @"Regex:^10\.(?:\d{1,3}\.){2}\d{1,3}$");
+
+            CollectionAssert.AreEqual(new[]
+            {
+                @"Regex:^10\.(?:\d{1,3}\.){2}\d{1,3}$"
+            }, urls);
+        }
+
+        [Test]
+        public void RegexUrl_Prefix_IsCaseInsensitive()
+        {
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(
+                @"regex:^host\.example\.internal$",
+                "host.example.internal"));
+        }
+
+        [Test]
         public void MatchesUrl_ExactHost_Matches()
         {
             Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(
