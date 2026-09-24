@@ -67,7 +67,7 @@ namespace KeePassNatMsg.Options
             this.picFormLogo = new System.Windows.Forms.PictureBox();
             this.lblVersion = new System.Windows.Forms.Label();
             this.pnlVersionCenter = new System.Windows.Forms.Panel();
-            this.toolTip = new System.Windows.Forms.ToolTip(this.components);
+            this.toolTip = new System.Windows.Forms.ToolTip();
             this.tipNotify = new System.Windows.Forms.PictureBox();
             this.tipMatching = new System.Windows.Forms.PictureBox();
             this.tipUnlock = new System.Windows.Forms.PictureBox();
