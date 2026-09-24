@@ -36,6 +36,46 @@ try {
         throw "Unexpected Form ClientSize: ${w}x${h} (expected 720x590)"
     }
 
+    # Reflection verification of the controls
+    $bindingFlags = [System.Reflection.BindingFlags]'NonPublic,Instance,Public'
+    
+    $lblVersion = $form.GetType().GetField("lblVersion", $bindingFlags).GetValue($form)
+    if (-not $lblVersion) { throw "lblVersion control not found" }
+    Write-Host "lblVersion text: '$($lblVersion.Text)'"
+    if ($lblVersion.Text -ne "KeePassNatMsg v2.3.7") {
+        throw "lblVersion text mismatch! Expected 'KeePassNatMsg v2.3.7' but got '$($lblVersion.Text)'"
+    }
+
+    $pnlCenter = $form.GetType().GetField("pnlVersionCenter", $bindingFlags).GetValue($form)
+    if (-not $pnlCenter) { throw "pnlVersionCenter control not found" }
+    Write-Host "pnlVersionCenter Location: X=$($pnlCenter.Location.X), Y=$($pnlCenter.Location.Y), Size=$($pnlCenter.Size.Width)x$($pnlCenter.Size.Height)"
+    if ($pnlCenter.Location.X -lt 230 -or $pnlCenter.Location.X -gt 250) {
+        throw "pnlVersionCenter not horizontally centered! X=$($pnlCenter.Location.X)"
+    }
+
+    # Verify Database Search Scope radio buttons are vertically arranged (no horizontal overlap)
+    $rbActive = $form.GetType().GetField("credOnlySearchInSelectedDatabaseRadioButton", $bindingFlags).GetValue($form)
+    $rbAll = $form.GetType().GetField("credSearchInAllOpenedDatabasesRadioButton", $bindingFlags).GetValue($form)
+    Write-Host "rbActive Top=$($rbActive.Top), rbAll Top=$($rbAll.Top)"
+    if ($rbAll.Top -le $rbActive.Top) {
+        throw "Database search radio buttons are not vertically separated!"
+    }
+
+    # Verify Danger zone checkboxes are vertically arranged
+    $chkAccess = $form.GetType().GetField("credAllowAccessCheckbox", $bindingFlags).GetValue($form)
+    $chkUpdates = $form.GetType().GetField("credAllowUpdatesCheckbox", $bindingFlags).GetValue($form)
+    Write-Host "chkAccess Top=$($chkAccess.Top), chkUpdates Top=$($chkUpdates.Top)"
+    if ($chkUpdates.Top -le $chkAccess.Top) {
+        throw "Danger Zone checkboxes are not vertically separated!"
+    }
+
+    # Verify tip icons exist
+    $tipNotify = $form.GetType().GetField("tipNotify", $bindingFlags).GetValue($form)
+    if (-not $tipNotify -or -not $tipNotify.Image) {
+        throw "tipNotify icon is missing or has no image!"
+    }
+    Write-Host "tipNotify icon verified: Size=$($tipNotify.Image.Width)x$($tipNotify.Image.Height)"
+
     New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
 
     # Render form to bitmap
@@ -48,6 +88,7 @@ try {
     $bmp.Dispose()
 
     Write-Host "Saved verified OptionsForm GUI screenshot to $shotPath" -ForegroundColor Green
+    Write-Host "`nAll 6 critical GUI layout and version constraints PASSED!" -ForegroundColor Green
 }
 finally {
     if ($form) {
