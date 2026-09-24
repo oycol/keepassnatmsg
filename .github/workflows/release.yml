@@ -1,0 +1,141 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download and Extract KeePass
+        shell: pwsh
+        run: |
+          $urls = @(
+            "https://github.com/JiriSko/KeePass/releases/download/v2.60/KeePass-2.60.zip",
+            "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/2.60/KeePass-2.60.zip"
+          )
+          $downloaded = $false
+          foreach ($url in $urls) {
+            Write-Host "Trying: $url"
+            try {
+              $ProgressPreference = 'SilentlyContinue'
+              Invoke-WebRequest -Uri $url -OutFile KeePass.zip -UseBasicParsing -TimeoutSec 60
+              $fileSize = (Get-Item KeePass.zip).Length
+              if ($fileSize -gt 100000) {
+                Write-Host "Downloaded $fileSize bytes from $url"
+                $downloaded = $true
+                break
+              } else {
+                Remove-Item KeePass.zip -Force -ErrorAction SilentlyContinue
+              }
+            } catch {
+              Write-Host "Failed: $_"
+              Remove-Item KeePass.zip -Force -ErrorAction SilentlyContinue
+            }
+          }
+          if (-not $downloaded) { throw "Could not download KeePass" }
+          New-Item -ItemType Directory -Force -Path build | Out-Null
+          7z x -o"build" KeePass.zip KeePass.exe
+          if (-not (Test-Path "build\KeePass.exe")) { throw "KeePass.exe not found" }
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: nuget/setup-nuget@v2
+        with:
+          nuget-version: '6.x'
+
+      - name: Restore NuGet packages
+        shell: pwsh
+        run: |
+          if (Test-Path "KeePassNatMsg.Tests\packages.config") {
+            nuget restore KeePassNatMsg.Tests\packages.config -OutputDirectory packages
+          }
+
+      - name: Build plugin (Release)
+        run: msbuild /p:Configuration=Release /verbosity:minimal
+
+      - name: Build test project
+        shell: pwsh
+        run: |
+          if (Test-Path "KeePassNatMsg.Tests\KeePassNatMsg.Tests.csproj") {
+            msbuild KeePassNatMsg.Tests\KeePassNatMsg.Tests.csproj /p:Configuration=Release /verbosity:minimal
+          }
+
+      - name: Run unit tests
+        shell: pwsh
+        run: |
+          nuget install NUnit.ConsoleRunner -OutputDirectory test-runner -Version 3.16.0 -NoCache
+          $runner = Get-ChildItem -Path test-runner -Filter "nunit3-console.exe" -Recurse | Select-Object -First 1
+          $testDll = Get-ChildItem -Path KeePassNatMsg.Tests\bin -Filter "KeePassNatMsg.Tests.dll" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($testDll -and $runner) {
+            $nunitFramework = Get-ChildItem -Path packages -Filter "nunit.framework.dll" -Recurse | Where-Object { $_.FullName -like "*net40*" } | Select-Object -First 1
+            if ($nunitFramework -and -not (Test-Path (Join-Path $testDll.DirectoryName "nunit.framework.dll"))) {
+              Copy-Item $nunitFramework.FullName $testDll.DirectoryName
+            }
+            $newtonsoft = Get-ChildItem -Path KeePassNatMsg\lib -Filter "Newtonsoft.Json.dll" -Recurse | Select-Object -First 1
+            if ($newtonsoft -and -not (Test-Path (Join-Path $testDll.DirectoryName "Newtonsoft.Json.dll"))) {
+              Copy-Item $newtonsoft.FullName $testDll.DirectoryName
+            }
+            & $runner.FullName $testDll.FullName --result=test-results.xml --work=$pwd
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+            Write-Host "All tests passed!"
+          } else {
+            Write-Error "Test assembly or runner not found"
+            exit 1
+          }
+
+      - name: Build .plgx
+        shell: pwsh
+        run: |
+          $kpPath = Resolve-Path "build\KeePass.exe"
+          $p = Start-Process -FilePath $kpPath -ArgumentList "--plgx-create","$pwd\KeePassNatMsg" -PassThru
+          if (-not $p.WaitForExit(30000)) { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
+          if (-not (Test-Path "KeePassNatMsg.plgx")) { throw ".plgx build failed" }
+
+      - name: Prepare artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          Copy-Item "KeePassNatMsg.plgx" artifacts
+          $hashes = @()
+          Get-ChildItem -Path artifacts -File | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            $hashes += "$hash  $($_.Name)"
+          }
+          $hashes | Set-Content "artifacts\SHA256SUMS" -Encoding UTF8
+
+      - name: Create GitHub Release
+        shell: pwsh
+        run: |
+          $tagName = "$($env:GITHUB_REF -replace 'refs/tags/', '')"
+          $plgx = "artifacts\KeePassNatMsg.plgx"
+          $sums = "artifacts\SHA256SUMS"
+          $hash = (Get-FileHash $plgx -Algorithm SHA256).Hash.ToLower()
+          
+          $notes = "### KeePassNatMsg $tagName`n`n"
+          $notes += "KeePass 2.x Native Messaging bridge plugin for KeePassXC-Browser.`n`n"
+          $notes += "#### Installation`n"
+          $notes += "1. Download KeePassNatMsg.plgx`n"
+          $notes += "2. Copy to KeePass Plugins directory`n"
+          $notes += "3. Restart KeePass and open database`n"
+          $notes += "4. Tools -> KeePassNatMsg Options -> Browser Integration -> Install / Repair`n"
+          $notes += "5. Restart Chrome or Edge, click Connect in KeePassXC-Browser`n`n"
+          $notes += "#### Checksum`n"
+          $notes += "````n$hash  KeePassNatMsg.plgx`n````n"
+          
+          $notes | Set-Content "release-notes.md" -Encoding UTF8
+          
+          gh release create $tagName $plgx $sums --repo $env:GITHUB_REPOSITORY --title "KeePassNatMsg $tagName" --notes-file release-notes.md
+        env:
+          GH_TOKEN: ${{ github.token }}
