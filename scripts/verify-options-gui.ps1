@@ -24,25 +24,21 @@ $opt = New-Object KeePassNatMsg.ConfigOpt($customConfig)
 $form = New-Object KeePassNatMsg.Options.OptionsForm($opt)
 
 try {
-    Write-Host "Instantiated OptionsForm successfully."
-    $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
-    $form.Show()
-    [System.Windows.Forms.Application]::DoEvents()
-    Start-Sleep -Milliseconds 500
-    [System.Windows.Forms.Application]::DoEvents()
-
+    Write-Host "Creating form control hierarchy..."
+    $form.CreateControl()
+    
     $w = $form.ClientSize.Width
     $h = $form.ClientSize.Height
     Write-Host "Form ClientSize: ${w}x${h}"
     Write-Host "Form Bounds: $($form.Bounds.ToString())"
 
-    if ($w -lt 680 -or $h -lt 550) {
-        throw "Form client size is unexpectedly small: ${w}x${h}"
+    if ($w -ne 720 -or $h -ne 590) {
+        throw "Unexpected Form ClientSize: ${w}x${h} (expected 720x590)"
     }
 
     New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
 
-    # Render entire form accurately using WinForms DrawToBitmap
+    # Render form to bitmap
     $bmp = New-Object System.Drawing.Bitmap($form.Width, $form.Height)
     $rect = New-Object System.Drawing.Rectangle(0, 0, $form.Width, $form.Height)
     $form.DrawToBitmap($bmp, $rect)
@@ -55,7 +51,6 @@ try {
 }
 finally {
     if ($form) {
-        $form.Close()
         $form.Dispose()
     }
 }
