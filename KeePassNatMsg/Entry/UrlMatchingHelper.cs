@@ -1,12 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace KeePassNatMsg.Entry
 {
     public static class UrlMatchingHelper
     {
         public static readonly string[] DefaultAllowedSchemes = new[] { "https", "http" };
+        private const string RegexPrefix = "Regex:";
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(200);
+
+        public static bool IsRegexUrl(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            return value.Trim().StartsWith(RegexPrefix, StringComparison.OrdinalIgnoreCase);
+        }
 
         public static bool IsAdditionalUrlField(string fieldName)
         {
@@ -18,6 +27,12 @@ namespace KeePassNatMsg.Entry
         public static IList<string> ParseUrlValues(string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return new List<string>();
+
+            var trimmed = value.Trim();
+            if (IsRegexUrl(trimmed))
+            {
+                return new List<string> { trimmed };
+            }
 
             return value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(x => x.Trim())
@@ -54,6 +69,49 @@ namespace KeePassNatMsg.Entry
                 return false;
 
             var normalizedUrl = entryUrl.Trim();
+
+            if (IsRegexUrl(normalizedUrl))
+            {
+                var pattern = normalizedUrl.Substring(RegexPrefix.Length).Trim();
+                if (string.IsNullOrEmpty(pattern)) return false;
+
+                try
+                {
+                    var regex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
+                    var scheme = !string.IsNullOrEmpty(requestScheme) ? requestScheme : "https";
+                    var fullRequestUrl = scheme + "://" + requestHost;
+
+                    if (regex.IsMatch(requestHost))
+                    {
+                        if (matchSchemes && !string.IsNullOrWhiteSpace(requestScheme))
+                        {
+                            // If pattern only matched host, check whether pattern also specified a conflicting scheme prefix
+                            if (pattern.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                                pattern.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return regex.IsMatch(fullRequestUrl);
+                            }
+                        }
+                        return true;
+                    }
+
+                    if (regex.IsMatch(fullRequestUrl))
+                        return true;
+                }
+                catch (ArgumentException)
+                {
+                    // Invalid regex syntax in entry
+                    return false;
+                }
+                catch (RegexMatchTimeoutException)
+                {
+                    // Protection against catastrophic backtracking
+                    return false;
+                }
+
+                return false;
+            }
+
             if (!normalizedUrl.Contains("://"))
             {
                 normalizedUrl = "https://" + normalizedUrl;
@@ -90,3 +148,4 @@ namespace KeePassNatMsg.Entry
         }
     }
 }
+
