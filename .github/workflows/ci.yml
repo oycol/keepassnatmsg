@@ -24,6 +24,7 @@ jobs:
         shell: pwsh
         run: |
           $kpVersion = "2.60"
+          $expectedSha256 = "63872830ae78a0e9075cd32b61693ce1e719929b3124e4987b1f3dc42f31da74"
           $urls = @(
             "https://github.com/JiriSko/KeePass/releases/download/v2.60/KeePass-2.60.zip",
             "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/2.60/KeePass-2.60.zip",
@@ -37,7 +38,14 @@ jobs:
               Invoke-WebRequest -Uri $url -OutFile KeePass.zip -UseBasicParsing -TimeoutSec 60
               $fileSize = (Get-Item KeePass.zip).Length
               if ($fileSize -gt 100000) {
-                Write-Host "Downloaded $fileSize bytes from $url"
+                $actualSha256 = (Get-FileHash KeePass.zip -Algorithm SHA256).Hash.ToLower()
+                Write-Host "Downloaded $fileSize bytes, SHA256: $actualSha256"
+                if ($actualSha256 -ne $expectedSha256) {
+                  Write-Host "SHA256 mismatch! Expected: $expectedSha256"
+                  Remove-Item KeePass.zip -Force -ErrorAction SilentlyContinue
+                  continue
+                }
+                Write-Host "SHA256 verified against official keepass.info integrity page"
                 $downloaded = $true
                 break
               } else {
@@ -50,7 +58,7 @@ jobs:
             }
           }
           if (-not $downloaded) {
-            throw "Could not download KeePass from any source"
+            throw "Could not download KeePass from any source or SHA256 verification failed"
           }
           
           New-Item -ItemType Directory -Force -Path build | Out-Null
