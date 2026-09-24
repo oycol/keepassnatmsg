@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace KeePassNatMsg.Entry
 {
@@ -55,33 +54,6 @@ namespace KeePassNatMsg.Entry
                 return false;
 
             var normalizedUrl = entryUrl.Trim();
-
-            // Support standard KeePass Regex: prefix for advanced IP/Host wildcard matching
-            if (normalizedUrl.StartsWith("Regex:", StringComparison.OrdinalIgnoreCase))
-            {
-                var regexPattern = normalizedUrl.Substring(6).Trim();
-                if (string.IsNullOrEmpty(regexPattern)) return false;
-
-                try
-                {
-                    // Construct a full request URL to allow regex to match scheme if provided
-                    string fullRequestUrl = (!string.IsNullOrEmpty(requestScheme) ? requestScheme : "https") + "://" + requestHost;
-                    
-                    var regex = new Regex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-                    
-                    // Allow the regex to match either the full URL (e.g. ^https?://10\.\d+\.\d+\.\d+) or just the host
-                    if (regex.IsMatch(requestHost) || regex.IsMatch(fullRequestUrl))
-                        return true;
-                }
-                catch (ArgumentException)
-                {
-                    // Invalid regex syntax in the entry
-                    return false;
-                }
-                
-                // If it's a regex URL and it failed to match, we stop here. We don't want to parse "Regex:" as a domain.
-                return false;
-            }
             if (!normalizedUrl.Contains("://"))
             {
                 normalizedUrl = "https://" + normalizedUrl;
