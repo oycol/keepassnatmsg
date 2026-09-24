@@ -70,14 +70,15 @@ namespace KeePassNatMsg.Entry
 
             var normalizedUrl = entryUrl.Trim();
 
+            // Support standard KeePass Regex: prefix for advanced IP/Host wildcard matching
             if (IsRegexUrl(normalizedUrl))
             {
-                var pattern = normalizedUrl.Substring(RegexPrefix.Length).Trim();
-                if (string.IsNullOrEmpty(pattern)) return false;
+                var regexPattern = normalizedUrl.Substring(RegexPrefix.Length).Trim();
+                if (string.IsNullOrEmpty(regexPattern)) return false;
 
                 try
                 {
-                    var regex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
+                    var regex = new Regex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
                     var scheme = !string.IsNullOrEmpty(requestScheme) ? requestScheme : "https";
                     var fullRequestUrl = scheme + "://" + requestHost;
 
@@ -85,9 +86,8 @@ namespace KeePassNatMsg.Entry
                     {
                         if (matchSchemes && !string.IsNullOrWhiteSpace(requestScheme))
                         {
-                            // If pattern only matched host, check whether pattern also specified a conflicting scheme prefix
-                            if (pattern.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                                pattern.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                            if (regexPattern.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                                regexPattern.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                             {
                                 return regex.IsMatch(fullRequestUrl);
                             }
@@ -100,7 +100,7 @@ namespace KeePassNatMsg.Entry
                 }
                 catch (ArgumentException)
                 {
-                    // Invalid regex syntax in entry
+                    // Invalid regex syntax in the entry
                     return false;
                 }
                 catch (RegexMatchTimeoutException)
@@ -111,7 +111,6 @@ namespace KeePassNatMsg.Entry
 
                 return false;
             }
-
             if (!normalizedUrl.Contains("://"))
             {
                 normalizedUrl = "https://" + normalizedUrl;
@@ -148,4 +147,3 @@ namespace KeePassNatMsg.Entry
         }
     }
 }
-

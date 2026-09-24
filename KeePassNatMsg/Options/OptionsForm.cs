@@ -2,6 +2,7 @@
 using KeePassNatMsg.NativeMessaging;
 using KeePassNatMsg.Utils;
 using System;
+using System.Drawing;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -17,7 +18,6 @@ namespace KeePassNatMsg.Options
         private bool _initialAlwaysAllowAccess;
         private bool _initialAlwaysAllowUpdates;
         private bool _initialDefaultGroupAlwaysAllow;
-        private ToolTip _toolTip;
 
         private string AssemblyVersion
         {
@@ -36,7 +36,7 @@ namespace KeePassNatMsg.Options
                 }
                 catch { }
 
-                return "2.3.1";
+                return "2.3.7";
             }
         }
 
@@ -96,17 +96,27 @@ namespace KeePassNatMsg.Options
                 }
             }
 
-            var toolTip = _toolTip = new ToolTip();
+            // Bind tooltip help for both the tip icons and checkboxes
             toolTip.AutoPopDelay = 10000;
-            toolTip.InitialDelay = 500;
-            toolTip.ReshowDelay = 500;
+            toolTip.InitialDelay = 350;
+            toolTip.ReshowDelay = 150;
             toolTip.ShowAlways = true;
-            
-            toolTip.SetToolTip(credMatchingCheckbox, "When checked, only entries with the most precise URL match are returned.\nUncheck this if you want all matching entries (including those with only the root domain) to be displayed.");
-            toolTip.SetToolTip(chkSearchUrls, "When checked, KeePassNatMsg will also search for URLs in custom string fields\n(e.g., URL1, URL2) in the 'Advanced' tab of your entries.");
-            toolTip.SetToolTip(hideExpiredCheckbox, "When checked, entries that have passed their expiry date will not be sent to the browser.");
-            toolTip.SetToolTip(matchSchemesCheckbox, "When checked, the URL protocol (http vs https) must match exactly.");
 
+            BindTip(credNotifyCheckbox, tipNotify, "Shows a system tray notification whenever a browser extension queries entries.");
+            BindTip(credMatchingCheckbox, tipMatching, "Filters out broader domain entries when a more specific path or subdomain matches.");
+            BindTip(unlockDatabaseCheckbox, tipUnlock, "Prompts KeePass to request master password unlock if queried while locked.");
+            BindTip(hideExpiredCheckbox, tipExpired, "Do not return credentials that have reached their configured expiration date.");
+            BindTip(matchSchemesCheckbox, tipSchemes, "Separates HTTP and HTTPS logins. Recommended to prevent leakage to cleartext sites.");
+            BindTip(chkSearchUrls, tipSearchUrls, "Also checks custom string attributes (URL1, URL2, KP2A_URL_1) for alternative login URLs.");
+            BindTip(chkDefaultGroupAlwaysAllow, tipDefaultGroup, "Automatically grants browser access to entries saved under this group without confirmation.");
+            BindTip(credAllowAccessCheckbox, tipAllowAccess, "Bypasses user confirmation when a browser extension queries stored credentials.");
+            BindTip(credAllowUpdatesCheckbox, tipAllowUpdates, "Bypasses user confirmation when a browser extension creates or updates stored credentials.");
+        }
+
+        private void BindTip(Control ctrl, PictureBox icon, string tipText)
+        {
+            if (ctrl != null) toolTip.SetToolTip(ctrl, tipText);
+            if (icon != null) toolTip.SetToolTip(icon, tipText);
         }
 
         private void okButton_Click(object sender, EventArgs e)
