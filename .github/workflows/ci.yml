@@ -1,8 +1,9 @@
 name: CI Build & Test
 
 on:
+  workflow_dispatch:
   push:
-    branches: [main, 'feat/**']
+    branches: [main, 'feat/**', 'refactor/**']
     paths-ignore:
       - '**.md'
       - 'documentation/**'
