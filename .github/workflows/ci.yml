@@ -20,15 +20,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download KeePass
-        id: dlkp
-        uses: smorks/keepass-download-action@v0.0.5
-
-      - name: Extract KeePass
+      - name: Download and Extract KeePass
         shell: pwsh
         run: |
+          $kpVersion = "2.60"
+          $url = "https://sourceforge.net/projects/keepass/files/KeePass%202.x/$kpVersion/KeePass-$kpVersion.zip/download"
+          Write-Host "Downloading KeePass $kpVersion from $url..."
+          Invoke-WebRequest -Uri $url -OutFile "KeePass.zip"
+          
           New-Item -ItemType Directory -Force -Path build | Out-Null
-          7z x -o"build" ${{ steps.dlkp.outputs.filename }} KeePass.exe
+          7z x -o"build" KeePass.zip KeePass.exe
+          
           if (-not (Test-Path "build\KeePass.exe")) {
             throw "KeePass.exe not found after extraction"
           }
