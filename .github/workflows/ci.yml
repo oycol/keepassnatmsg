@@ -24,9 +24,33 @@ jobs:
         shell: pwsh
         run: |
           $kpVersion = "2.60"
-          $url = "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/$kpVersion/KeePass-$kpVersion.zip"
-          Write-Host "Downloading KeePass $kpVersion from $url..."
-          curl.exe -sL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "$url" -o KeePass.zip
+          $urls = @(
+            "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/$kpVersion/KeePass-$kpVersion.zip",
+            "https://sourceforge.net/projects/keepass/files/KeePass%202.x/$kpVersion/KeePass-$kpVersion.zip/download"
+          )
+          $downloaded = $false
+          foreach ($url in $urls) {
+            Write-Host "Trying: $url"
+            try {
+              $ProgressPreference = 'SilentlyContinue'
+              Invoke-WebRequest -Uri $url -OutFile KeePass.zip -UseBasicParsing -TimeoutSec 60
+              $fileSize = (Get-Item KeePass.zip).Length
+              if ($fileSize -gt 100000) {
+                Write-Host "Downloaded $fileSize bytes from $url"
+                $downloaded = $true
+                break
+              } else {
+                Write-Host "File too small ($fileSize bytes), likely HTML redirect"
+                Remove-Item KeePass.zip -Force -ErrorAction SilentlyContinue
+              }
+            } catch {
+              Write-Host "Failed: $_"
+              Remove-Item KeePass.zip -Force -ErrorAction SilentlyContinue
+            }
+          }
+          if (-not $downloaded) {
+            throw "Could not download KeePass from any source"
+          }
           
           New-Item -ItemType Directory -Force -Path build | Out-Null
           7z x -o"build" KeePass.zip KeePass.exe
