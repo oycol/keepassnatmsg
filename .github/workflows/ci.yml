@@ -25,8 +25,9 @@ jobs:
         run: |
           $kpVersion = "2.60"
           $urls = @(
-            "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/$kpVersion/KeePass-$kpVersion.zip",
-            "https://sourceforge.net/projects/keepass/files/KeePass%202.x/$kpVersion/KeePass-$kpVersion.zip/download"
+            "https://github.com/JiriSko/KeePass/releases/download/v2.60/KeePass-2.60.zip",
+            "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/2.60/KeePass-2.60.zip",
+            "https://sourceforge.net/projects/keepass/files/KeePass%202.x/2.60/KeePass-2.60.zip/download"
           )
           $downloaded = $false
           foreach ($url in $urls) {
