@@ -24,9 +24,9 @@ jobs:
         shell: pwsh
         run: |
           $kpVersion = "2.60"
-          $url = "https://sourceforge.net/projects/keepass/files/KeePass%202.x/$kpVersion/KeePass-$kpVersion.zip/download"
+          $url = "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/$kpVersion/KeePass-$kpVersion.zip"
           Write-Host "Downloading KeePass $kpVersion from $url..."
-          Invoke-WebRequest -Uri $url -OutFile "KeePass.zip"
+          curl.exe -sL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "$url" -o KeePass.zip
           
           New-Item -ItemType Directory -Force -Path build | Out-Null
           7z x -o"build" KeePass.zip KeePass.exe
