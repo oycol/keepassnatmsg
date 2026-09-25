@@ -124,12 +124,12 @@ try {
         $failures.Add("Danger Zone checkboxes are not vertically separated") | Out-Null
     }
 
-    $tipNotify = $form.GetType().GetField("tipNotify", $bindingFlags).GetValue($form)
-    if (-not $tipNotify -or -not $tipNotify.Image) {
-        $failures.Add("tipNotify icon is missing or has no image") | Out-Null
+    $tipMatching = $form.GetType().GetField("tipMatching", $bindingFlags).GetValue($form)
+    if (-not $tipMatching -or -not $tipMatching.Image) {
+        $failures.Add("tipMatching icon is missing or has no image") | Out-Null
     }
     else {
-        Write-Host "tipNotify icon verified: Size=$($tipNotify.Image.Width)x$($tipNotify.Image.Height)"
+        Write-Host "tipMatching icon verified: Size=$($tipMatching.Image.Width)x$($tipMatching.Image.Height)"
     }
 
     New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
