@@ -646,6 +646,191 @@ namespace KeePassNatMsg.Options
             this.btnRemoveAllKeys.UseVisualStyleBackColor = true;
             this.btnRemoveAllKeys.Click += new System.EventHandler(this.btnRemoveAllKeys_Click);
             //
+            // tabFavicon
+            //
+            this.tabFavicon.Controls.Add(this.grpFaviconOptions);
+            this.tabFavicon.Controls.Add(this.grpFaviconSize);
+            this.tabFavicon.Controls.Add(this.grpFaviconProvider);
+            this.tabFavicon.Location = new System.Drawing.Point(4, 22);
+            this.tabFavicon.Name = "tabFavicon";
+            this.tabFavicon.Padding = new System.Windows.Forms.Padding(3);
+            this.tabFavicon.Size = new System.Drawing.Size(688, 504);
+            this.tabFavicon.TabIndex = 4;
+            this.tabFavicon.Text = "Favicon Downloader";
+            this.tabFavicon.UseVisualStyleBackColor = true;
+            //
+            // grpFaviconOptions
+            //
+            this.grpFaviconOptions.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.grpFaviconOptions.Controls.Add(this.chkFaviconPrefixUrls);
+            this.grpFaviconOptions.Controls.Add(this.lblTipFaviconPrefix);
+            this.grpFaviconOptions.Controls.Add(this.chkFaviconUseTitle);
+            this.grpFaviconOptions.Controls.Add(this.lblTipFaviconTitle);
+            this.grpFaviconOptions.Controls.Add(this.chkFaviconUpdateModified);
+            this.grpFaviconOptions.Controls.Add(this.lblTipFaviconModified);
+            this.grpFaviconOptions.Location = new System.Drawing.Point(16, 16);
+            this.grpFaviconOptions.Name = "grpFaviconOptions";
+            this.grpFaviconOptions.Size = new System.Drawing.Size(656, 175);
+            this.grpFaviconOptions.TabIndex = 0;
+            this.grpFaviconOptions.TabStop = false;
+            this.grpFaviconOptions.Text = "Download Options";
+            //
+            // chkFaviconPrefixUrls
+            //
+            this.chkFaviconPrefixUrls.AutoSize = true;
+            this.chkFaviconPrefixUrls.Location = new System.Drawing.Point(16, 24);
+            this.chkFaviconPrefixUrls.Name = "chkFaviconPrefixUrls";
+            this.chkFaviconPrefixUrls.Size = new System.Drawing.Size(248, 17);
+            this.chkFaviconPrefixUrls.TabIndex = 0;
+            this.chkFaviconPrefixUrls.Text = "Automatically prefix URLs with http(s)://";
+            this.chkFaviconPrefixUrls.UseVisualStyleBackColor = true;
+            //
+            // lblTipFaviconPrefix
+            //
+            this.lblTipFaviconPrefix.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lblTipFaviconPrefix.Location = new System.Drawing.Point(36, 44);
+            this.lblTipFaviconPrefix.Name = "lblTipFaviconPrefix";
+            this.lblTipFaviconPrefix.Size = new System.Drawing.Size(600, 20);
+            this.lblTipFaviconPrefix.TabIndex = 1;
+            this.lblTipFaviconPrefix.Text = "If scheme is missing, try HTTPS first then fallback to HTTP automatically.";
+            //
+            // chkFaviconUseTitle
+            //
+            this.chkFaviconUseTitle.AutoSize = true;
+            this.chkFaviconUseTitle.Location = new System.Drawing.Point(16, 72);
+            this.chkFaviconUseTitle.Name = "chkFaviconUseTitle";
+            this.chkFaviconUseTitle.Size = new System.Drawing.Size(225, 17);
+            this.chkFaviconUseTitle.TabIndex = 2;
+            this.chkFaviconUseTitle.Text = "Use entry Title field if URL is empty";
+            this.chkFaviconUseTitle.UseVisualStyleBackColor = true;
+            //
+            // lblTipFaviconTitle
+            //
+            this.lblTipFaviconTitle.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lblTipFaviconTitle.Location = new System.Drawing.Point(36, 92);
+            this.lblTipFaviconTitle.Name = "lblTipFaviconTitle";
+            this.lblTipFaviconTitle.Size = new System.Drawing.Size(600, 20);
+            this.lblTipFaviconTitle.TabIndex = 3;
+            this.lblTipFaviconTitle.Text = "Attempt to look up website domain from entry title if URL is not specified.";
+            //
+            // chkFaviconUpdateModified
+            //
+            this.chkFaviconUpdateModified.AutoSize = true;
+            this.chkFaviconUpdateModified.Location = new System.Drawing.Point(16, 120);
+            this.chkFaviconUpdateModified.Name = "chkFaviconUpdateModified";
+            this.chkFaviconUpdateModified.Size = new System.Drawing.Size(275, 17);
+            this.chkFaviconUpdateModified.TabIndex = 4;
+            this.chkFaviconUpdateModified.Text = "Update entry last modification time on icon changes";
+            this.chkFaviconUpdateModified.UseVisualStyleBackColor = true;
+            //
+            // lblTipFaviconModified
+            //
+            this.lblTipFaviconModified.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lblTipFaviconModified.Location = new System.Drawing.Point(36, 140);
+            this.lblTipFaviconModified.Name = "lblTipFaviconModified";
+            this.lblTipFaviconModified.Size = new System.Drawing.Size(600, 20);
+            this.lblTipFaviconModified.TabIndex = 5;
+            this.lblTipFaviconModified.Text = "Mark entries as modified when a new custom icon is downloaded and linked.";
+            //
+            // grpFaviconSize
+            //
+            this.grpFaviconSize.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.grpFaviconSize.Controls.Add(this.lblFaviconMaxIconSize);
+            this.grpFaviconSize.Controls.Add(this.cmbFaviconMaxIconSize);
+            this.grpFaviconSize.Controls.Add(this.lblTipFaviconSize);
+            this.grpFaviconSize.Location = new System.Drawing.Point(16, 201);
+            this.grpFaviconSize.Name = "grpFaviconSize";
+            this.grpFaviconSize.Size = new System.Drawing.Size(656, 88);
+            this.grpFaviconSize.TabIndex = 1;
+            this.grpFaviconSize.TabStop = false;
+            this.grpFaviconSize.Text = "Icon Quality & Scaling";
+            //
+            // lblFaviconMaxIconSize
+            //
+            this.lblFaviconMaxIconSize.AutoSize = true;
+            this.lblFaviconMaxIconSize.Location = new System.Drawing.Point(16, 26);
+            this.lblFaviconMaxIconSize.Name = "lblFaviconMaxIconSize";
+            this.lblFaviconMaxIconSize.Size = new System.Drawing.Size(102, 13);
+            this.lblFaviconMaxIconSize.TabIndex = 0;
+            this.lblFaviconMaxIconSize.Text = "Maximum icon size:";
+            //
+            // cmbFaviconMaxIconSize
+            //
+            this.cmbFaviconMaxIconSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbFaviconMaxIconSize.FormattingEnabled = true;
+            this.cmbFaviconMaxIconSize.Location = new System.Drawing.Point(140, 23);
+            this.cmbFaviconMaxIconSize.Name = "cmbFaviconMaxIconSize";
+            this.cmbFaviconMaxIconSize.Size = new System.Drawing.Size(200, 21);
+            this.cmbFaviconMaxIconSize.TabIndex = 1;
+            //
+            // lblTipFaviconSize
+            //
+            this.lblTipFaviconSize.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lblTipFaviconSize.Location = new System.Drawing.Point(16, 52);
+            this.lblTipFaviconSize.Name = "lblTipFaviconSize";
+            this.lblTipFaviconSize.Size = new System.Drawing.Size(620, 24);
+            this.lblTipFaviconSize.TabIndex = 2;
+            this.lblTipFaviconSize.Text = "Downscales larger icons with high-quality Bicubic interpolation for sharp rendering on 4K/2K screens.";
+            //
+            // grpFaviconProvider
+            //
+            this.grpFaviconProvider.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.grpFaviconProvider.Controls.Add(this.lblFaviconProvider);
+            this.grpFaviconProvider.Controls.Add(this.cmbFaviconProvider);
+            this.grpFaviconProvider.Controls.Add(this.lblFaviconCustomUrl);
+            this.grpFaviconProvider.Controls.Add(this.txtFaviconCustomUrl);
+            this.grpFaviconProvider.Controls.Add(this.lblTipFaviconProvider);
+            this.grpFaviconProvider.Location = new System.Drawing.Point(16, 299);
+            this.grpFaviconProvider.Name = "grpFaviconProvider";
+            this.grpFaviconProvider.Size = new System.Drawing.Size(656, 140);
+            this.grpFaviconProvider.TabIndex = 2;
+            this.grpFaviconProvider.TabStop = false;
+            this.grpFaviconProvider.Text = "Download Provider";
+            //
+            // lblFaviconProvider
+            //
+            this.lblFaviconProvider.AutoSize = true;
+            this.lblFaviconProvider.Location = new System.Drawing.Point(16, 26);
+            this.lblFaviconProvider.Name = "lblFaviconProvider";
+            this.lblFaviconProvider.Size = new System.Drawing.Size(126, 13);
+            this.lblFaviconProvider.TabIndex = 0;
+            this.lblFaviconProvider.Text = "Favicon provider service:";
+            //
+            // cmbFaviconProvider
+            //
+            this.cmbFaviconProvider.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbFaviconProvider.FormattingEnabled = true;
+            this.cmbFaviconProvider.Location = new System.Drawing.Point(160, 23);
+            this.cmbFaviconProvider.Name = "cmbFaviconProvider";
+            this.cmbFaviconProvider.Size = new System.Drawing.Size(320, 21);
+            this.cmbFaviconProvider.TabIndex = 1;
+            //
+            // lblFaviconCustomUrl
+            //
+            this.lblFaviconCustomUrl.AutoSize = true;
+            this.lblFaviconCustomUrl.Location = new System.Drawing.Point(16, 56);
+            this.lblFaviconCustomUrl.Name = "lblFaviconCustomUrl";
+            this.lblFaviconCustomUrl.Size = new System.Drawing.Size(130, 13);
+            this.lblFaviconCustomUrl.TabIndex = 2;
+            this.lblFaviconCustomUrl.Text = "Custom template URL:";
+            //
+            // txtFaviconCustomUrl
+            //
+            this.txtFaviconCustomUrl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtFaviconCustomUrl.Location = new System.Drawing.Point(160, 53);
+            this.txtFaviconCustomUrl.Name = "txtFaviconCustomUrl";
+            this.txtFaviconCustomUrl.Size = new System.Drawing.Size(476, 20);
+            this.txtFaviconCustomUrl.TabIndex = 3;
+            //
+            // lblTipFaviconProvider
+            //
+            this.lblTipFaviconProvider.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lblTipFaviconProvider.Location = new System.Drawing.Point(16, 84);
+            this.lblTipFaviconProvider.Name = "lblTipFaviconProvider";
+            this.lblTipFaviconProvider.Size = new System.Drawing.Size(620, 42);
+            this.lblTipFaviconProvider.TabIndex = 4;
+            this.lblTipFaviconProvider.Text = "Direct website is safest and private. Cloud providers support {URL:HOST} and {YAFD:ICON_SIZE} placeholders.";
+            //
             // pnlVersionCenter
             //
             this.pnlVersionCenter.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));

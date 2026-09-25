@@ -25,13 +25,14 @@ namespace KeePassNatMsg.Options
                 try
                 {
                     var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                    if (v.Revision == 0)
+                    if (v != null)
                     {
-                        if (v.Build == 0)
-                            return string.Format("{0}.{1}", v.Major, v.Minor);
-                        return string.Format("{0}.{1}.{2}", v.Major, v.Minor, v.Build);
+                        if (v.Revision <= 0)
+                        {
+                            return string.Format("{0}.{1}.{2}", v.Major, v.Minor, Math.Max(0, v.Build));
+                        }
+                        return string.Format("{0}.{1}.{2}.{3}", v.Major, v.Minor, Math.Max(0, v.Build), v.Revision);
                     }
-                    return v.ToString();
                 }
                 catch { }
 
