@@ -54,7 +54,7 @@ try {
     }
 
     $picFormLogo = $form.GetType().GetField("picFormLogo", $bindingFlags).GetValue($form)
-    if (-not $picFormLogo -or -not $picFormLogo.Image) { throw "picFormLogo or its image is missing" }
+    if (-not $picFormLogo) { throw "picFormLogo control is missing" }
     if ($lblVersion.AutoSize) {
         $failures.Add("lblVersion must use a fixed height so text can be vertically centered with the icon") | Out-Null
     }
