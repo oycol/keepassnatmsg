@@ -76,6 +76,25 @@ namespace KeePassNatMsg.Tests
         }
 
         [Test]
+        public void NetworkCandidate_RecognizesOnlyCidrInPrimaryOrAdditionalUrls()
+        {
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.IsNetworkRuleCandidate("CIDR:10.125.1.0/24"));
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.IsNetworkRuleCandidate("https://example.com, CIDR:10.125.1.0/24"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsNetworkRuleCandidate(@"Regex:^10\.125\.1\.\d+$"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsNetworkRuleCandidate("https://example.com/CIDR:10.125.1.0/24"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsNetworkRuleCandidate("CIDR:10.125.1.0/33"));
+        }
+
+        [Test]
+        public void CidrRule_RejectsIpv6AndMisleadingHostForms()
+        {
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl("CIDR:10.125.1.0/24", "::ffff:10.125.1.3", "https"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl("CIDR:10.125.1.0/24", "010.125.1.3", "https"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl("CIDR:10.125.1.0/24", "10.125.1.3:8080", "https"));
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl("CIDR:10.125.1.0/24", "10.125.1.3", "http", true, true));
+        }
+
+        [Test]
         public void MatchesUrl_ExactHost_Matches()
         {
             Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(
