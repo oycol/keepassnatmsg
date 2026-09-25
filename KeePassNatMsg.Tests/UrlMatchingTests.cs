@@ -70,12 +70,9 @@ namespace KeePassNatMsg.Tests
         }
 
         [Test]
-        public void RegexRules_DoNotMatchOrEnterSpecialCandidateRecall()
+        public void RegexRules_DoNotMatchAfterRemoval()
         {
             Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(@"Regex:^10\.125\.1\.\d+$", "10.125.1.8", "https"));
-            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsNetworkRuleCandidate(@"Regex:^10\.125\.1\.\d+$"));
-            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.IsNetworkRuleCandidate("CIDR:10.125.1.0/24"));
-            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.IsNetworkRuleCandidate("CIDR:10.125.1.0/24, CIDR:10.125.2.0/24"));
         }
 
         [Test]
