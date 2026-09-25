@@ -26,6 +26,10 @@ $form = New-Object KeePassNatMsg.Options.OptionsForm($opt)
 try {
     Write-Host "Creating form control hierarchy..."
     $form.CreateControl()
+    $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
+    $form.Show()
+    [System.Windows.Forms.Application]::DoEvents()
+    Start-Sleep -Milliseconds 300
 
     $failures = New-Object 'System.Collections.Generic.List[string]'
     $w = $form.ClientSize.Width
@@ -186,6 +190,8 @@ try {
         for ($i = 0; $i -lt $tabControl.TabCount; $i++) {
             $tabControl.SelectedIndex = $i
             $form.Refresh()
+            [System.Windows.Forms.Application]::DoEvents()
+            Start-Sleep -Milliseconds 150
             $bmpTab = New-Object System.Drawing.Bitmap($form.Width, $form.Height)
             $rectTab = New-Object System.Drawing.Rectangle(0, 0, $form.Width, $form.Height)
             $form.DrawToBitmap($bmpTab, $rectTab)
@@ -215,6 +221,7 @@ try {
 }
 finally {
     if ($form) {
+        try { $form.Close() } catch { }
         $form.Dispose()
     }
 }
