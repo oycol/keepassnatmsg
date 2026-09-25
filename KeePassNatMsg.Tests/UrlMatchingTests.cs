@@ -44,54 +44,38 @@ namespace KeePassNatMsg.Tests
         }
 
         [Test]
-        public void RegexUrl_HostPattern_MatchesRequestedHost()
+        public void CidrRule_MatchesOnlyIpv4SubnetIncludingBoundaries()
         {
-            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(
-                @"Regex:^192\.168\.1\.\d+$",
-                "192.168.1.42",
-                requestScheme: "https"));
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl("CIDR:10.125.1.0/24", "10.125.1.0", "https"));
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl("cidr:10.125.1.0/24", "10.125.1.255", "http"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl("CIDR:10.125.1.0/24", "10.125.2.1", "https"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl("CIDR:10.125.1.0/24", "bmc.example.com", "https"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl("CIDR:10.125.1.0/24", "10.125.1.1.evil.test", "https"));
         }
 
         [Test]
-        public void RegexUrl_FullUrlPattern_RespectsRequestedScheme()
+        public void CidrRule_MultipleNetworksAndHostMask()
         {
-            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(
-                @"Regex:^https://10\.0\.0\.\d+$",
-                "10.0.0.8",
-                requestScheme: "https"));
-            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(
-                @"Regex:^https://10\.0\.0\.\d+$",
-                "10.0.0.8",
-                requestScheme: "http"));
+            var rules = KeePassNatMsg.Entry.UrlMatchingHelper.ParseUrlValues("CIDR:10.125.1.0/24, CIDR:10.125.2.3/32");
+            CollectionAssert.AreEqual(new[] { "CIDR:10.125.1.0/24", "CIDR:10.125.2.3/32" }, rules);
+            Assert.IsTrue(rules.Any(rule => KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(rule, "10.125.2.3", "https")));
+            Assert.IsFalse(rules.Any(rule => KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(rule, "10.125.2.4", "https")));
         }
 
         [Test]
-        public void RegexUrl_InvalidPattern_ReturnsFalse()
+        public void CidrRule_RejectsMalformedAndNonCanonicalNetworks()
         {
-            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(
-                "Regex:(unclosed",
-                "example.com",
-                requestScheme: "https"));
+            foreach (var rule in new[] { "CIDR:", "CIDR:10.125.1.0", "CIDR:10.125.1.0/33", "CIDR:10.125.1.1/24", "CIDR:10.125.1.999/24", "CIDR:010.125.1.0/24", "CIDR:10.125.1.0/-1", "CIDR:10.125.1.0/24/1", "CIDR:0.0.0.0/0" })
+                Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(rule, "10.125.1.1", "https"), rule);
         }
 
         [Test]
-        public void RegexUrl_WithCommaQuantifier_IsNotSplitAsMultipleUrls()
+        public void RegexRules_DoNotMatchOrEnterSpecialCandidateRecall()
         {
-            var urls = KeePassNatMsg.Entry.UrlMatchingHelper.ParseUrlValues(
-                @"Regex:^10\.(?:\d{1,3}\.){2}\d{1,3}$");
-
-            CollectionAssert.AreEqual(new[]
-            {
-                @"Regex:^10\.(?:\d{1,3}\.){2}\d{1,3}$"
-            }, urls);
-        }
-
-        [Test]
-        public void RegexUrl_Prefix_IsCaseInsensitive()
-        {
-            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(
-                @"regex:^host\.example\.internal$",
-                "host.example.internal"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(@"Regex:^10\.125\.1\.\d+$", "10.125.1.8", "https"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsNetworkRuleCandidate(@"Regex:^10\.125\.1\.\d+$"));
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.IsNetworkRuleCandidate("CIDR:10.125.1.0/24"));
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.IsNetworkRuleCandidate("CIDR:10.125.1.0/24, CIDR:10.125.2.0/24"));
         }
 
         [Test]
