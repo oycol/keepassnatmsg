@@ -510,9 +510,9 @@ namespace KeePassNatMsg.Options
             //
             this.comboBoxSearchDatabases.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxSearchDatabases.FormattingEnabled = true;
-            this.comboBoxSearchDatabases.Location = new System.Drawing.Point(190, 74);
+            this.comboBoxSearchDatabases.Location = new System.Drawing.Point(230, 74);
             this.comboBoxSearchDatabases.Name = "comboBoxSearchDatabases";
-            this.comboBoxSearchDatabases.Size = new System.Drawing.Size(440, 23);
+            this.comboBoxSearchDatabases.Size = new System.Drawing.Size(400, 23);
             this.comboBoxSearchDatabases.TabIndex = 3;
             //
             // labelConnDb
@@ -528,9 +528,9 @@ namespace KeePassNatMsg.Options
             //
             this.comboBoxDatabases.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxDatabases.FormattingEnabled = true;
-            this.comboBoxDatabases.Location = new System.Drawing.Point(190, 105);
+            this.comboBoxDatabases.Location = new System.Drawing.Point(230, 105);
             this.comboBoxDatabases.Name = "comboBoxDatabases";
-            this.comboBoxDatabases.Size = new System.Drawing.Size(440, 23);
+            this.comboBoxDatabases.Size = new System.Drawing.Size(400, 23);
             this.comboBoxDatabases.TabIndex = 5;
             //
             // grpNewLogins
@@ -752,17 +752,18 @@ namespace KeePassNatMsg.Options
             //
             // pnlVersionCenter
             //
-            this.pnlVersionCenter.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.pnlVersionCenter.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.pnlVersionCenter.Controls.Add(this.picFormLogo);
             this.pnlVersionCenter.Controls.Add(this.lblVersion);
-            this.pnlVersionCenter.Location = new System.Drawing.Point(240, 548);
+            this.pnlVersionCenter.Location = new System.Drawing.Point(16, 548);
             this.pnlVersionCenter.Name = "pnlVersionCenter";
-            this.pnlVersionCenter.Size = new System.Drawing.Size(240, 24);
+            this.pnlVersionCenter.Size = new System.Drawing.Size(220, 24);
             this.pnlVersionCenter.TabIndex = 1;
-            //
+            // 
             // picFormLogo
-            //
-            this.picFormLogo.Location = new System.Drawing.Point(10, 4);
+            // 
+            this.picFormLogo.Image = global::KeePassNatMsg.Properties.Resources.icon_16;
+            this.picFormLogo.Location = new System.Drawing.Point(0, 4);
             this.picFormLogo.Name = "picFormLogo";
             this.picFormLogo.Size = new System.Drawing.Size(16, 16);
             this.picFormLogo.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -771,13 +772,13 @@ namespace KeePassNatMsg.Options
             //
             // lblVersion
             //
-            this.lblVersion.AutoSize = true;
+            this.lblVersion.AutoSize = false;
             this.lblVersion.ForeColor = System.Drawing.SystemColors.GrayText;
-            this.lblVersion.Location = new System.Drawing.Point(32, 4);
+            this.lblVersion.Location = new System.Drawing.Point(22, 0);
             this.lblVersion.Name = "lblVersion";
-            this.lblVersion.Size = new System.Drawing.Size(126, 15);
+            this.lblVersion.Size = new System.Drawing.Size(190, 24);
             this.lblVersion.TabIndex = 1;
-            this.lblVersion.Text = "KeePassNatMsg v2.3.7";
+            this.lblVersion.Text = "KeePassNatMsg v2.3.8";
             this.lblVersion.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // okButton

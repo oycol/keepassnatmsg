@@ -142,14 +142,16 @@ jobs:
           $sums = "artifacts\SHA256SUMS"
           $hash = (Get-FileHash $plgx -Algorithm SHA256).Hash.ToLower()
           
+          $fence = '```'
           $notes = "### KeePassNatMsg $tagName`n`n"
           $notes += "KeePass 2.x Native Messaging bridge plugin for KeePassXC-Browser.`n`n"
           $notes += "#### Changes in this release`n"
-          $notes += "- **Options UI**: Redesigned clean and modern info tip icons with native tooltips.`n"
-          $notes += "- **Layout Fixes**: Vertical layout for Database Search Scope radio buttons to eliminate overlap; Danger Zone warning fully visible.`n"
-          $notes += "- **Footer**: Centered logo and version display ('KeePassNatMsg v2.3.7') without button overlap.`n"
-          $notes += "- **Regex URL Matching**: Full candidate recall, comma-quantifier preservation, and 200ms ReDoS timeout protection.`n"
-          $notes += "- **Version Sync**: Synchronized AssemblyVersion and UI versioning across all components.`n`n"
+          $notes += "- **KeePassXC Branding**: Replaced the footer and Tools menu artwork with the official KeePassXC application icon, downsampled to 16x16 from the pinned upstream source.`n"
+          $notes += "- **Footer Alignment**: Restored the version block to the lower-left and vertically centered the version text against the icon.`n"
+          $notes += "- **Database Layout**: Moved both database selectors to a safe text column, eliminating overlap with 'Restrict search to target DB' and 'Connection database'.`n"
+          $notes += "- **Regression Coverage**: Added Windows GUI assertions for footer position, icon provenance, vertical alignment, and database selector spacing.`n"
+          $notes += "- **Version Sync**: Synchronized AssemblyVersion, AssemblyFileVersion, Options display, tag, and Release title to $tagName.`n"
+          $notes += "- **Compatibility**: Protocol remains 2.7.0; Regex URL matching and all browser integration behavior are unchanged from v2.3.7.`n`n"
           $notes += "#### Installation`n"
           $notes += "1. Download KeePassNatMsg.plgx`n"
           $notes += "2. Copy to KeePass Plugins directory`n"
@@ -157,7 +159,7 @@ jobs:
           $notes += "4. Tools -> KeePassNatMsg Options -> Browser Integration -> Install / Repair`n"
           $notes += "5. Restart Chrome or Edge, click Connect in KeePassXC-Browser`n`n"
           $notes += "#### Checksum`n"
-          $notes += "````n$hash  KeePassNatMsg.plgx`n````n"
+          $notes += "$fence`n$hash  KeePassNatMsg.plgx`n$fence`n"
           
           $notes | Set-Content "release-notes.md" -Encoding UTF8
           

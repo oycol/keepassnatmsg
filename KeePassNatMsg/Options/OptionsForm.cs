@@ -36,7 +36,7 @@ namespace KeePassNatMsg.Options
                 }
                 catch { }
 
-                return "2.3.7";
+                return "2.3.8";
             }
         }
 

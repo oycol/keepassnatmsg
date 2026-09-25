@@ -17,7 +17,7 @@ if (-not (Test-Path $ciDll)) { throw "Plugin dll not found at $ciDll" }
 Write-Host "Loading assemblies into PowerShell session..."
 [System.Reflection.Assembly]::LoadFrom($kpExe) | Out-Null
 [System.Reflection.Assembly]::LoadFrom($newtonsoftDll) | Out-Null
-[System.Reflection.Assembly]::LoadFrom($ciDll) | Out-Null
+$pluginAsm = [System.Reflection.Assembly]::LoadFrom($ciDll)
 
 $customConfig = New-Object KeePass.App.Configuration.AceCustomConfig
 $opt = New-Object KeePassNatMsg.ConfigOpt($customConfig)
@@ -55,6 +55,9 @@ try {
 
     $picFormLogo = $form.GetType().GetField("picFormLogo", $bindingFlags).GetValue($form)
     if (-not $picFormLogo) { throw "picFormLogo control is missing" }
+    if (-not $picFormLogo.Image) {
+        $failures.Add("picFormLogo.Image is null; logo was not initialized in Designer") | Out-Null
+    }
     if ($lblVersion.AutoSize) {
         $failures.Add("lblVersion must use a fixed height so text can be vertically centered with the icon") | Out-Null
     }
@@ -65,6 +68,20 @@ try {
         $failures.Add("Version text is not vertically centered with the icon") | Out-Null
     }
 
+    # Verify embedded icon_16 resource inside the compiled DLL
+    $resType = $pluginAsm.GetType("KeePassNatMsg.Properties.Resources")
+    $resIconProp = if ($resType) { $resType.GetProperty("icon_16", [System.Reflection.BindingFlags]'Static,NonPublic,Public') } else { $null }
+    $resIcon = if ($resIconProp) { $resIconProp.GetValue($null, $null) } else { $null }
+    if (-not $resIcon) {
+        $failures.Add("Compiled assembly does not contain embedded Resources.icon_16 Bitmap") | Out-Null
+    } else {
+        Write-Host "Embedded Resources.icon_16 verified: $($resIcon.Width)x$($resIcon.Height)"
+        if ($resIcon.Width -ne 16 -or $resIcon.Height -ne 16) {
+            $failures.Add("Embedded Resources.icon_16 size is $($resIcon.Width)x$($resIcon.Height), expected 16x16") | Out-Null
+        }
+    }
+
+    # Verify file-level official icon hash
     $officialIconPath = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\KeePassNatMsg\Resources\icon_16.png"))
     $officialIconHash = (Get-FileHash $officialIconPath -Algorithm SHA256).Hash.ToLowerInvariant()
     $expectedIconHash = "f32a7e44faacf4a81dc05fb09f6bc5f9f9d7969877549df1313aaa2939c59ecf"
@@ -73,6 +90,7 @@ try {
         $failures.Add("icon_16.png is not the pinned official KeePassXC application icon") | Out-Null
     }
 
+    # Verify Database Search Scope radio buttons are all vertically separated
     $rbActive = $form.GetType().GetField("credOnlySearchInSelectedDatabaseRadioButton", $bindingFlags).GetValue($form)
     $rbAll = $form.GetType().GetField("credSearchInAllOpenedDatabasesRadioButton", $bindingFlags).GetValue($form)
     $rbRestrict = $form.GetType().GetField("credRestrictSearchInSpecificDatabaseRadioButton", $bindingFlags).GetValue($form)
@@ -80,9 +98,12 @@ try {
     $connectionLabel = $form.GetType().GetField("labelConnDb", $bindingFlags).GetValue($form)
     $connectionCombo = $form.GetType().GetField("comboBoxDatabases", $bindingFlags).GetValue($form)
 
-    Write-Host "rbActive Top=$($rbActive.Top), rbAll Top=$($rbAll.Top)"
+    Write-Host "rbActive Top=$($rbActive.Top), rbAll Top=$($rbAll.Top), rbRestrict Top=$($rbRestrict.Top)"
     if ($rbAll.Top -le $rbActive.Bottom) {
-        $failures.Add("Database search radio buttons are not vertically separated") | Out-Null
+        $failures.Add("Database radio 2 is not vertically below radio 1") | Out-Null
+    }
+    if ($rbRestrict.Top -le $rbAll.Bottom) {
+        $failures.Add("Database radio 3 is not vertically below radio 2") | Out-Null
     }
 
     $targetGap = $targetDbCombo.Left - $rbRestrict.Right
@@ -112,6 +133,24 @@ try {
     }
 
     New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
+
+    # Render each tab individually so all controls across tabs can be visually reviewed
+    $tabControl = $form.GetType().GetField("tabControl", $bindingFlags).GetValue($form)
+    if ($tabControl) {
+        for ($i = 0; $i -lt $tabControl.TabCount; $i++) {
+            $tabControl.SelectedIndex = $i
+            $form.Refresh()
+            $bmpTab = New-Object System.Drawing.Bitmap($form.Width, $form.Height)
+            $rectTab = New-Object System.Drawing.Rectangle(0, 0, $form.Width, $form.Height)
+            $form.DrawToBitmap($bmpTab, $rectTab)
+            $tabName = "tab$i-$($tabControl.TabPages[$i].Name).png"
+            $bmpTab.Save((Join-Path $outputDir $tabName), [System.Drawing.Imaging.ImageFormat]::Png)
+            $bmpTab.Dispose()
+            Write-Host "Saved verified tab screenshot: $tabName"
+        }
+    }
+
+    # Save primary overall screenshot
     $bmp = New-Object System.Drawing.Bitmap($form.Width, $form.Height)
     $rect = New-Object System.Drawing.Rectangle(0, 0, $form.Width, $form.Height)
     $form.DrawToBitmap($bmp, $rect)
