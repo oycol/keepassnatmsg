@@ -367,7 +367,7 @@ namespace KeePassNatMsg.Entry
                     }
                 }
 
-                AddRegexAndUrlCandidates(db, candidates, parms.RespectEntrySearchingDisabled, searchUrls);
+                AddNetworkAndUrlCandidates(db, candidates, parms.RespectEntrySearchingDisabled, searchUrls);
             }
 
             var filtered = new List<PwEntryDatabase>();
@@ -407,7 +407,7 @@ namespace KeePassNatMsg.Entry
             return filtered;
         }
 
-        private void AddRegexAndUrlCandidates(PwDatabase db, Dictionary<string, PwEntryDatabase> candidates, bool bRespectEntrySearchingDisabled, bool includeAdditionalFields)
+        private void AddNetworkAndUrlCandidates(PwDatabase db, Dictionary<string, PwEntryDatabase> candidates, bool bRespectEntrySearchingDisabled, bool includeAdditionalFields)
         {
             var listEntries = db.RootGroup.GetEntries(true).AsEnumerable();
             if (bRespectEntrySearchingDisabled)
@@ -420,12 +420,12 @@ namespace KeePassNatMsg.Entry
                 var uuid = entry.Uuid.ToHexString();
                 if (candidates.ContainsKey(uuid)) continue;
 
-                var isRegexInPrimary = UrlMatchingHelper.IsRegexUrl(entry.Strings.ReadSafe(PwDefs.UrlField));
+                var hasNetworkInPrimary = UrlMatchingHelper.IsNetworkRuleCandidate(entry.Strings.ReadSafe(PwDefs.UrlField));
                 var hasAdditionalUrls = includeAdditionalFields && entry.Strings.Any(x =>
                     UrlMatchingHelper.IsAdditionalUrlField(x.Key) &&
                     UrlMatchingHelper.ParseUrlValues(entry.Strings.ReadSafe(x.Key)).Count > 0);
 
-                if (!isRegexInPrimary && !hasAdditionalUrls)
+                if (!hasNetworkInPrimary && !hasAdditionalUrls)
                 {
                     continue;
                 }

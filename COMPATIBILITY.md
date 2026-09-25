@@ -33,7 +33,7 @@
 ## 安全边界
 
 - 协议版本固定为 2.7.0，避免浏览器启用未实现的 Passkeys 功能。
-- URL 匹配不使用编辑距离或拼写模糊匹配。
+- URL 匹配仅允许普通 URL 和显式 IPv4 CIDR 网段规则；旧 `Regex:` 规则不再匹配，需人工修改旧条目。
 - 浏览器关联密钥存储在 KeePass 数据库 CustomData 中；Options 只显示短指纹。
 - Native Messaging 配置写入当前用户 HKCU，不默认写入 HKLM。
 

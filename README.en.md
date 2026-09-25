@@ -33,6 +33,10 @@ The plugin deploys its bundled proxy and registers the required HKCU Native Mess
 - **Preferences** contains matching, database scope, default group, and high-risk prompt bypass settings.
 - **Associations** manages browser associations and displays fingerprints instead of secret key material.
 
+## URL matching
+
+A KeePass entry can match multiple IPv4 subnets by setting its URL to `CIDR:10.125.1.0/24, CIDR:10.125.2.0/24`. Only numeric IPv4 hosts are matched; DNS names are not resolved. Invalid or non-canonical networks and `/0` fail closed. CIDR rules are independent of the HTTP/HTTPS scheme. Existing `Regex:` rules are no longer supported and are not migrated: replace them with CIDR or ordinary URLs before upgrading. Browser auto-fill is controlled by the extension settings.
+
 ## Notes
 
 - Run KeePass and the browsers as the same standard Windows user. Do not run KeePass as administrator.

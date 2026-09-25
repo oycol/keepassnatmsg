@@ -1,20 +1,66 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace KeePassNatMsg.Entry
 {
     public static class UrlMatchingHelper
     {
         public static readonly string[] DefaultAllowedSchemes = new[] { "https", "http" };
-        private const string RegexPrefix = "Regex:";
-        private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(200);
+        private const string CidrPrefix = "CIDR:";
 
-        public static bool IsRegexUrl(string value)
+        // Only explicit, canonical IPv4 networks are accepted. No DNS resolution or IPv6 coercion.
+        private static bool TryParseIpv4(string value, out uint address)
         {
-            if (string.IsNullOrWhiteSpace(value)) return false;
-            return value.Trim().StartsWith(RegexPrefix, StringComparison.OrdinalIgnoreCase);
+            address = 0;
+            if (string.IsNullOrEmpty(value)) return false;
+            string[] parts = value.Split('.');
+            if (parts.Length != 4) return false;
+            foreach (string part in parts)
+            {
+                if (part.Length < 1 || part.Length > 3 || (part.Length > 1 && part[0] == '0')) return false;
+                int octet = 0;
+                foreach (char c in part)
+                {
+                    if (c < '0' || c > '9') return false;
+                    octet = octet * 10 + (c - '0');
+                }
+                if (octet > 255) return false;
+                address = (address << 8) | (uint)octet;
+            }
+            return true;
+        }
+
+        private static bool TryParseCidr(string value, out uint network, out uint mask)
+        {
+            network = 0;
+            mask = 0;
+            if (string.IsNullOrWhiteSpace(value) ||
+                !value.Trim().StartsWith(CidrPrefix, StringComparison.OrdinalIgnoreCase)) return false;
+            string[] parts = value.Trim().Substring(CidrPrefix.Length).Split('/');
+            if (parts.Length != 2 || !TryParseIpv4(parts[0], out network)) return false;
+            string prefix = parts[1];
+            if (prefix.Length < 1 || prefix.Length > 2) return false;
+            int bits = 0;
+            foreach (char c in prefix)
+            {
+                if (c < '0' || c > '9') return false;
+                bits = bits * 10 + (c - '0');
+            }
+            // A global /0 rule would return a credential for every IPv4 website.
+            if (bits < 1 || bits > 32) return false;
+            mask = uint.MaxValue << (32 - bits);
+            return (network & mask) == network;
+        }
+
+        public static bool IsNetworkRuleCandidate(string value)
+        {
+            foreach (string rule in ParseUrlValues(value))
+            {
+                uint network, mask;
+                if (TryParseCidr(rule, out network, out mask)) return true;
+            }
+            return false;
         }
 
         public static bool IsAdditionalUrlField(string fieldName)
@@ -27,12 +73,6 @@ namespace KeePassNatMsg.Entry
         public static IList<string> ParseUrlValues(string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return new List<string>();
-
-            var trimmed = value.Trim();
-            if (IsRegexUrl(trimmed))
-            {
-                return new List<string> { trimmed };
-            }
 
             return value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(x => x.Trim())
@@ -70,47 +110,16 @@ namespace KeePassNatMsg.Entry
 
             var normalizedUrl = entryUrl.Trim();
 
-            // Support standard KeePass Regex: prefix for advanced IP/Host wildcard matching
-            if (IsRegexUrl(normalizedUrl))
+            // CIDR is an explicit IPv4 host rule; never resolve DNS or match a substring.
+            if (normalizedUrl.StartsWith(CidrPrefix, StringComparison.OrdinalIgnoreCase))
             {
-                var regexPattern = normalizedUrl.Substring(RegexPrefix.Length).Trim();
-                if (string.IsNullOrEmpty(regexPattern)) return false;
-
-                try
-                {
-                    var regex = new Regex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
-                    var scheme = !string.IsNullOrEmpty(requestScheme) ? requestScheme : "https";
-                    var fullRequestUrl = scheme + "://" + requestHost;
-
-                    if (regex.IsMatch(requestHost))
-                    {
-                        if (matchSchemes && !string.IsNullOrWhiteSpace(requestScheme))
-                        {
-                            if (regexPattern.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                                regexPattern.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                            {
-                                return regex.IsMatch(fullRequestUrl);
-                            }
-                        }
-                        return true;
-                    }
-
-                    if (regex.IsMatch(fullRequestUrl))
-                        return true;
-                }
-                catch (ArgumentException)
-                {
-                    // Invalid regex syntax in the entry
-                    return false;
-                }
-                catch (RegexMatchTimeoutException)
-                {
-                    // Protection against catastrophic backtracking
-                    return false;
-                }
-
-                return false;
+                uint network, mask, host;
+                return TryParseCidr(normalizedUrl, out network, out mask) &&
+                       TryParseIpv4(requestHost, out host) &&
+                       (host & mask) == network;
             }
+            // Retired Regex rules must not become ordinary URL matches.
+            if (normalizedUrl.StartsWith("Regex:", StringComparison.OrdinalIgnoreCase)) return false;
             if (!normalizedUrl.Contains("://"))
             {
                 normalizedUrl = "https://" + normalizedUrl;

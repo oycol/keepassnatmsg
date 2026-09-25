@@ -33,6 +33,13 @@ KeePassNatMsg 是 KeePass 2.x 的 Native Messaging 插件，使 Chrome 和 Edge 
 - **Preferences**：匹配规则、数据库范围、新登录默认组和高风险免确认设置。
 - **Associations**：管理当前数据库的浏览器关联；界面只显示密钥指纹，不显示密钥原文。
 
+## URL 匹配
+
+- 同一条目的 URL 可写多个 IPv4 网段，例如 `CIDR:10.125.1.0/24, CIDR:10.125.2.0/24`；只匹配数字 IPv4 主机，不查询 DNS，也不匹配网段外地址。
+- 为避免全网凭据泄漏，不接受 `/0`；网络地址须与掩码对齐，其他无效规则不匹配。
+- `Regex:` 已移除，不自动迁移；升级前请手动改为 CIDR 或普通 URL。
+- CIDR 不区分 HTTP/HTTPS；浏览器扩展是否自动填入仍取决于扩展设置。
+
 ## 注意事项
 
 - KeePass 与浏览器必须使用同一普通 Windows 用户运行；不要以管理员身份启动 KeePass。
