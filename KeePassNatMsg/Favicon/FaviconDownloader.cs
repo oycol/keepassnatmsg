@@ -5,6 +5,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -18,6 +19,7 @@ namespace KeePassNatMsg.Favicon
 
         private readonly CookieContainer _cookies = new CookieContainer();
         private IWebProxy _proxy;
+        private readonly Func<string, IPAddress[]> _resolveHost;
         private readonly object _reqLock = new object();
         private HttpWebRequest _activeRequest;
         private volatile bool _isAborted;
@@ -55,8 +57,15 @@ namespace KeePassNatMsg.Favicon
         }
 
         public FaviconDownloader(IWebProxy proxy = null)
+            : this(proxy, Dns.GetHostAddresses)
+        {
+        }
+
+        // Resolver injection keeps DNS safety tests deterministic without network access.
+        internal FaviconDownloader(IWebProxy proxy, Func<string, IPAddress[]> resolveHost)
         {
             _proxy = proxy ?? WebRequest.DefaultWebProxy;
+            _resolveHost = resolveHost ?? Dns.GetHostAddresses;
         }
 
         public byte[] DownloadFaviconDirect(string rawUrl, bool autoPrefix, int maxIconSize)
@@ -95,7 +104,7 @@ namespace KeePassNatMsg.Favicon
                 if (!Uri.TryCreate(currentUrl, UriKind.Absolute, out baseUri))
                     throw new FaviconDownloaderException(FaviconErrorStatus.NotFound);
 
-                if (IsPrivateAddress(baseUri.Host))
+                if (!IsAllowedDestination(baseUri))
                     throw new FaviconDownloaderException(FaviconErrorStatus.NotFound);
 
                 try
@@ -173,7 +182,7 @@ namespace KeePassNatMsg.Favicon
                         {
                             Uri candidateUri;
                             if (!Uri.TryCreate(candidate, UriKind.Absolute, out candidateUri)) continue;
-                            if (IsPrivateAddress(candidateUri.Host)) continue;
+                            if (!IsAllowedDestination(candidateUri)) continue;
                             rawData = TryDownloadAsset(candidateUri);
                         }
 
@@ -240,7 +249,7 @@ namespace KeePassNatMsg.Favicon
             if (!Uri.TryCreate(requestUrl, UriKind.Absolute, out providerUri))
                 throw new FaviconDownloaderException(FaviconErrorStatus.NotFound);
 
-            if (IsPrivateAddress(providerUri.Host))
+            if (!IsAllowedDestination(providerUri))
                 throw new FaviconDownloaderException(FaviconErrorStatus.NotFound);
 
             byte[] data = TryDownloadAsset(providerUri);
@@ -271,6 +280,51 @@ namespace KeePassNatMsg.Favicon
                 return uri.Host;
             }
             return string.Empty;
+        }
+
+        // Fail closed if any DNS answer is unsafe; redirects and assets use this same gate.
+        internal bool IsAllowedDestination(Uri uri)
+        {
+            if (uri == null || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) ||
+                string.IsNullOrEmpty(uri.Host) || !string.IsNullOrEmpty(uri.UserInfo) || IsPrivateAddress(uri.Host))
+                return false;
+
+            IPAddress literal;
+            if (IPAddress.TryParse(uri.Host, out literal)) return IsAllowedResolvedAddress(literal);
+
+            try
+            {
+                IPAddress[] addresses = _resolveHost(uri.Host);
+                if (addresses == null || addresses.Length == 0) return false;
+                foreach (IPAddress address in addresses)
+                    if (!IsAllowedResolvedAddress(address)) return false;
+                return true;
+            }
+            catch (Exception) { return false; }
+        }
+
+        internal static bool IsAllowedResolvedAddress(IPAddress address)
+        {
+            if (address == null) return false;
+            if (address.IsIPv4MappedToIPv6) address = address.MapToIPv4();
+            byte[] bytes = address.GetAddressBytes();
+            if (address.AddressFamily == AddressFamily.InterNetwork)
+            {
+                // Reject non-global, private, shared, link-local, documentation and multicast space.
+                return bytes[0] != 0 && bytes[0] != 10 && bytes[0] != 127 && bytes[0] < 224 &&
+                    !(bytes[0] == 100 && bytes[1] >= 64 && bytes[1] <= 127) &&
+                    !(bytes[0] == 169 && bytes[1] == 254) &&
+                    !(bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) &&
+                    !(bytes[0] == 192 && bytes[1] == 168) &&
+                    !(bytes[0] == 192 && bytes[1] == 0 && bytes[2] == 0) &&
+                    !(bytes[0] == 198 && (bytes[1] == 18 || bytes[1] == 19)) &&
+                    !(bytes[0] == 192 && bytes[1] == 0 && bytes[2] == 2) &&
+                    !(bytes[0] == 198 && bytes[1] == 51 && bytes[2] == 100) &&
+                    !(bytes[0] == 203 && bytes[1] == 0 && bytes[2] == 113);
+            }
+            if (address.AddressFamily != AddressFamily.InterNetworkV6) return false;
+            // Only globally routable IPv6 unicast (2000::/3), excluding documentation.
+            return (bytes[0] & 0xe0) == 0x20 && !(bytes[0] == 0x20 && bytes[1] == 0x01 && bytes[2] == 0x0d && bytes[3] == 0xb8);
         }
 
         private static bool IsPrivateAddress(string host)
@@ -562,7 +616,7 @@ namespace KeePassNatMsg.Favicon
                     _activeRequest = req;
                 }
 
-                using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
+                using (HttpWebResponse resp = GetSafeResponse(ref req, uri))
                 {
                     responseUri = resp.ResponseUri;
                     using (Stream stream = resp.GetResponseStream())
@@ -628,7 +682,7 @@ namespace KeePassNatMsg.Favicon
                     _activeRequest = req;
                 }
 
-                using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
+                using (HttpWebResponse resp = GetSafeResponse(ref req, uri))
                 {
                     if (resp.StatusCode != HttpStatusCode.OK) return null;
 
@@ -677,6 +731,46 @@ namespace KeePassNatMsg.Favicon
             }
         }
 
+        // HttpWebRequest automatic redirects bypass destination checks. Inspect every hop first.
+        private HttpWebResponse GetSafeResponse(ref HttpWebRequest request, Uri startUri)
+        {
+            Uri current = startUri;
+            for (int redirects = 0; redirects <= 5; redirects++)
+            {
+                if (_isAborted || !IsAllowedDestination(current))
+                    throw new WebException("Favicon destination is not allowed");
+
+                HttpWebResponse response;
+                try { response = (HttpWebResponse)request.GetResponse(); }
+                catch (WebException ex)
+                {
+                    response = ex.Response as HttpWebResponse;
+                    if (response == null) throw;
+                }
+
+                int status = (int)response.StatusCode;
+                if (status != 301 && status != 302 && status != 303 && status != 307 && status != 308)
+                    return response;
+
+                string location = response.Headers[HttpResponseHeader.Location];
+                response.Close();
+                Uri next;
+                if (redirects == 5 || string.IsNullOrEmpty(location) ||
+                    !Uri.TryCreate(current, location, out next) || !IsAllowedDestination(next))
+                    throw new WebException("Favicon redirect destination is not allowed");
+
+                current = next;
+                HttpWebRequest nextRequest = CreateRequest(current);
+                lock (_reqLock)
+                {
+                    if (_isAborted) throw new WebException("Favicon request cancelled");
+                    _activeRequest = nextRequest;
+                    request = nextRequest;
+                }
+            }
+            throw new WebException("Too many favicon redirects");
+        }
+
         // Extracted common request setup to eliminate duplication between TryFetchPage and TryDownloadAsset
         private HttpWebRequest CreateRequest(Uri uri)
         {
@@ -687,8 +781,7 @@ namespace KeePassNatMsg.Favicon
             req.ReadWriteTimeout = RequestTimeoutMs;
             req.CookieContainer = _cookies;
             req.Proxy = _proxy;
-            req.AllowAutoRedirect = true;
-            req.MaximumAutomaticRedirections = 5;
+            req.AllowAutoRedirect = false;
             return req;
         }
 

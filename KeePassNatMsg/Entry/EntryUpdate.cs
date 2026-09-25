@@ -6,6 +6,7 @@ using KeePassLib.Security;
 using KeePassLib.Utility;
 using System;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace KeePassNatMsg.Entry
@@ -23,42 +24,62 @@ namespace KeePassNatMsg.Entry
 
         public bool UpdateEntry(string uuid, string username, string password, string formHost)
         {
+            Uri requestUri;
+            if (string.IsNullOrEmpty(uuid) || string.IsNullOrEmpty(formHost) ||
+                !Uri.TryCreate(formHost, UriKind.Absolute, out requestUri) ||
+                !UrlMatchingHelper.DefaultAllowedSchemes.Contains(requestUri.Scheme.ToLowerInvariant()))
+                return false;
+
             PwEntry entry = null;
-            PwUuid id = new PwUuid(MemUtil.HexStringToByteArray(uuid));
+            PwUuid id;
+            try { id = new PwUuid(MemUtil.HexStringToByteArray(uuid)); }
+            catch (Exception) { return false; }
             PwDatabase db = null;
+            bool ambiguous = false;
             var configOpt = new ConfigOpt(_host.CustomConfig);
             if (configOpt.AllowSearchDatabase == (ulong)AllowSearchDatabase.SearchInAllOpenedDatabases)
             {
                 foreach (PwDocument doc in _host.MainWindow.DocumentManager.Documents)
                 {
-                    if (doc.Database.IsOpen)
+                    if (doc.Database != null && doc.Database.IsOpen && doc.Database.RootGroup != null)
                     {
-                        entry = doc.Database.RootGroup.FindEntry(id, true);
-                        if (entry != null)
+                        var found = doc.Database.RootGroup.FindEntry(id, true);
+                        if (found != null)
                         {
+                            if (entry != null && !object.ReferenceEquals(entry, found)) ambiguous = true;
+                            entry = found;
                             db = doc.Database;
-                            break;
                         }
                     }
                 }
             }
             else if (configOpt.AllowSearchDatabase == (ulong)AllowSearchDatabase.RestrictSearchInSpecificDatabase)
             {
-                entry = _ext.GetSearchDatabase().RootGroup.FindEntry(id, true);
                 db = _ext.GetSearchDatabase();
+                if (db == null || !db.IsOpen || db.RootGroup == null) return false;
+                entry = db.RootGroup.FindEntry(id, true);
             }
             else
             {
-                entry = _host.Database.RootGroup.FindEntry(id, true);
                 db = _host.Database;
+                if (db == null || !db.IsOpen || db.RootGroup == null) return false;
+                entry = db.RootGroup.FindEntry(id, true);
             }
 
-            if (entry == null)
+            if (entry == null || ambiguous)
             {
                 return false;
             }
 
-            string[] up = _ext.GetUserPass(entry);
+            if (entry.Expires && entry.ExpiryTime <= DateTime.UtcNow && configOpt.HideExpired) return false;
+            if (!EntrySearch.GetEntryUrls(entry, configOpt.SearchUrls).Any(url =>
+                UrlMatchingHelper.MatchesUrl(url, requestUri.Host, requestUri.Scheme,
+                    configOpt.MatchSchemes, configOpt.SpecificMatchingOnly))) return false;
+            var entryConfig = _ext.GetEntryConfig(entry);
+            if (entryConfig != null && (entryConfig.Deny.Contains(requestUri.Authority) ||
+                entryConfig.Deny.Contains(requestUri.Host))) return false;
+
+            string[] up = _ext.GetUserPass(new PwEntryDatabase(entry, db));
             var u = up[0];
             var p = up[1];
 
@@ -143,6 +164,9 @@ namespace KeePassNatMsg.Entry
                 baseUrl = url.Substring(0, lastSlash + 1);
             }
 
+            var connectionDb = _ext.GetConnectionDatabase();
+            if (connectionDb == null || !connectionDb.IsOpen || connectionDb.RootGroup == null) return false;
+
             PwEntry entry = new PwEntry(true, true);
             entry.Strings.Set(PwDefs.TitleField, new KeePassLib.Security.ProtectedString(false, uri.Host));
             entry.Strings.Set(PwDefs.UserNameField, new KeePassLib.Security.ProtectedString(false, username));
@@ -164,7 +188,7 @@ namespace KeePassNatMsg.Entry
 
             if (!string.IsNullOrEmpty(groupUuid))
             {
-                var db = _ext.GetConnectionDatabase();
+                var db = connectionDb;
                 if (db.RootGroup != null)
                 {
                     var uuid = new PwUuid(KeePassLib.Utility.MemUtil.HexStringToByteArray(groupUuid));
@@ -173,12 +197,18 @@ namespace KeePassNatMsg.Entry
             }
 
             if (group == null)
+            {
+                // A UUID that does not belong to the configured connection database
+                // must not silently redirect a create operation to the default group.
+                if (!string.IsNullOrEmpty(groupUuid)) return false;
                 group = _ext.GetPasswordsGroup();
+            }
+            if (group == null) return false;
 
             group.AddEntry(entry, true);
             _ext.UpdateUI(group);
 
-            AutoSaveIfRequired(_ext.GetConnectionDatabase());
+            AutoSaveIfRequired(connectionDb);
 
             return true;
         }

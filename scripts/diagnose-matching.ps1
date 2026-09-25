@@ -9,14 +9,11 @@ param(
 $pipeName = "keepassxc\$env:USERNAME\kpxc_server"
 $logPath = "$env:LOCALAPPDATA\KeePassNatMsg\plugin.log"
 
-Write-Host "=== Step 1: Plugin Log (last 50 lines) ===" -ForegroundColor Cyan
-if (Test-Path $logPath) {
-    Get-Content $logPath -Tail 50 | ForEach-Object { Write-Host "  $_" }
-} else {
-    Write-Host "  plugin.log not found" -ForegroundColor Yellow
-}
+Write-Host "=== Step 1: Plugin log availability ===" -ForegroundColor Cyan
+Write-Host "  plugin.log present: $(Test-Path $logPath)"
+Write-Host '  Raw log content withheld (may contain credentials or request payloads).'
 
-Write-Host "`n=== Step 2: Named Pipe get-logins for: $Url ===" -ForegroundColor Cyan
+Write-Host "`n=== Step 2: Direct Named Pipe key exchange (not a get-logins query) ===" -ForegroundColor Cyan
 
 # 1. Connect pipe and do change-public-keys
 $pipe = New-Object System.IO.Pipes.NamedPipeClientStream(".", $pipeName, [System.IO.Pipes.PipeDirection]::InOut)
@@ -48,49 +45,24 @@ try {
     $task = $pipe.ReadAsync($buf, 0, $buf.Length)
     if (-not $task.Wait(8000)) { throw "Timeout on change-public-keys" }
     $resp1Json = [System.Text.Encoding]::UTF8.GetString($buf, 0, $task.Result)
-    Write-Host "change-public-keys response: $resp1Json" -ForegroundColor Gray
-
     $resp1 = $resp1Json | ConvertFrom-Json
-    if ($resp1.success -ne "true") { throw "change-public-keys failed: $resp1Json" }
-    Write-Host "Key exchange OK, server pubKey: $($resp1.publicKey)" -ForegroundColor Green
+    if ($resp1.success -ne "true") { throw 'change-public-keys failed (response withheld)' }
+    Write-Host 'Direct named-pipe key exchange OK; this does not prove browser IPC or get-logins.' -ForegroundColor Green
 
-    # --- NOTE: get-logins requires full NaCl box encryption.
-    # We cannot do real nacl box in PowerShell without a library.
-    # Instead, we trigger a get-logins via another TCP approach is not feasible.
-    # However, the plugin.log already captures EVERY receive/response, so:
-    # We print the last RECV lines related to microsoftonline from the log.
-    Write-Host "`n=== Step 3: Search plugin.log for microsoftonline entries ===" -ForegroundColor Cyan
-    if (Test-Path $logPath) {
-        $lines = Get-Content $logPath
-        $relevant = $lines | Where-Object { $_ -match "microsoftonline|RECV|RESP" }
-        if ($relevant) {
-            $relevant | Select-Object -Last 100 | ForEach-Object { Write-Host "  $_" }
-        } else {
-            Write-Host "  No microsoftonline entries found in plugin.log" -ForegroundColor Yellow
-            Write-Host "  Showing all RECV/RESP from last 100 lines:" -ForegroundColor Yellow
-            $lines | Select-Object -Last 100 | Where-Object { $_ -match "RECV|RESP" } | ForEach-Object { Write-Host "  $_" }
-        }
-    }
+    # get-logins requires authenticated NaCl box encryption; this script does not
+    # issue it. Log lines (including RECV/RESP) cannot attribute traffic to Chrome.
+    Write-Host 'get-logins and browser-origin communication UNVERIFIED.' -ForegroundColor Yellow
 }
 finally {
     $pipe.Dispose()
 }
 
-Write-Host "`n=== Step 4: KeePass Matching Config ===" -ForegroundColor Cyan
-# Read KeePass config for matching options
+Write-Host "`n=== Step 3: KeePass matching config availability ===" -ForegroundColor Cyan
 $kpConfigPaths = @(
     "$env:APPDATA\KeePass\KeePass.config.xml",
     "C:\Program Files\KeePass Password Safe 2\KeePass.config.xml",
     "$env:LOCALAPPDATA\KeePass\KeePass.config.xml"
 )
-foreach ($cp in $kpConfigPaths) {
-    if (Test-Path $cp) {
-        Write-Host "KeePass config at: $cp" -ForegroundColor Green
-        # Look for KeePassNatMsg settings
-        $content = Get-Content $cp -Raw
-        if ($content -match "KeePassNatMsg") {
-            $content | Select-String "SpecificMatchingOnly|HideExpired|AlwaysAllow|KeePassNatMsg" -AllMatches | ForEach-Object { Write-Host "  $_" }
-        }
-        break
-    }
-}
+$foundConfig = @($kpConfigPaths | Where-Object { Test-Path $_ }).Count -gt 0
+Write-Host "KeePass config present: $foundConfig"
+Write-Host 'Config values withheld; matching behavior is not verified by this check.'

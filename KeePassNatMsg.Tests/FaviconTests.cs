@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
 using KeePassNatMsg.Favicon;
 using NUnit.Framework;
 
@@ -235,6 +239,191 @@ namespace KeePassNatMsg.Tests
         {
             Assert.AreEqual("git.corp.internal", FaviconDownloader.ExtractHostname("https://alice:secret123@git.corp.internal:9443/repo/project?branch=main#readme"));
             Assert.AreEqual("10.0.1.50", FaviconDownloader.ExtractHostname("http://admin:pwd@10.0.1.50:8080/dashboard"));
+        }
+
+        [TestCase("127.0.0.1")]
+        [TestCase("10.2.3.4")]
+        [TestCase("172.20.1.1")]
+        [TestCase("192.168.1.1")]
+        [TestCase("169.254.169.254")]
+        [TestCase("0.0.0.0")]
+        [TestCase("::1")]
+        [TestCase("::ffff:127.0.0.1")]
+        [TestCase("fe80::1")]
+        [TestCase("fc00::1")]
+        public void FaviconDownloader_ResolvedInternalAddress_IsBlocked(string address)
+        {
+            Assert.IsFalse(FaviconDownloader.IsAllowedResolvedAddress(IPAddress.Parse(address)));
+        }
+
+        [TestCase("8.8.8.8")]
+        [TestCase("172.32.1.1")]
+        [TestCase("2606:4700:4700::1111")]
+        public void FaviconDownloader_ResolvedPublicAddress_IsAllowed(string address)
+        {
+            Assert.IsTrue(FaviconDownloader.IsAllowedResolvedAddress(IPAddress.Parse(address)));
+        }
+
+        [Test]
+        public void FaviconDownloader_MixedDnsAnswers_FailsClosed()
+        {
+            using (FaviconDownloader fd = new FaviconDownloader(null, delegate(string host)
+            {
+                return new IPAddress[] { IPAddress.Parse("8.8.8.8"), IPAddress.Loopback };
+            }))
+            {
+                Assert.Throws<FaviconDownloaderException>(delegate
+                {
+                    fd.DownloadFaviconFromProvider("http://public.example.invalid/{URL:HOST}.png", "example.com", 32);
+                });
+            }
+        }
+
+        [Test]
+        public void FaviconDownloader_RedirectToInternalHost_IsRejected()
+        {
+            using (FaviconDownloader fd = new FaviconDownloader(null, delegate(string host)
+            {
+                return new IPAddress[] { host == "public.example" ? IPAddress.Parse("8.8.8.8") : IPAddress.Loopback };
+            }))
+            {
+                Assert.IsTrue(fd.IsAllowedDestination(new Uri("https://public.example/favicon.ico")));
+                Assert.IsFalse(fd.IsAllowedDestination(new Uri("http://127.0.0.1/admin")));
+                Assert.IsFalse(fd.IsAllowedDestination(new Uri("http://internal.example/admin")));
+            }
+        }
+
+        [Test]
+        public void FaviconDownloader_DnsFailure_IsRejected()
+        {
+            using (FaviconDownloader fd = new FaviconDownloader(null, delegate(string host)
+            {
+                throw new SocketException();
+            }))
+            {
+                Assert.IsFalse(fd.IsAllowedDestination(new Uri("https://unresolved.example/")));
+            }
+        }
+
+        [Test]
+        public void FaviconDownloader_ProviderRedirectToLoopback_DoesNotFollow()
+        {
+            TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+            try
+            {
+                listener.Start();
+                int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+                int requestCount = 0;
+                Exception serverError = null;
+                Thread server = new Thread(delegate()
+                {
+                    try
+                    {
+                        using (TcpClient client = listener.AcceptTcpClient())
+                        {
+                            client.ReceiveTimeout = 5000;
+                            Stream stream = client.GetStream();
+                            byte[] buffer = new byte[4096];
+                            stream.Read(buffer, 0, buffer.Length);
+                            Interlocked.Increment(ref requestCount);
+                            byte[] response = Encoding.ASCII.GetBytes("HTTP/1.1 302 Found\r\nLocation: http://127.0.0.1:" + port + "/internal\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+                            stream.Write(response, 0, response.Length);
+                        }
+                        // A second request means the redirect target was actually contacted.
+                        if (listener.Server.Poll(1000000, SelectMode.SelectRead))
+                        {
+                            using (TcpClient second = listener.AcceptTcpClient())
+                                Interlocked.Increment(ref requestCount);
+                        }
+                    }
+                    catch (Exception ex) { serverError = ex; }
+                });
+                server.IsBackground = true;
+                server.Start();
+                IWebProxy proxy = new WebProxy("http://127.0.0.1:" + port);
+                using (FaviconDownloader fd = new FaviconDownloader(proxy, delegate(string host)
+                {
+                    return new IPAddress[] { IPAddress.Parse("8.8.8.8") };
+                }))
+                {
+                    Assert.Throws<FaviconDownloaderException>(delegate
+                    {
+                        fd.DownloadFaviconFromProvider("http://public.example/{URL:HOST}.png", "example.com", 32);
+                    });
+                }
+                Assert.IsTrue(server.Join(3000));
+                Assert.IsNull(serverError);
+                Assert.AreEqual(1, requestCount, "Redirect target must not be requested");
+            }
+            finally { listener.Stop(); }
+        }
+
+        [Test]
+        public void FaviconDownloader_PublicProviderDirectResponse_Succeeds()
+        {
+            byte[] png;
+            using (Bitmap bitmap = new Bitmap(16, 16))
+            using (MemoryStream image = new MemoryStream())
+            {
+                bitmap.Save(image, ImageFormat.Png);
+                png = image.ToArray();
+            }
+            TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+            try
+            {
+                listener.Start();
+                int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+                Thread server = new Thread(delegate()
+                {
+                    using (TcpClient client = listener.AcceptTcpClient())
+                    {
+                        Stream stream = client.GetStream();
+                        byte[] request = new byte[4096];
+                        stream.Read(request, 0, request.Length);
+                        byte[] headers = Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: " + png.Length + "\r\nConnection: close\r\n\r\n");
+                        stream.Write(headers, 0, headers.Length);
+                        stream.Write(png, 0, png.Length);
+                    }
+                });
+                server.IsBackground = true;
+                server.Start();
+                using (FaviconDownloader fd = new FaviconDownloader(new WebProxy("http://127.0.0.1:" + port), delegate(string host)
+                {
+                    return new IPAddress[] { IPAddress.Parse("8.8.8.8") };
+                }))
+                {
+                    byte[] result = fd.DownloadFaviconFromProvider("http://public.example/{URL:HOST}.png", "example.com", 32);
+                    Assert.IsNotNull(result);
+                    Assert.Greater(result.Length, 0);
+                }
+                Assert.IsTrue(server.Join(3000));
+            }
+            finally { listener.Stop(); }
+        }
+
+        [Test]
+        public void FaviconDownloader_PublicLiteral_DoesNotRequireDnsLookup()
+        {
+            using (FaviconDownloader fd = new FaviconDownloader(null, delegate(string host)
+            {
+                throw new SocketException();
+            }))
+            {
+                Assert.IsTrue(fd.IsAllowedDestination(new Uri("https://8.8.8.8/favicon.ico")));
+                Assert.IsFalse(fd.IsAllowedDestination(new Uri("http://127.0.0.1/favicon.ico")));
+            }
+        }
+
+        [Test]
+        public void FaviconDownloader_PublicHostnameStartingWithFc_IsAllowed()
+        {
+            using (FaviconDownloader fd = new FaviconDownloader(null, delegate(string host)
+            {
+                return new IPAddress[] { IPAddress.Parse("8.8.8.8") };
+            }))
+            {
+                Assert.IsTrue(fd.IsAllowedDestination(new Uri("https://fcdn.example/favicon.ico")));
+            }
         }
 
         [Test]

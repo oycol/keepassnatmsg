@@ -8,7 +8,7 @@ namespace KeePassNatMsg.Protocol.Listener
 {
     public sealed class NamedPipeListener : IListener
     {
-        private const int BufferSize = 1024 * 1024;
+        private const int MaxMessageSize = 10 * 1024 * 1024;
         private const int Threads = 5;
         private readonly string _name;
         private volatile bool _active;
@@ -107,6 +107,22 @@ namespace KeePassNatMsg.Protocol.Listener
             }
         }
 
+        private static bool ReadExact(Stream stream, byte[] buffer, int offset, int count, bool allowEof)
+        {
+            while (count > 0)
+            {
+                int read = stream.Read(buffer, offset, count);
+                if (read == 0)
+                {
+                    if (allowEof && offset == 0) return false;
+                    throw new EndOfStreamException("Truncated pipe request");
+                }
+                offset += read;
+                count -= read;
+            }
+            return true;
+        }
+
         private void Run(object args)
         {
             var pts = (PipeThreadState)args;
@@ -130,29 +146,30 @@ namespace KeePassNatMsg.Protocol.Listener
             {
                 server.WaitForConnection();
 
-                var buffer = new byte[BufferSize];
                 while (_active && server.IsConnected)
                 {
-                    var bytes = server.Read(buffer, 0, buffer.Length);
-
-                    if (bytes > 0)
-                    {
-                        var data = new byte[bytes];
-                        Array.Copy(buffer, data, bytes);
-                        var handler = MessageReceived;
-                        if (handler != null)
-                            handler(this, new PipeMessageReceivedEventArgs(new PipeWriter(server), data));
-                    }
-                    else
-                    {
-                        // bytes == 0 means the client disconnected cleanly.
-                        break;
-                    }
+                    // The pipe is in byte mode: one Read may contain only part of a
+                    // header/body. Read the exact framed request before dispatch.
+                    var header = new byte[4];
+                    if (!ReadExact(server, header, 0, header.Length, true)) break;
+                    int length = header[0] | (header[1] << 8) |
+                        (header[2] << 16) | (header[3] << 24);
+                    if (length <= 0 || length > MaxMessageSize)
+                        throw new IOException("Invalid pipe request length: " + length);
+                    var data = new byte[length];
+                    ReadExact(server, data, 0, length, false);
+                    var handler = MessageReceived;
+                    if (handler != null)
+                        handler(this, new PipeMessageReceivedEventArgs(new PipeWriter(server), data));
                 }
             }
             catch (IOException)
             {
                 // Client disconnected abruptly — normal operating condition.
+            }
+            catch (ObjectDisposedException)
+            {
+                // Stop() closed a waiting or connected pipe.
             }
 
             ThreadClosed(pts);

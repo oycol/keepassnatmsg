@@ -8,6 +8,22 @@ namespace KeePassNatMsg.Entry
     {
         public static readonly string[] DefaultAllowedSchemes = new[] { "https", "http" };
         private const string CidrPrefix = "CIDR:";
+        // Conservative built-in boundary list: never inherit credentials from a shared suffix.
+        // This is not a complete Public Suffix List; see security regression notes.
+        private static readonly HashSet<string> SharedSuffixes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "co.uk", "org.uk", "ac.uk", "gov.uk", "net.uk", "com.au", "net.au", "org.au",
+            "com.br", "com.cn", "com.hk", "com.mx", "com.sg", "co.jp", "co.kr", "co.nz",
+            "co.in", "com.tw", "github.io", "gitlab.io", "pages.dev", "appspot.com",
+            "blogspot.com", "wordpress.com", "herokuapp.com", "vercel.app", "netlify.app",
+            "azurewebsites.net", "cloudfront.net", "s3.amazonaws.com"
+        };
+
+        private static bool IsPublicSuffix(string host)
+        {
+            if (string.IsNullOrEmpty(host)) return true;
+            return host.IndexOf('.') < 0 || SharedSuffixes.Contains(host);
+        }
 
         // Only explicit, canonical IPv4 networks are accepted. No DNS resolution or IPv6 coercion.
         private static bool TryParseIpv4(string value, out uint address)
@@ -93,7 +109,7 @@ namespace KeePassNatMsg.Entry
                 if (dotIndex < 0) break;
 
                 current = current.Substring(dotIndex + 1);
-                if (string.IsNullOrEmpty(current) || current.IndexOf('.') < 0)
+                if (IsPublicSuffix(current))
                 {
                     // Stop at the registrable top boundary to avoid searching naked TLDs like "com" or "uk"
                     break;
@@ -149,7 +165,8 @@ namespace KeePassNatMsg.Entry
 
             // Security rule: a parent domain entry (e.g. example.com) may match a subdomain request (e.g. login.example.com).
             // A child subdomain entry MUST NOT match a parent domain request.
-            if (cleanRequestHost.EndsWith("." + cleanEntryHost, StringComparison.OrdinalIgnoreCase))
+            if (!IsPublicSuffix(cleanEntryHost) &&
+                cleanRequestHost.EndsWith("." + cleanEntryHost, StringComparison.OrdinalIgnoreCase))
                 return true;
 
             return false;

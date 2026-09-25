@@ -16,8 +16,21 @@ namespace KeePassNatMsg.Protocol.Listener
         public void Send(string msg)
         {
             var data = _utf8.GetBytes(msg);
-            _server.Write(data, 0, data.Length);
-            _server.Flush();
+            if (data.Length == 0 || data.Length > 10 * 1024 * 1024)
+                throw new System.IO.InvalidDataException("Invalid pipe response length: " + data.Length);
+            var header = new byte[4];
+            header[0] = (byte)data.Length;
+            header[1] = (byte)(data.Length >> 8);
+            header[2] = (byte)(data.Length >> 16);
+            header[3] = (byte)(data.Length >> 24);
+            // Keep response bytes together with their prefix even when broadcasts
+            // and request handlers write concurrently to the same pipe.
+            lock (_server)
+            {
+                _server.Write(header, 0, header.Length);
+                _server.Write(data, 0, data.Length);
+                _server.Flush();
+            }
         }
     }
 }

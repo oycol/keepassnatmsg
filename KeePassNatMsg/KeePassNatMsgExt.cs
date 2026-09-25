@@ -114,7 +114,9 @@ namespace KeePassNatMsg
 
         internal PwGroup GetPasswordsGroup()
         {
-            var root = GetConnectionDatabase().RootGroup;
+            var db = GetConnectionDatabase();
+            if (db == null || !db.IsOpen || db.RootGroup == null) return null;
+            var root = db.RootGroup;
             var uuid = new PwUuid(KeePassNatMsgGroupUuid);
             var group = root.FindGroup(uuid, true);
             if (group == null)
@@ -379,7 +381,12 @@ namespace KeePassNatMsg
         internal void UpdateUI(PwGroup group)
         {
             var win = HostInstance.MainWindow;
-            if (group == null) group = GetConnectionDatabase().RootGroup;
+            if (group == null)
+            {
+                var db = GetConnectionDatabase();
+                if (db == null || !db.IsOpen || db.RootGroup == null) return;
+                group = db.RootGroup;
+            }
             var f = (MethodInvoker) delegate {
                 win.UpdateUI(false, null, true, group, true, null, true);
             };
@@ -453,7 +460,9 @@ namespace KeePassNatMsg
         internal string GetDbHashForMessage()
         {
             var opts = new ConfigOpt(HostInstance.CustomConfig);
-            return GetDbHash(GetConnectionDatabase(), !opts.UseKeePassXcSettings);
+            var db = GetConnectionDatabase();
+            return db == null || !db.IsOpen || db.RootGroup == null ? string.Empty :
+                GetDbHash(db, !opts.UseKeePassXcSettings);
         }
 
         // wizard magic courtesy of https://stackoverflow.com/questions/311165/how-do-you-convert-a-byte-array-to-a-hexadecimal-string-and-vice-versa/14333437#14333437
@@ -602,11 +611,11 @@ namespace KeePassNatMsg
             }
             else
             {
-                var document = HostInstance.MainWindow.DocumentManager.Documents.Find(p => GetDbHash(p.Database) == options.ConnectionDatabaseHash);
+                var document = HostInstance.MainWindow.DocumentManager.Documents.Find(p => p.Database != null && p.Database.IsOpen && p.Database.RootGroup != null && GetDbHash(p.Database) == options.ConnectionDatabaseHash);
                 if (document != null)
                     return document.Database;
                 else
-                    return HostInstance.Database;
+                    return null;
             }
         }
 
@@ -619,11 +628,11 @@ namespace KeePassNatMsg
             }
             else
             {
-                var document = HostInstance.MainWindow.DocumentManager.Documents.Find(p => GetDbHash(p.Database) == options.SearchDatabaseHash);
+                var document = HostInstance.MainWindow.DocumentManager.Documents.Find(p => p.Database != null && p.Database.IsOpen && p.Database.RootGroup != null && GetDbHash(p.Database) == options.SearchDatabaseHash);
                 if (document != null)
                     return document.Database;
                 else
-                    return HostInstance.Database;
+                    return null;
             }
         }
 

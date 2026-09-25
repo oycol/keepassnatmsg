@@ -3,106 +3,28 @@ name: Diagnose Matching
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   diagnose:
-    name: Diagnose KeePassNatMsg Matching
+    name: Diagnose KeePassNatMsg Matching (redacted)
     runs-on: [self-hosted, windows, keepass-e2e, interactive]
     timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read plugin.log and KeePass config
+      - name: Check diagnostic availability without exposing logs or credentials
         shell: powershell
         run: |
-          Write-Host "=== plugin.log ===" -ForegroundColor Cyan
-          $logPath = "$env:LOCALAPPDATA\KeePassNatMsg\plugin.log"
-          if (Test-Path $logPath) {
-            Get-Content $logPath | Select-Object -Last 200 | ForEach-Object { Write-Host $_ }
-          } else {
-            Write-Host "plugin.log not found at $logPath" -ForegroundColor Yellow
-          }
-
-          Write-Host "`n=== KeePass config KeePassNatMsg settings ===" -ForegroundColor Cyan
-          $kpCfg = "$env:APPDATA\KeePass\KeePass.config.xml"
-          if (Test-Path $kpCfg) {
-            [xml]$xml = Get-Content $kpCfg -Raw
-            $ns = $xml.DocumentElement.NamespaceURI
-            # Find all custom config items for KeePassNatMsg
-            $items = $xml.SelectNodes("//*[contains(local-name(),'Item') or contains(local-name(),'item')]")
-            $items | Where-Object { $_.Key -match "KeePassNatMsg" } | ForEach-Object {
-              Write-Host "  $($_.Key) = $($_.Value)"
-            }
-            # Alternative: grep approach
-            $raw = Get-Content $kpCfg -Raw
-            $matches_ = [regex]::Matches($raw, '<Item><Key>(KeePassNatMsg[^<]*)</Key><Value>([^<]*)</Value>')
-            $matches_ | ForEach-Object { Write-Host "  $($_.Groups[1].Value) = $($_.Groups[2].Value)" }
-          } else {
-            Write-Host "KeePass config not found" -ForegroundColor Yellow
-          }
-
-      - name: Load KeePass DLL and inspect microsoftonline entries
-        shell: powershell
-        run: |
-          Write-Host "=== Inspect KeePass database entries for microsoftonline ===" -ForegroundColor Cyan
-
-          $kpExe = "C:\Program Files\KeePass Password Safe 2\KeePass.exe"
-          if (-not (Test-Path $kpExe)) { Write-Host "KeePass.exe not found"; exit 0 }
-          
-          try {
-            Add-Type -Path $kpExe -ErrorAction Stop
-          } catch {
-            Write-Host "Could not load KeePass types: $($_.Exception.Message)" -ForegroundColor Yellow
-            exit 0
-          }
-
-          # Find open database file
-          $dbPath = "C:\KeePassNatMsg-E2E\test.kdbx"
-          $dbPass = "TestPassword2026!"
-          if (-not (Test-Path $dbPath)) {
-            Write-Host "Test DB not found at $dbPath"
-            exit 0
-          }
-
-          $db = New-Object KeePassLib.PwDatabase
-          $io = New-Object KeePassLib.Serialization.IOConnectionInfo
-          $io.Path = $dbPath
-          $compKey = New-Object KeePassLib.Keys.CompositeKey
-          $compKey.AddUserKey((New-Object KeePassLib.Keys.KcpPassword($dbPass)))
-          $db.Open($io, $compKey, $null)
-
-          Write-Host "Database opened. Scanning all entries..." -ForegroundColor Green
-          $allEntries = $db.RootGroup.GetEntries($true)
-          Write-Host "Total entries: $($allEntries.Count)"
-
-          Write-Host "`n--- Entries matching 'microsoftonline' (URL or Title) ---"
-          foreach ($entry in $allEntries) {
-            $url   = $entry.Strings.ReadSafe("URL")
-            $title = $entry.Strings.ReadSafe("Title")
-            $user  = $entry.Strings.ReadSafe("UserName")
-            if ($url -match "microsoftonline" -or $title -match "microsoft" -or $url -match "microsoft") {
-              Write-Host "  Title: $title"
-              Write-Host "  URL:   $url"
-              Write-Host "  User:  $user"
-              # Check CustomData for KeePassNatMsg Allow/Deny
-              foreach ($kv in $entry.CustomData) {
-                if ($kv.Key -match "KeePassNatMsg") {
-                  Write-Host "  CustomData[$($kv.Key)] = $($kv.Value)"
-                }
-              }
-              Write-Host "  Expires: $($entry.Expires)  ExpiryTime: $($entry.ExpiryTime)"
-              Write-Host "  ---"
-            }
-          }
-          $db.Close()
-
-      - name: Read proxy.log
-        shell: powershell
-        run: |
-          Write-Host "=== proxy.log ===" -ForegroundColor Cyan
-          $proxyLog = "$env:LOCALAPPDATA\KeePassNatMsg\proxy.log"
-          if (Test-Path $proxyLog) {
-            Get-Content $proxyLog | Select-Object -Last 100 | ForEach-Object { Write-Host $_ }
-          } else {
-            Write-Host "proxy.log not found" -ForegroundColor Yellow
-          }
+          $logPath = Join-Path $env:LOCALAPPDATA 'KeePassNatMsg\plugin.log'
+          $proxyLog = Join-Path $env:LOCALAPPDATA 'KeePassNatMsg\proxy.log'
+          $kpCfg = Join-Path $env:APPDATA 'KeePass\KeePass.config.xml'
+          $dbPath = 'C:\KeePassNatMsg-E2E\test.kdbx'
+          Write-Host "plugin.log present: $(Test-Path $logPath)"
+          Write-Host "proxy.log present: $(Test-Path $proxyLog)"
+          Write-Host "KeePass config present: $(Test-Path $kpCfg)"
+          Write-Host "Test database present: $(Test-Path $dbPath)"
+          Write-Host 'No raw logs, config values, database entries, URLs, usernames, or credentials are published.'
+          Write-Host 'Matching behavior and browser-origin communication remain UNVERIFIED by this diagnostic.'

@@ -203,10 +203,8 @@ namespace KeePassNatMsg.Entry
         internal string GetTotp(string uuid)
         {
             var dbEntry = FindEntry(uuid);
-
             if (dbEntry == null)
                 return null;
-
             return GetTotpFromEntry(dbEntry);
         }
 
@@ -254,7 +252,7 @@ namespace KeePassNatMsg.Entry
             {
                 foreach (var doc in _host.MainWindow.DocumentManager.Documents)
                 {
-                    if (doc.Database.IsOpen)
+                    if (doc.Database != null && doc.Database.IsOpen && doc.Database.RootGroup != null)
                     {
                         var entry = doc.Database.RootGroup.FindEntry(id, true);
                         if (entry != null)
@@ -264,12 +262,15 @@ namespace KeePassNatMsg.Entry
             }
             else if (configOpt.AllowSearchDatabase == (ulong)AllowSearchDatabase.RestrictSearchInSpecificDatabase)
             {
-                var entry = _ext.GetSearchDatabase().RootGroup.FindEntry(id, true);
+                var searchDb = _ext.GetSearchDatabase();
+                if (searchDb == null || !searchDb.IsOpen || searchDb.RootGroup == null) return null;
+                var entry = searchDb.RootGroup.FindEntry(id, true);
                 if (entry != null)
-                    return new PwEntryDatabase(entry, _ext.GetSearchDatabase());
+                    return new PwEntryDatabase(entry, searchDb);
             }
             else
             {
+                if (_host.Database == null || !_host.Database.IsOpen || _host.Database.RootGroup == null) return null;
                 var entry = _host.Database.RootGroup.FindEntry(id, true);
                 if (entry != null)
                     return new PwEntryDatabase(entry, _host.Database);
@@ -317,7 +318,7 @@ namespace KeePassNatMsg.Entry
             {
                 foreach (PwDocument doc in _host.MainWindow.DocumentManager.Documents)
                 {
-                    if (doc.Database.IsOpen)
+                    if (doc.Database != null && doc.Database.IsOpen && doc.Database.RootGroup != null)
                     {
                         listDatabases.Add(doc.Database);
                     }
@@ -337,7 +338,7 @@ namespace KeePassNatMsg.Entry
             var matchSchemes = configOpt.MatchSchemes;
             var exactHostOnly = configOpt.SpecificMatchingOnly;
             var formAuthority = hostUri.Authority;
-            var candidates = new Dictionary<string, PwEntryDatabase>();
+            var candidates = new Dictionary<PwEntry, PwEntryDatabase>();
 
             foreach (PwDatabase db in listDatabases)
             {
@@ -359,10 +360,9 @@ namespace KeePassNatMsg.Entry
                     db.RootGroup.SearchEntries(parms, listEntries);
                     foreach (var entry in listEntries)
                     {
-                        var key = entry.Uuid.ToHexString();
-                        if (!candidates.ContainsKey(key))
+                        if (!candidates.ContainsKey(entry))
                         {
-                            candidates.Add(key, new PwEntryDatabase(entry, db));
+                            candidates.Add(entry, new PwEntryDatabase(entry, db));
                         }
                     }
                 }
@@ -407,7 +407,7 @@ namespace KeePassNatMsg.Entry
             return filtered;
         }
 
-        private void AddNetworkAndUrlCandidates(PwDatabase db, Dictionary<string, PwEntryDatabase> candidates, bool bRespectEntrySearchingDisabled, bool includeAdditionalFields)
+        private void AddNetworkAndUrlCandidates(PwDatabase db, Dictionary<PwEntry, PwEntryDatabase> candidates, bool bRespectEntrySearchingDisabled, bool includeAdditionalFields)
         {
             var listEntries = db.RootGroup.GetEntries(true).AsEnumerable();
             if (bRespectEntrySearchingDisabled)
@@ -417,8 +417,7 @@ namespace KeePassNatMsg.Entry
 
             foreach (var entry in listEntries)
             {
-                var uuid = entry.Uuid.ToHexString();
-                if (candidates.ContainsKey(uuid)) continue;
+                if (candidates.ContainsKey(entry)) continue;
 
                 var hasNetworkInPrimary = UrlMatchingHelper.IsNetworkRuleCandidate(entry.Strings.ReadSafe(PwDefs.UrlField));
                 var hasAdditionalUrls = includeAdditionalFields && entry.Strings.Any(x =>
@@ -430,11 +429,11 @@ namespace KeePassNatMsg.Entry
                     continue;
                 }
 
-                candidates.Add(uuid, new PwEntryDatabase(entry, db));
+                candidates.Add(entry, new PwEntryDatabase(entry, db));
             }
         }
 
-        private static IEnumerable<string> GetEntryUrls(PwEntry entry, bool includeAdditionalFields)
+        internal static IEnumerable<string> GetEntryUrls(PwEntry entry, bool includeAdditionalFields)
         {
             foreach (var url in UrlMatchingHelper.ParseUrlValues(entry.Strings.ReadSafe(PwDefs.UrlField)))
             {

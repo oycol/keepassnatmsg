@@ -36,21 +36,31 @@ try {
     $json = $reqObj | ConvertTo-Json -Compress
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
 
-    Write-Host "Sending request ($($bytes.Length) bytes): $json"
+    Write-Host "Sending framed request ($($bytes.Length) bytes)"
+    $requestHeader = [BitConverter]::GetBytes([int]$bytes.Length)
+    $pipe.Write($requestHeader, 0, 4)
     $pipe.Write($bytes, 0, $bytes.Length)
     $pipe.Flush()
 
-    Write-Host "Reading response from pipe..."
-    $respBuffer = New-Object byte[] 4096
-    $readTask = $pipe.ReadAsync($respBuffer, 0, $respBuffer.Length)
-    if (-not $readTask.Wait(8000)) {
-        throw "Timeout waiting for response from KeePassNatMsg named pipe."
+    Write-Host "Reading framed response from pipe..."
+    $respHeader = New-Object byte[] 4
+    $headerRead = 0
+    while ($headerRead -lt 4) {
+        $readTask = $pipe.ReadAsync($respHeader, $headerRead, 4 - $headerRead)
+        if (-not $readTask.Wait(8000) -or $readTask.Result -le 0) { throw 'Incomplete response header' }
+        $headerRead += $readTask.Result
     }
-    $bytesRead = $readTask.Result
-    Write-Host "Read $bytesRead bytes from pipe!" -ForegroundColor Green
-
-    $responseJson = [System.Text.Encoding]::UTF8.GetString($respBuffer, 0, $bytesRead)
-    Write-Host "KeePassNatMsg Raw Response:`n$responseJson" -ForegroundColor Green
+    $respSize = [BitConverter]::ToInt32($respHeader, 0)
+    if ($respSize -le 0 -or $respSize -gt 10485760) { throw 'Invalid response length' }
+    $respBuffer = New-Object byte[] $respSize
+    $bytesRead = 0
+    while ($bytesRead -lt $respSize) {
+        $readTask = $pipe.ReadAsync($respBuffer, $bytesRead, $respSize - $bytesRead)
+        if (-not $readTask.Wait(8000) -or $readTask.Result -le 0) { throw 'Incomplete response body' }
+        $bytesRead += $readTask.Result
+    }
+    $responseJson = [System.Text.Encoding]::UTF8.GetString($respBuffer)
+    Write-Host "Received framed response ($bytesRead bytes)" -ForegroundColor Green
 
     # Validate response fields
     if (-not ($responseJson -match '"version"\s*:\s*"2\.7\.0"')) {
@@ -63,6 +73,57 @@ try {
         throw "Response does not contain success: true!"
     }
 
+    # A plaintext lock request must be rejected before it can lock the open test DB.
+    $lockJson = '{"action":"lock-database","clientID":"' + $clientBase64 + '","nonce":"' + $nonceBase64 + '"}'
+    $lockBytes = [System.Text.Encoding]::UTF8.GetBytes($lockJson)
+    $pipe.Write(([BitConverter]::GetBytes([int]$lockBytes.Length)), 0, 4)
+    $pipe.Write($lockBytes, 0, $lockBytes.Length)
+    $pipe.Flush()
+    $lockHeader = New-Object byte[] 4
+    $headerRead = 0
+    while ($headerRead -lt 4) {
+        $lockRead = $pipe.ReadAsync($lockHeader, $headerRead, 4 - $headerRead)
+        if (-not $lockRead.Wait(8000) -or $lockRead.Result -le 0) { throw 'No response to unauthenticated lock-database request' }
+        $headerRead += $lockRead.Result
+    }
+    $lockSize = [BitConverter]::ToInt32($lockHeader, 0)
+    if ($lockSize -le 0 -or $lockSize -gt 10485760) { throw 'Invalid lock response length' }
+    $lockBuffer = New-Object byte[] $lockSize
+    $lockReadCount = 0
+    while ($lockReadCount -lt $lockSize) {
+        $lockRead = $pipe.ReadAsync($lockBuffer, $lockReadCount, $lockSize - $lockReadCount)
+        if (-not $lockRead.Wait(8000) -or $lockRead.Result -le 0) { throw 'Incomplete lock response' }
+        $lockReadCount += $lockRead.Result
+    }
+    $lockResponse = [System.Text.Encoding]::UTF8.GetString($lockBuffer) | ConvertFrom-Json
+    if ($lockResponse.action -ne 'lock-database' -or $lockResponse.errorCode -ne 4) {
+        throw 'Unauthenticated lock-database was not rejected'
+    }
+    $hashJson = '{"action":"get-databasehash","clientID":"' + $clientBase64 + '","nonce":"' + $nonceBase64 + '"}'
+    $hashBytes = [System.Text.Encoding]::UTF8.GetBytes($hashJson)
+    $hashFrame = [BitConverter]::GetBytes([int]$hashBytes.Length)
+    $pipe.Write($hashFrame, 0, 4)
+    $pipe.Write($hashBytes, 0, $hashBytes.Length)
+    $pipe.Flush()
+    $hashHeader = New-Object byte[] 4
+    $hashHeaderRead = 0
+    while ($hashHeaderRead -lt 4) {
+        $hashRead = $pipe.ReadAsync($hashHeader, $hashHeaderRead, 4 - $hashHeaderRead)
+        if (-not $hashRead.Wait(8000) -or $hashRead.Result -le 0) { throw 'Database became unavailable after denied lock' }
+        $hashHeaderRead += $hashRead.Result
+    }
+    $hashSize = [BitConverter]::ToInt32($hashHeader, 0)
+    if ($hashSize -le 0 -or $hashSize -gt 10485760) { throw 'Invalid response after denied lock' }
+    $hashBody = New-Object byte[] $hashSize
+    $hashBodyRead = 0
+    while ($hashBodyRead -lt $hashSize) {
+        $hashRead = $pipe.ReadAsync($hashBody, $hashBodyRead, $hashSize - $hashBodyRead)
+        if (-not $hashRead.Wait(8000) -or $hashRead.Result -le 0) { throw 'Incomplete response after denied lock' }
+        $hashBodyRead += $hashRead.Result
+    }
+    $hashResponse = [System.Text.Encoding]::UTF8.GetString($hashBody) | ConvertFrom-Json
+    if ($hashResponse.errorCode -eq 1) { throw 'Unauthenticated request locked the database' }
+    Write-Host 'Unauthenticated lock-database request rejected without locking the database.' -ForegroundColor Green
     Write-Host "`nDIRECT NAMED PIPE PROTOCOL ROUNDTRIP: 100% PASSED!" -ForegroundColor Green
 }
 finally {

@@ -122,6 +122,29 @@ namespace KeePassNatMsg.Tests
         }
 
         [Test]
+        public void MatchesUrl_PublicSuffixEntry_NeverMatchesOtherTenant()
+        {
+            foreach (var suffix in new[] { "co.uk", "github.io", "com.au", "pages.dev" })
+            {
+                Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(
+                    "https://" + suffix + "/", "victim." + suffix), suffix);
+                Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(
+                    "https://" + suffix + "/", suffix), suffix + " exact host");
+            }
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(
+                "https://example.co.uk/", "login.example.co.uk"));
+        }
+
+        [Test]
+        public void BuildCandidateHosts_StopsBeforePublicSuffix()
+        {
+            CollectionAssert.AreEqual(new[] { "login.example.co.uk", "example.co.uk" },
+                KeePassNatMsg.Entry.UrlMatchingHelper.GetSearchHosts("login.example.co.uk").ToList());
+            CollectionAssert.AreEqual(new[] { "login.tenant.github.io", "tenant.github.io" },
+                KeePassNatMsg.Entry.UrlMatchingHelper.GetSearchHosts("login.tenant.github.io").ToList());
+        }
+
+        [Test]
         public void MatchesUrl_ExactHostOnlyMode_DisallowsParentToSubdomainMatching()
         {
             Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.MatchesUrl(

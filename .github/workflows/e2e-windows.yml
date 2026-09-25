@@ -194,12 +194,12 @@ jobs:
 
           Write-Host "Initial status before install:"
           $s1 = $service.CheckStatus()
-          Write-Host "  State: $($s1.State) - $($s1.Message)"
+          Write-Host "  State: $($s1.State)"
 
           Write-Host "`nExecuting InstallOrRepair()..."
           $err = $null
           $ok = $service.InstallOrRepair([ref]$err)
-          if (-not $ok) { throw "InstallOrRepair failed: $err" }
+          if (-not $ok) { throw 'InstallOrRepair failed (details withheld)' }
           Write-Host "InstallOrRepair returned true!" -ForegroundColor Green
 
           Write-Host "`nValidating filesystem and registry state:"
@@ -213,7 +213,7 @@ jobs:
 
           if (-not (Test-Path $manifestPath)) { throw "Manifest file does not exist at: $manifestPath" }
           $manifestContent = Get-Content $manifestPath -Raw
-          Write-Host "  Manifest JSON Content:`n$manifestContent"
+          # Do not print manifest contents; they may contain local paths or future secrets.
           if (-not ($manifestContent -match "pdffhmdngciaglkoonimfcmckehcpafo") -or -not ($manifestContent -match "oboonakemofpalcgghocfoadofidjkkk")) {
             throw "Manifest does not contain KeePassXC upstream extension origins!"
           }
@@ -224,8 +224,7 @@ jobs:
           if (-not (Test-Path $edgeRegKey)) { throw "Edge Registry key does not exist: $edgeRegKey" }
           $regVal = (Get-ItemProperty -Path $chromeRegKey).'(default)'
           $edgeRegVal = (Get-ItemProperty -Path $edgeRegKey).'(default)'
-          Write-Host "  Chrome Registry Value: $regVal"
-          Write-Host "  Edge Registry Value: $edgeRegVal"
+          # Validate registry paths without printing their raw values.
           if ($regVal -ne $manifestPath -or $edgeRegVal -ne $manifestPath) {
             throw "Registry values do not point to manifest path!"
           }
@@ -249,7 +248,7 @@ jobs:
           if ($s3.State -ne [KeePassNatMsg.NativeMessaging.ChromeIntegrationState]::Ready) {
             throw "Failed to re-install integration into Ready state!"
           }
-          Write-Host "Chrome Integration is 100% verified and READY for Chrome!" -ForegroundColor Green
+          Write-Host "Native messaging host registration reports Ready; browser-origin traffic is not yet verified." -ForegroundColor Green
 
           Write-Host "`n=== Step 5: Test KeePass Startup & Named Pipe with Plugin ===" -ForegroundColor Cyan
           $kpExe = "C:\Program Files\KeePass Password Safe 2\KeePass.exe"
@@ -307,15 +306,17 @@ jobs:
 
           # 5.4 Check Named Pipe created by KeePassNatMsg for proxy communication
           $pipes = [System.IO.Directory]::GetFiles('\\.\pipe\') | Where-Object { $_ -match "keepass" }
-          Write-Host "Active KeePass pipes:"
-          $pipes | ForEach-Object { Write-Host "  $_" -ForegroundColor Green }
+          Write-Host "KeePass pipe candidates found: $(@($pipes).Count)"
 
           # 5.5 Execute direct Named Pipe protocol roundtrip test
           Write-Host "`nRunning direct Named Pipe protocol roundtrip test..." -ForegroundColor Cyan
-          & powershell -ExecutionPolicy Bypass -File "$PWD\scripts\test-direct-pipe.ps1"
+          # The direct-pipe helper dumps raw protocol and plugin.log on exit.
+          # Suppress its output (including errors) so CI never publishes credentials.
+          & powershell -ExecutionPolicy Bypass -File "$PWD\scripts\test-direct-pipe.ps1" *> $null
           if ($LASTEXITCODE -ne 0) {
             throw "Direct Named Pipe test failed with exit code $LASTEXITCODE"
           }
+          Write-Host "Direct named-pipe roundtrip passed (not evidence of browser-origin communication)." -ForegroundColor Green
 
           # 5.6 Test launching Chrome with extension loaded and open extension options page
           $chromeExe = "C:\Program Files\Google\Chrome\Application\chrome.exe"
@@ -323,34 +324,18 @@ jobs:
           Write-Host "Launching Chrome with KeePassXC-Browser extension..."
           $chromeProc = Start-Process -FilePath $chromeExe -ArgumentList "--user-data-dir=`"$chromeUserData`" --load-extension=`"$extDir`" https://example.com/" -PassThru
           Start-Sleep -Seconds 8
-          Write-Host "Chrome is running with extension loaded (PID: $($chromeProc.Id))." -ForegroundColor Green
-
-          # 5.6.1 Assert that Chrome extension and plugin actually communicated
-          $pluginLog = "$env:LOCALAPPDATA\KeePassNatMsg\plugin.log"
-          if (-not (Test-Path $pluginLog)) {
-            throw "plugin.log not found at $pluginLog — plugin did not write any diagnostic output"
-          }
-          $pluginLogContent = Get-Content $pluginLog -Raw
-          if ($pluginLogContent -notmatch 'change-public-keys' -and $pluginLogContent -notmatch 'RECV') {
-            throw "Communication assertion failed: plugin.log does not contain 'change-public-keys' or 'RECV' entries — Chrome extension did not successfully communicate with the plugin"
-          }
-          Write-Host "Communication assertion PASSED: plugin.log contains expected native messaging exchange entries." -ForegroundColor Green
+          # Chrome launch alone does not prove that the extension loaded or sent a message.
+          # plugin.log RECV/change-public-keys can come from the preceding direct-pipe test;
+          # no browser-attributed signal is available here. Do not assert browser IPC.
+          Write-Host "Chrome launch attempted; extension loading and browser-origin native messaging are UNVERIFIED." -ForegroundColor Yellow
 
           # Clean up processes
           Stop-Process -Id $chromeProc.Id -Force -ErrorAction SilentlyContinue
           Stop-Process -Id $kpProc.Id -Force -ErrorAction SilentlyContinue
-          Write-Host "KeePass and Chrome test processes closed cleanly." -ForegroundColor Green
+          Write-Host "KeePass and Chrome test process cleanup attempted."
 
-          # 5.7 Inspect diagnostic logs
-          $proxyLog = "$env:LOCALAPPDATA\KeePassNatMsg\proxy.log"
-          if (Test-Path $proxyLog) {
-            Write-Host "`n=== Proxy Diagnostic Log ===" -ForegroundColor Yellow
-            Get-Content $proxyLog | ForEach-Object { Write-Host "  $_" }
-          }
-          if (Test-Path $pluginLog) {
-            Write-Host "`n=== Plugin Diagnostic Log ===" -ForegroundColor Yellow
-            Get-Content $pluginLog | ForEach-Object { Write-Host "  $_" }
-          }
+          # Do not publish raw proxy/plugin logs: they may include request payloads,
+          # credential metadata, URLs, and keys.
 
           Write-Host "`n=== Step 5.8: Real Interactive Windows GUI OptionsForm Layout & Screenshot Verification ===" -ForegroundColor Cyan
           & powershell -ExecutionPolicy Bypass -File "$PWD\scripts\verify-options-gui.ps1" -kpExe $kpExe -newtonsoftDll $newtonsoftDll -ciDll $ciDll -outputDir $env:E2E_OUTPUT_DIR
@@ -358,7 +343,7 @@ jobs:
             throw "GUI OptionsForm verification failed with exit code $LASTEXITCODE"
           }
 
-          Write-Host "`n=== All Windows E2E Integration, IPC Protocol, and GUI Tests PASSED! ===" -ForegroundColor Green
+          Write-Host "`n=== Windows E2E deployment, direct IPC, and GUI checks completed; browser-origin IPC UNVERIFIED ===" -ForegroundColor Yellow
 
       - name: Upload E2E Test Artifacts and GUI Screenshot
         uses: actions/upload-artifact@v4

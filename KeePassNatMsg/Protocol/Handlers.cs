@@ -93,6 +93,8 @@ namespace KeePassNatMsg.Protocol
             if (req.TryDecrypt())
             {
                 var db = _ext.GetConnectionDatabase();
+                if (db == null || !db.IsOpen || db.RootGroup == null)
+                    return new ErrorResponse(req, ErrorType.DatabaseNotOpened);
                 var msg = req.Message;
                 var customKey = KeePassNatMsgExt.DbKey + msg.GetString("id");
                 if (!db.CustomData.Exists(customKey))
@@ -191,6 +193,8 @@ namespace KeePassNatMsg.Protocol
                     if (!string.IsNullOrEmpty(group))
                     {
                         var db = _ext.GetConnectionDatabase();
+                        if (db == null || !db.IsOpen || db.RootGroup == null)
+                            return new ErrorResponse(req, ErrorType.DatabaseNotOpened);
                         var grp = db.RootGroup.FindCreateSubTree(group, new[] { '/' }, true);
                         if (grp != null)
                         {
@@ -232,6 +236,8 @@ namespace KeePassNatMsg.Protocol
 
         private Response LockDatabase(Request req)
         {
+            if (!req.TryDecrypt())
+                return new ErrorResponse(req, ErrorType.CannotDecryptMessage);
 
             _host.MainWindow.Invoke(new System.Action(() => _host.MainWindow.LockAllDocuments()));
             return req.GetResponse();
@@ -296,6 +302,9 @@ namespace KeePassNatMsg.Protocol
 
             var db = _ext.GetConnectionDatabase();
 
+            if (db == null || !db.IsOpen || db.RootGroup == null)
+                return new ErrorResponse(req, ErrorType.DatabaseNotOpened);
+
             var group = db.RootGroup.FindCreateSubTree(groupName, new[] { '/' }, true);
 
             if (group == null)
@@ -315,7 +324,6 @@ namespace KeePassNatMsg.Protocol
                 return new ErrorResponse(req, ErrorType.CannotDecryptMessage);
 
             var uuid = req.Message.GetString("uuid");
-
             var es = new EntrySearch();
             var totp = es.GetTotp(uuid);
 

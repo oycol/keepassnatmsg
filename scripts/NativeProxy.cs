@@ -17,6 +17,18 @@ namespace KeePassNatMsgProxy
             catch { }
         }
 
+        static bool ReadExact(Stream stream, byte[] buffer, int offset, int count)
+        {
+            while (count > 0)
+            {
+                int read = stream.Read(buffer, offset, count);
+                if (read <= 0) return false;
+                offset += read;
+                count -= read;
+            }
+            return true;
+        }
+
         static int Main(string[] args)
         {
             var pipeName = "keepassxc\\" + Environment.UserName + "\\kpxc_server";
@@ -72,24 +84,34 @@ namespace KeePassNatMsgProxy
                         }
                         Log(string.Format("Read full message body: {0} bytes", length));
 
-                        // 3. Forward to named pipe
+                        // 3. Forward one complete framed request to the byte-mode pipe.
+                        pipe.Write(header, 0, header.Length);
                         pipe.Write(body, 0, body.Length);
                         pipe.Flush();
                         Log("Forwarded message to pipe.");
 
-                        // 4. Read response from named pipe
-                        var respBuf = new byte[65536];
-                        int respLen = pipe.Read(respBuf, 0, respBuf.Length);
-                        Log(string.Format("Read {0} bytes from pipe.", respLen));
-                        if (respLen <= 0)
+                        // 4. Read exactly one complete framed response. A pipe Read
+                        // can be short even if the writer used a single Write call.
+                        if (!ReadExact(pipe, header, 0, header.Length))
                         {
-                            Log("Zero bytes read from pipe. Exiting.");
+                            Log("Pipe EOF at response header. Exiting.");
                             return 0;
                         }
-
-                        // 5. Forward response to stdout with 4-byte header
-                        var respHeader = BitConverter.GetBytes(respLen);
-                        stdout.Write(respHeader, 0, 4);
+                        int respLen = header[0] | (header[1] << 8) |
+                            (header[2] << 16) | (header[3] << 24);
+                        if (respLen <= 0 || respLen > 10 * 1024 * 1024)
+                        {
+                            Log("Invalid response length: " + respLen);
+                            return 0;
+                        }
+                        var respBuf = new byte[respLen];
+                        if (!ReadExact(pipe, respBuf, 0, respLen))
+                        {
+                            Log("Pipe EOF in response body. Exiting.");
+                            return 0;
+                        }
+                        // 5. Preserve the native-messaging framing for the browser.
+                        stdout.Write(header, 0, header.Length);
                         stdout.Write(respBuf, 0, respLen);
                         stdout.Flush();
                         Log(string.Format("Wrote {0} response bytes to stdout.", respLen));
