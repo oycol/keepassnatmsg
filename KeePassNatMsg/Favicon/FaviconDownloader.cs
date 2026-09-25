@@ -17,6 +17,23 @@ namespace KeePassNatMsg.Favicon
 
         private readonly CookieContainer _cookies = new CookieContainer();
         private IWebProxy _proxy;
+        private readonly object _reqLock = new object();
+        private HttpWebRequest _activeRequest;
+        private volatile bool _isAborted;
+
+        public bool IsAborted { get { return _isAborted; } }
+
+        public void Abort()
+        {
+            _isAborted = true;
+            lock (_reqLock)
+            {
+                if (_activeRequest != null)
+                {
+                    try { _activeRequest.Abort(); } catch { }
+                }
+            }
+        }
 
         private static readonly Regex DataSchemaRegex = new Regex(@"data:(?<mediatype>.*?)(;(?<base64>.+?))?,(?<data>.+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex HttpSchemaRegex = new Regex(@"^http(s)?://", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -308,10 +325,12 @@ namespace KeePassNatMsg.Favicon
         {
             html = null;
             responseUri = uri;
+            if (_isAborted) return false;
 
+            HttpWebRequest req = null;
             try
             {
-                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(uri);
+                req = (HttpWebRequest)WebRequest.Create(uri);
                 req.Method = "GET";
                 req.UserAgent = DefaultUserAgent;
                 req.Timeout = RequestTimeoutMs;
@@ -320,6 +339,12 @@ namespace KeePassNatMsg.Favicon
                 req.Proxy = _proxy;
                 req.AllowAutoRedirect = true;
                 req.MaximumAutomaticRedirections = 5;
+
+                lock (_reqLock)
+                {
+                    if (_isAborted) return false;
+                    _activeRequest = req;
+                }
 
                 using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
                 {
@@ -339,13 +364,25 @@ namespace KeePassNatMsg.Favicon
             {
                 return false;
             }
+            finally
+            {
+                lock (_reqLock)
+                {
+                    if (object.ReferenceEquals(_activeRequest, req))
+                    {
+                        _activeRequest = null;
+                    }
+                }
+            }
         }
 
         private byte[] TryDownloadAsset(Uri uri)
         {
+            if (_isAborted) return null;
+            HttpWebRequest req = null;
             try
             {
-                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(uri);
+                req = (HttpWebRequest)WebRequest.Create(uri);
                 req.Method = "GET";
                 req.UserAgent = DefaultUserAgent;
                 req.Timeout = RequestTimeoutMs;
@@ -353,6 +390,12 @@ namespace KeePassNatMsg.Favicon
                 req.CookieContainer = _cookies;
                 req.Proxy = _proxy;
                 req.AllowAutoRedirect = true;
+
+                lock (_reqLock)
+                {
+                    if (_isAborted) return null;
+                    _activeRequest = req;
+                }
 
                 using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
                 {
@@ -369,6 +412,7 @@ namespace KeePassNatMsg.Favicon
                             const int maxDownloadBytes = 5 * 1024 * 1024; // 5MB guard
                             while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
                             {
+                                if (_isAborted) return null;
                                 total += read;
                                 if (total > maxDownloadBytes) return null;
                                 ms.Write(buffer, 0, read);
@@ -382,10 +426,21 @@ namespace KeePassNatMsg.Favicon
             {
                 return null;
             }
+            finally
+            {
+                lock (_reqLock)
+                {
+                    if (object.ReferenceEquals(_activeRequest, req))
+                    {
+                        _activeRequest = null;
+                    }
+                }
+            }
         }
 
         public void Dispose()
         {
+            Abort();
         }
     }
 }

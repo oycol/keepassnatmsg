@@ -89,25 +89,77 @@ namespace KeePassNatMsg.Favicon
                     }
                 }
 
-                // Proxy injection from KeePass configuration if available
                 IWebProxy proxy = WebRequest.DefaultWebProxy;
 
-                using (ManualResetEvent allDone = new ManualResetEvent(false))
-                {
-                    int remaining = entries.Length;
+                Queue<PwEntry> queue = new Queue<PwEntry>(entries);
+                object queueLock = new object();
+                List<FaviconDownloader> activeDownloaders = new List<FaviconDownloader>();
+                object activeLock = new object();
 
-                    for (int i = 0; i < entries.Length; i++)
+                int activeWorkers = 0;
+                const int maxConcurrency = 4;
+                bool cancelRequested = false;
+
+                while (true)
+                {
+                    // Check user cancellation via KeePass Status dialog Cancel button
+                    if (!logger.ContinueWork() || worker.CancellationPending || cancelRequested)
                     {
-                        PwEntry entry = entries[i];
+                        cancelRequested = true;
+                        e.Cancel = true;
+
+                        lock (queueLock)
+                        {
+                            queue.Clear();
+                        }
+
+                        lock (activeLock)
+                        {
+                            for (int a = 0; a < activeDownloaders.Count; a++)
+                            {
+                                try { activeDownloaders[a].Abort(); } catch { }
+                            }
+                        }
+                    }
+
+                    // Dispatch new work items up to concurrency limit
+                    while (!cancelRequested)
+                    {
+                        PwEntry nextEntry = null;
+                        lock (queueLock)
+                        {
+                            if (activeWorkers < maxConcurrency && queue.Count > 0)
+                            {
+                                nextEntry = queue.Dequeue();
+                                Interlocked.Increment(ref activeWorkers);
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+
+                        if (nextEntry == null) break;
+
                         ThreadPool.QueueUserWorkItem(delegate(object state)
                         {
-                            try
+                            PwEntry entry = (PwEntry)state;
+                            FaviconDownloader fd = new FaviconDownloader(proxy);
+
+                            lock (activeLock)
                             {
-                                if (!logger.ContinueWork())
+                                if (cancelRequested)
                                 {
-                                    e.Cancel = true;
+                                    try { fd.Dispose(); } catch { }
+                                    Interlocked.Decrement(ref activeWorkers);
                                     return;
                                 }
+                                activeDownloaders.Add(fd);
+                            }
+
+                            try
+                            {
+                                if (cancelRequested) return;
 
                                 string url = entry.Strings.ReadSafe(PwDefs.UrlField);
                                 if (string.IsNullOrEmpty(url) && useTitle)
@@ -121,87 +173,99 @@ namespace KeePassNatMsg.Favicon
                                 }
                                 else
                                 {
-                                    using (FaviconDownloader fd = new FaviconDownloader(proxy))
+                                    byte[] iconBytes = null;
+                                    try
                                     {
-                                        byte[] iconBytes = null;
-                                        try
+                                        if (isDirect)
                                         {
-                                            if (isDirect)
-                                            {
-                                                iconBytes = fd.DownloadFaviconDirect(url, autoPrefix, maxIconSize);
-                                            }
-                                            else
-                                            {
-                                                iconBytes = fd.DownloadFaviconFromProvider(activeTemplate, url, maxIconSize);
-                                            }
+                                            iconBytes = fd.DownloadFaviconDirect(url, autoPrefix, maxIconSize);
                                         }
-                                        catch (FaviconDownloaderException fex)
+                                        else
                                         {
-                                            if (fex.Status == FaviconErrorStatus.NotFound)
-                                                Interlocked.Increment(ref progress.NotFound);
-                                            else
-                                                Interlocked.Increment(ref progress.Error);
+                                            iconBytes = fd.DownloadFaviconFromProvider(activeTemplate, url, maxIconSize);
                                         }
-                                        catch
-                                        {
+                                    }
+                                    catch (FaviconDownloaderException fex)
+                                    {
+                                        if (fex.Status == FaviconErrorStatus.NotFound)
+                                            Interlocked.Increment(ref progress.NotFound);
+                                        else
                                             Interlocked.Increment(ref progress.Error);
-                                        }
+                                    }
+                                    catch
+                                    {
+                                        Interlocked.Increment(ref progress.Error);
+                                    }
 
-                                        if (iconBytes != null && iconBytes.Length > 0)
+                                    if (!cancelRequested && iconBytes != null && iconBytes.Length > 0)
+                                    {
+                                        byte[] hash = ComputeSha256(iconBytes);
+                                        PwUuid uuid = new PwUuid(hash);
+
+                                        lock (_host.Database)
                                         {
-                                            byte[] hash = ComputeSha256(iconBytes);
-                                            PwUuid uuid = new PwUuid(hash);
-
-                                            lock (_host.Database)
+                                            bool exists = false;
+                                            for (int ci = 0; ci < _host.Database.CustomIcons.Count; ci++)
                                             {
-                                                bool exists = false;
-                                                for (int ci = 0; ci < _host.Database.CustomIcons.Count; ci++)
+                                                if (_host.Database.CustomIcons[ci].Uuid.Equals(uuid))
                                                 {
-                                                    if (_host.Database.CustomIcons[ci].Uuid.Equals(uuid))
-                                                    {
-                                                        exists = true;
-                                                        break;
-                                                    }
-                                                }
-
-                                                if (!exists)
-                                                {
-                                                    PwCustomIcon customIcon = new PwCustomIcon(uuid, iconBytes);
-                                                    AttachIconMetadata(customIcon, url);
-                                                    _host.Database.CustomIcons.Add(customIcon);
-                                                }
-
-                                                if (!entry.CustomIconUuid.Equals(uuid))
-                                                {
-                                                    entry.CustomIconUuid = uuid;
-                                                    if (updateModified)
-                                                    {
-                                                        entry.LastModificationTime = DateTime.UtcNow;
-                                                    }
-                                                    entry.Touch(true, false);
+                                                    exists = true;
+                                                    break;
                                                 }
                                             }
 
-                                            Interlocked.Increment(ref progress.Success);
+                                            if (!exists)
+                                            {
+                                                PwCustomIcon customIcon = new PwCustomIcon(uuid, iconBytes);
+                                                AttachIconMetadata(customIcon, url);
+                                                _host.Database.CustomIcons.Add(customIcon);
+                                            }
+
+                                            if (!entry.CustomIconUuid.Equals(uuid))
+                                            {
+                                                entry.CustomIconUuid = uuid;
+                                                if (updateModified)
+                                                {
+                                                    entry.LastModificationTime = DateTime.UtcNow;
+                                                }
+                                                entry.Touch(true, false);
+                                            }
                                         }
+
+                                        Interlocked.Increment(ref progress.Success);
                                     }
                                 }
                             }
                             finally
                             {
+                                lock (activeLock)
+                                {
+                                    activeDownloaders.Remove(fd);
+                                    try { fd.Dispose(); } catch { }
+                                }
+
+                                Interlocked.Decrement(ref activeWorkers);
+
                                 int done = Interlocked.Increment(ref progress.Completed);
                                 uint pct = (uint)Math.Min(100, (int)Math.Round((double)done * 100 / progress.Total));
                                 logger.SetProgress(pct);
-
-                                if (Interlocked.Decrement(ref remaining) == 0)
-                                {
-                                    allDone.Set();
-                                }
                             }
-                        });
+                        }, nextEntry);
                     }
 
-                    allDone.WaitOne();
+                    // Check exit condition
+                    bool finished = false;
+                    lock (queueLock)
+                    {
+                        if ((queue.Count == 0 && Volatile.Read(ref activeWorkers) == 0) || (cancelRequested && Volatile.Read(ref activeWorkers) == 0))
+                        {
+                            finished = true;
+                        }
+                    }
+
+                    if (finished) break;
+
+                    Thread.Sleep(50);
                 }
 
                 e.Result = progress;
@@ -209,29 +273,39 @@ namespace KeePassNatMsg.Favicon
 
             worker.RunWorkerCompleted += delegate(object sender, RunWorkerCompletedEventArgs e)
             {
-                _host.MainWindow.UIBlockInteraction(false);
-                if (statusForm != null && !statusForm.IsDisposed)
+                try
                 {
-                    statusForm.Close();
-                }
+                    _host.MainWindow.UIBlockInteraction(false);
+                    if (statusForm != null && !statusForm.IsDisposed)
+                    {
+                        statusForm.Close();
+                    }
 
-                _host.MainWindow.UpdateUI(false, null, true, null, true, null, true);
+                    _host.MainWindow.UpdateUI(false, null, true, null, true, null, true);
 
-                if (e.Cancelled)
-                {
-                    MessageBox.Show("Favicon download was cancelled.", "KeePassNatMsg", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
+                    if (e.Cancelled)
+                    {
+                        MessageBox.Show("Favicon download was cancelled.", "KeePassNatMsg", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
 
-                DownloadProgress p = e.Result as DownloadProgress;
-                if (p != null)
-                {
-                    string msg = string.Format(
-                        "Favicon Download Complete:\n\nSuccess: {0}\nNot Found: {1}\nErrors: {2}\nTotal: {3}",
-                        p.Success, p.NotFound, p.Error, p.Total
-                    );
-                    MessageBox.Show(msg, "KeePassNatMsg Favicon Downloader", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    if (e.Error != null)
+                    {
+                        MessageBox.Show("Favicon download encountered an error: " + e.Error.Message, "KeePassNatMsg", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    DownloadProgress p = e.Result as DownloadProgress;
+                    if (p != null)
+                    {
+                        string msg = string.Format(
+                            "Favicon Download Complete:\n\nSuccess: {0}\nNot Found: {1}\nErrors: {2}\nTotal: {3}",
+                            p.Success, p.NotFound, p.Error, p.Total
+                        );
+                        MessageBox.Show(msg, "KeePassNatMsg Favicon Downloader", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
                 }
+                catch { }
             };
 
             worker.RunWorkerAsync();

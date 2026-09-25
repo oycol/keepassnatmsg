@@ -42,8 +42,8 @@ try {
     $lblVersion = $form.GetType().GetField("lblVersion", $bindingFlags).GetValue($form)
     if (-not $lblVersion) { throw "lblVersion control not found" }
     Write-Host "lblVersion text: '$($lblVersion.Text)'"
-    if ($lblVersion.Text -ne "KeePassNatMsg v2.4.0") {
-        $failures.Add("lblVersion text mismatch: expected 'KeePassNatMsg v2.4.0', got '$($lblVersion.Text)'") | Out-Null
+    if ($lblVersion.Text -ne "KeePassNatMsg v2.4.1") {
+        $failures.Add("lblVersion text mismatch: expected 'KeePassNatMsg v2.4.1', got '$($lblVersion.Text)'") | Out-Null
     }
 
     $pnlCenter = $form.GetType().GetField("pnlVersionCenter", $bindingFlags).GetValue($form)
@@ -156,6 +156,24 @@ try {
             }
             if ($grpFavProvider.Top -le $grpFavSize.Bottom) {
                 $failures.Add("grpFaviconProvider overlaps or touches grpFaviconSize") | Out-Null
+            }
+
+            # Check individual controls inside tabFavicon
+            $chkPrefix = $form.GetType().GetField("chkFaviconPrefixUrls", $bindingFlags).GetValue($form)
+            $tipPrefix = $form.GetType().GetField("lblTipFaviconPrefix", $bindingFlags).GetValue($form)
+            $cmbSize = $form.GetType().GetField("cmbFaviconMaxIconSize", $bindingFlags).GetValue($form)
+            if ($chkPrefix -and $tipPrefix) {
+                $verticalGap = $tipPrefix.Top - $chkPrefix.Top
+                Write-Host "Favicon prefix checkbox-to-tip vertical distance: $verticalGap px"
+                if ($verticalGap -lt 20) {
+                    $failures.Add("Favicon prefix tip crowds or overlaps checkbox; gap=$verticalGap px, required >=20") | Out-Null
+                }
+            }
+            if ($cmbSize) {
+                Write-Host "Favicon max size combo width: $($cmbSize.Width) px"
+                if ($cmbSize.Width -lt 240) {
+                    $failures.Add("cmbFaviconMaxIconSize is too narrow; width=$($cmbSize.Width) px, required >=240") | Out-Null
+                }
             }
         }
     }

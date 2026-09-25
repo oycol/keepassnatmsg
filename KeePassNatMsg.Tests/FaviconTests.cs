@@ -141,5 +141,111 @@ namespace KeePassNatMsg.Tests
             Assert.IsFalse(success);
             Assert.IsNull(result);
         }
+
+        [Test]
+        public void FaviconDownloader_Abort_SetsIsAbortedAndTerminatesSafely()
+        {
+            using (FaviconDownloader fd = new FaviconDownloader())
+            {
+                Assert.IsFalse(fd.IsAborted);
+                fd.Abort();
+                Assert.IsTrue(fd.IsAborted);
+
+                // Any subsequent operations after abort should terminate without unhandled crashes
+                Assert.Throws<FaviconDownloaderException>(delegate
+                {
+                    fd.DownloadFaviconDirect("https://127.0.0.1:65534/test", false, 128);
+                });
+            }
+        }
+
+        [Test]
+        public void TryProcessAndResizeImage_NonSquareImage_PreservesAspectRatio()
+        {
+            byte[] rawImageBytes;
+            using (Bitmap bmp = new Bitmap(400, 200)) // 2:1 ratio
+            {
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.Clear(Color.Red);
+                }
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    bmp.Save(ms, ImageFormat.Png);
+                    rawImageBytes = ms.ToArray();
+                }
+            }
+
+            byte[] resizedBytes;
+            bool success = FaviconDownloader.TryProcessAndResizeImage(rawImageBytes, 64, out resizedBytes);
+            Assert.IsTrue(success);
+            Assert.NotNull(resizedBytes);
+
+            using (MemoryStream outMs = new MemoryStream(resizedBytes))
+            {
+                using (Image outImg = Image.FromStream(outMs))
+                {
+                    Assert.AreEqual(64, outImg.Width);
+                    Assert.AreEqual(32, outImg.Height); // 2:1 preserved
+                }
+            }
+        }
+
+        [Test]
+        public void ExtractFaviconHrefsFromHtml_ComplexTagsAndMixedAttributes_FiltersStrictly()
+        {
+            string html = @"
+<html>
+<head>
+    <!-- Commented out: <link rel=""icon"" href=""/commented.ico""> -->
+    <link rel=""stylesheet"" type=""text/css"" href=""/style.css"">
+    <link rel=""dns-prefetch"" href=""//dns.example.com"">
+    <link rel=""preload"" as=""font"" href=""/font.woff2"">
+    <link rel='SHORTCUT ICON' href='/shortcut.ico'>
+    <link rel=icon type=image/svg+xml href=/logo.svg>
+    <link rel=""apple-touch-icon-precomposed"" sizes=""120x120"" href=""/apple-pre.png"">
+</head>
+</html>";
+
+            List<string> hrefs = FaviconDownloader.ExtractFaviconHrefsFromHtml(html);
+            Assert.AreEqual(3, hrefs.Count);
+            Assert.Contains("/shortcut.ico", hrefs);
+            Assert.Contains("/logo.svg", hrefs);
+            Assert.Contains("/apple-pre.png", hrefs);
+            Assert.IsFalse(hrefs.Contains("/commented.ico"));
+            Assert.IsFalse(hrefs.Contains("/style.css"));
+            Assert.IsFalse(hrefs.Contains("//dns.example.com"));
+        }
+
+        [Test]
+        public void FaviconProvider_BuildProviderUrl_EdgeCasePlaceholders()
+        {
+            // Null or empty template
+            Assert.AreEqual(string.Empty, FaviconProvider.BuildProviderUrl(null, "example.com", 32));
+            Assert.AreEqual(string.Empty, FaviconProvider.BuildProviderUrl("", "example.com", 32));
+
+            // Multiple occurrences of placeholders
+            string multi = "https://srv.test/{URL:HOST}/icon/{YAFD:ICON_SIZE}?domain={url:host}&sz={yafd:icon_size}";
+            string result = FaviconProvider.BuildProviderUrl(multi, "myhost.org", 64);
+            Assert.AreEqual("https://srv.test/myhost.org/icon/64?domain=myhost.org&sz=64", result);
+        }
+
+        [Test]
+        public void ExtractHostname_UrlWithCredentialsAndSpecialChars_ExtractsOnlyHost()
+        {
+            Assert.AreEqual("git.corp.internal", FaviconDownloader.ExtractHostname("https://alice:secret123@git.corp.internal:9443/repo/project?branch=main#readme"));
+            Assert.AreEqual("10.0.1.50", FaviconDownloader.ExtractHostname("http://admin:pwd@10.0.1.50:8080/dashboard"));
+        }
+
+        [Test]
+        public void FaviconDownloader_Abort_CanBeCalledMultipleTimesWithoutException()
+        {
+            using (FaviconDownloader fd = new FaviconDownloader())
+            {
+                fd.Abort();
+                fd.Abort(); // Idempotent call
+                Assert.IsTrue(fd.IsAborted);
+            }
+        }
     }
 }

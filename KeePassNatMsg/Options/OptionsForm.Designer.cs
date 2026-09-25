@@ -670,7 +670,7 @@ namespace KeePassNatMsg.Options
             this.grpFaviconOptions.Controls.Add(this.lblTipFaviconModified);
             this.grpFaviconOptions.Location = new System.Drawing.Point(16, 16);
             this.grpFaviconOptions.Name = "grpFaviconOptions";
-            this.grpFaviconOptions.Size = new System.Drawing.Size(656, 175);
+            this.grpFaviconOptions.Size = new System.Drawing.Size(656, 196);
             this.grpFaviconOptions.TabIndex = 0;
             this.grpFaviconOptions.TabStop = false;
             this.grpFaviconOptions.Text = "Download Options";
@@ -678,7 +678,7 @@ namespace KeePassNatMsg.Options
             // chkFaviconPrefixUrls
             //
             this.chkFaviconPrefixUrls.AutoSize = true;
-            this.chkFaviconPrefixUrls.Location = new System.Drawing.Point(16, 24);
+            this.chkFaviconPrefixUrls.Location = new System.Drawing.Point(16, 22);
             this.chkFaviconPrefixUrls.Name = "chkFaviconPrefixUrls";
             this.chkFaviconPrefixUrls.Size = new System.Drawing.Size(248, 17);
             this.chkFaviconPrefixUrls.TabIndex = 0;
@@ -690,14 +690,14 @@ namespace KeePassNatMsg.Options
             this.lblTipFaviconPrefix.ForeColor = System.Drawing.SystemColors.GrayText;
             this.lblTipFaviconPrefix.Location = new System.Drawing.Point(36, 44);
             this.lblTipFaviconPrefix.Name = "lblTipFaviconPrefix";
-            this.lblTipFaviconPrefix.Size = new System.Drawing.Size(600, 20);
+            this.lblTipFaviconPrefix.Size = new System.Drawing.Size(610, 18);
             this.lblTipFaviconPrefix.TabIndex = 1;
             this.lblTipFaviconPrefix.Text = "If scheme is missing, try HTTPS first then fallback to HTTP automatically.";
             //
             // chkFaviconUseTitle
             //
             this.chkFaviconUseTitle.AutoSize = true;
-            this.chkFaviconUseTitle.Location = new System.Drawing.Point(16, 72);
+            this.chkFaviconUseTitle.Location = new System.Drawing.Point(16, 74);
             this.chkFaviconUseTitle.Name = "chkFaviconUseTitle";
             this.chkFaviconUseTitle.Size = new System.Drawing.Size(225, 17);
             this.chkFaviconUseTitle.TabIndex = 2;
@@ -707,16 +707,16 @@ namespace KeePassNatMsg.Options
             // lblTipFaviconTitle
             //
             this.lblTipFaviconTitle.ForeColor = System.Drawing.SystemColors.GrayText;
-            this.lblTipFaviconTitle.Location = new System.Drawing.Point(36, 92);
+            this.lblTipFaviconTitle.Location = new System.Drawing.Point(36, 96);
             this.lblTipFaviconTitle.Name = "lblTipFaviconTitle";
-            this.lblTipFaviconTitle.Size = new System.Drawing.Size(600, 20);
+            this.lblTipFaviconTitle.Size = new System.Drawing.Size(610, 18);
             this.lblTipFaviconTitle.TabIndex = 3;
             this.lblTipFaviconTitle.Text = "Attempt to look up website domain from entry title if URL is not specified.";
             //
             // chkFaviconUpdateModified
             //
             this.chkFaviconUpdateModified.AutoSize = true;
-            this.chkFaviconUpdateModified.Location = new System.Drawing.Point(16, 120);
+            this.chkFaviconUpdateModified.Location = new System.Drawing.Point(16, 126);
             this.chkFaviconUpdateModified.Name = "chkFaviconUpdateModified";
             this.chkFaviconUpdateModified.Size = new System.Drawing.Size(275, 17);
             this.chkFaviconUpdateModified.TabIndex = 4;
@@ -726,9 +726,9 @@ namespace KeePassNatMsg.Options
             // lblTipFaviconModified
             //
             this.lblTipFaviconModified.ForeColor = System.Drawing.SystemColors.GrayText;
-            this.lblTipFaviconModified.Location = new System.Drawing.Point(36, 140);
+            this.lblTipFaviconModified.Location = new System.Drawing.Point(36, 148);
             this.lblTipFaviconModified.Name = "lblTipFaviconModified";
-            this.lblTipFaviconModified.Size = new System.Drawing.Size(600, 20);
+            this.lblTipFaviconModified.Size = new System.Drawing.Size(610, 36);
             this.lblTipFaviconModified.TabIndex = 5;
             this.lblTipFaviconModified.Text = "Mark entries as modified when a new custom icon is downloaded and linked.";
             //
@@ -738,12 +738,12 @@ namespace KeePassNatMsg.Options
             this.grpFaviconSize.Controls.Add(this.lblFaviconMaxIconSize);
             this.grpFaviconSize.Controls.Add(this.cmbFaviconMaxIconSize);
             this.grpFaviconSize.Controls.Add(this.lblTipFaviconSize);
-            this.grpFaviconSize.Location = new System.Drawing.Point(16, 201);
+            this.grpFaviconSize.Location = new System.Drawing.Point(16, 222);
             this.grpFaviconSize.Name = "grpFaviconSize";
-            this.grpFaviconSize.Size = new System.Drawing.Size(656, 88);
+            this.grpFaviconSize.Size = new System.Drawing.Size(656, 92);
             this.grpFaviconSize.TabIndex = 1;
             this.grpFaviconSize.TabStop = false;
-            this.grpFaviconSize.Text = "Icon Quality & Scaling";
+            this.grpFaviconSize.Text = "Icon Quality && Scaling";
             //
             // lblFaviconMaxIconSize
             //
@@ -758,17 +758,17 @@ namespace KeePassNatMsg.Options
             //
             this.cmbFaviconMaxIconSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbFaviconMaxIconSize.FormattingEnabled = true;
-            this.cmbFaviconMaxIconSize.Location = new System.Drawing.Point(140, 23);
+            this.cmbFaviconMaxIconSize.Location = new System.Drawing.Point(145, 23);
             this.cmbFaviconMaxIconSize.Name = "cmbFaviconMaxIconSize";
-            this.cmbFaviconMaxIconSize.Size = new System.Drawing.Size(200, 21);
+            this.cmbFaviconMaxIconSize.Size = new System.Drawing.Size(260, 21);
             this.cmbFaviconMaxIconSize.TabIndex = 1;
             //
             // lblTipFaviconSize
             //
             this.lblTipFaviconSize.ForeColor = System.Drawing.SystemColors.GrayText;
-            this.lblTipFaviconSize.Location = new System.Drawing.Point(16, 52);
+            this.lblTipFaviconSize.Location = new System.Drawing.Point(16, 56);
             this.lblTipFaviconSize.Name = "lblTipFaviconSize";
-            this.lblTipFaviconSize.Size = new System.Drawing.Size(620, 24);
+            this.lblTipFaviconSize.Size = new System.Drawing.Size(620, 28);
             this.lblTipFaviconSize.TabIndex = 2;
             this.lblTipFaviconSize.Text = "Downscales larger icons with high-quality Bicubic interpolation for sharp rendering on 4K/2K screens.";
             //
@@ -780,9 +780,9 @@ namespace KeePassNatMsg.Options
             this.grpFaviconProvider.Controls.Add(this.lblFaviconCustomUrl);
             this.grpFaviconProvider.Controls.Add(this.txtFaviconCustomUrl);
             this.grpFaviconProvider.Controls.Add(this.lblTipFaviconProvider);
-            this.grpFaviconProvider.Location = new System.Drawing.Point(16, 299);
+            this.grpFaviconProvider.Location = new System.Drawing.Point(16, 324);
             this.grpFaviconProvider.Name = "grpFaviconProvider";
-            this.grpFaviconProvider.Size = new System.Drawing.Size(656, 140);
+            this.grpFaviconProvider.Size = new System.Drawing.Size(656, 145);
             this.grpFaviconProvider.TabIndex = 2;
             this.grpFaviconProvider.TabStop = false;
             this.grpFaviconProvider.Text = "Download Provider";
