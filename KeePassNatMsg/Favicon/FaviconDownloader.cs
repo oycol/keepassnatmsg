@@ -13,7 +13,7 @@ namespace KeePassNatMsg.Favicon
     public sealed class FaviconDownloader : IDisposable
     {
         private const string DefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-        private const int RequestTimeoutMs = 8000;
+        private const int RequestTimeoutMs = 5000;
 
         private readonly CookieContainer _cookies = new CookieContainer();
         private IWebProxy _proxy;
@@ -81,7 +81,7 @@ namespace KeePassNatMsg.Favicon
 
         retry_entry:
             attempts++;
-            if (attempts > 3)
+            if (attempts > 2)
                 throw new FaviconDownloaderException(FaviconErrorStatus.NotFound);
 
             Uri baseUri;
