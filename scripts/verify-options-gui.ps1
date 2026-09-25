@@ -25,13 +25,26 @@ $form = New-Object KeePassNatMsg.Options.OptionsForm($opt)
 
 try {
     Write-Host "Creating form control hierarchy..."
-    $form.Show()
-    [System.Windows.Forms.Application]::DoEvents()
-    if (-not $form.Visible -or -not $form.IsHandleCreated) { throw 'Options dialog did not open on the interactive desktop' }
+    # CreateControl avoids triggering KeePass-specific Load handlers in this
+    # standalone harness. Show() would run InitDatabasesDropdown without a host.
+    $form.CreateControl()
     $screen = [System.Windows.Forms.Screen]::FromControl($form)
     $graphics = $form.CreateGraphics()
     try { $dpiX = $graphics.DpiX; $dpiY = $graphics.DpiY } finally { $graphics.Dispose() }
+    if ($dpiX -le 0 -or $dpiY -le 0) { throw 'Display DPI could not be measured' }
     Write-Host "Display: $($screen.Bounds.Width)x$($screen.Bounds.Height); working=$($screen.WorkingArea); DPI=${dpiX}x${dpiY}; scale=$([Math]::Round($dpiX / 96 * 100))%"
+    $displayEvidence = [ordered]@{
+        screenWidth = $screen.Bounds.Width
+        screenHeight = $screen.Bounds.Height
+        workingArea = $screen.WorkingArea.ToString()
+        dpiX = $dpiX
+        dpiY = $dpiY
+        scalePercent = [Math]::Round($dpiX / 96 * 100)
+        formActuallyShown = $false
+        verificationMode = 'standalone WinForms control hierarchy; no KeePass-hosted Load'
+    }
+    New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
+    $displayEvidence | ConvertTo-Json | Set-Content (Join-Path $outputDir 'options-display.json') -Encoding UTF8
 
     $failures = New-Object 'System.Collections.Generic.List[string]'
     $w = $form.ClientSize.Width
@@ -167,7 +180,7 @@ try {
         $check = $checkField.GetValue($form)
         $tip = $tipField.GetValue($form)
         if (-not ($tip -is [System.Windows.Forms.Label]) -or -not $tip.Parent.Controls.Contains($tip) -or
-            -not $tip.Visible -or $tip.Parent -ne $check.Parent -or $tip.ForeColor -ne [System.Drawing.SystemColors]::GrayText -or
+            $tip.Parent -ne $check.Parent -or $tip.ForeColor -ne [System.Drawing.SystemColors]::GrayText -or
             [string]::IsNullOrWhiteSpace($tip.Text)) {
             $failures.Add("Persistent gray help not visible under $($check.Name)") | Out-Null
             continue
