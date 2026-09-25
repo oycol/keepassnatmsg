@@ -124,12 +124,50 @@ try {
         $failures.Add("Danger Zone checkboxes are not vertically separated") | Out-Null
     }
 
-    $tipMatching = $form.GetType().GetField("tipMatching", $bindingFlags).GetValue($form)
-    if (-not $tipMatching -or -not $tipMatching.Image) {
-        $failures.Add("tipMatching icon is missing or has no image") | Out-Null
+    # Each security/matching choice must explain itself without hovering. Check the
+    # actual control tree and measured bounds, not source text or a screenshot alone.
+    $helpPairs = @(
+        @('credMatchingCheckbox', 'lblTipMatching'),
+        @('unlockDatabaseCheckbox', 'lblTipUnlock'),
+        @('hideExpiredCheckbox', 'lblTipExpired'),
+        @('matchSchemesCheckbox', 'lblTipSchemes'),
+        @('chkSearchUrls', 'lblTipSearchUrls'),
+        @('credAllowAccessCheckbox', 'lblTipAllowAccess'),
+        @('credAllowUpdatesCheckbox', 'lblTipAllowUpdates')
+    )
+    foreach ($pair in $helpPairs) {
+        $checkField = $form.GetType().GetField($pair[0], $bindingFlags)
+        $tipField = $form.GetType().GetField($pair[1], $bindingFlags)
+        if (-not $checkField -or -not $tipField) {
+            $failures.Add("Missing checkbox or persistent help label: $($pair -join ' / ')") | Out-Null
+            continue
+        }
+        $check = $checkField.GetValue($form)
+        $tip = $tipField.GetValue($form)
+        if (-not ($tip -is [System.Windows.Forms.Label]) -or $tip.Parent -ne $check.Parent -or
+            -not $tip.Visible -or $tip.ForeColor -ne [System.Drawing.SystemColors]::GrayText -or
+            [string]::IsNullOrWhiteSpace($tip.Text)) {
+            $failures.Add("Persistent gray help not visible under $($check.Name)") | Out-Null
+            continue
+        }
+        if ($tip.Top -lt $check.Bottom -or $tip.Bottom -gt $tip.Parent.ClientSize.Height -or
+            $tip.Right -gt $tip.Parent.ClientSize.Width) {
+            $failures.Add("Help bounds overlap or clip under $($check.Name)") | Out-Null
+        }
+        $tipSize = [System.Windows.Forms.TextRenderer]::MeasureText($tip.Text, $tip.Font, (New-Object System.Drawing.Size($tip.Width, 1000)), [System.Windows.Forms.TextFormatFlags]::WordBreak)
+        if ($tipSize.Height -gt $tip.Height) {
+            $failures.Add("Help text clipped under $($check.Name): requires $($tipSize.Height)px, has $($tip.Height)px") | Out-Null
+        }
     }
-    else {
-        Write-Host "tipMatching icon verified: Size=$($tipMatching.Image.Width)x$($tipMatching.Image.Height)"
+    $matchingGroup = $form.GetType().GetField('grpMatching', $bindingFlags).GetValue($form)
+    $dangerGroup = $form.GetType().GetField('grpDangerZone', $bindingFlags).GetValue($form)
+    foreach ($group in @($matchingGroup, $dangerGroup)) {
+        $children = @($group.Controls | Where-Object { $_ -is [System.Windows.Forms.CheckBox] -or $_ -is [System.Windows.Forms.Label] -or $_ -is [System.Windows.Forms.Button] })
+        foreach ($child in $children) {
+            if ($child.Bottom -gt $group.ClientSize.Height) {
+                $failures.Add("$($child.Name) clipped by $($group.Name)") | Out-Null
+            }
+        }
     }
 
     # Verify TabControl count and Favicon Tab
