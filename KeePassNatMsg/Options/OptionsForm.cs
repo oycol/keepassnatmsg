@@ -90,20 +90,6 @@ namespace KeePassNatMsg.Options
                 }
             }
 
-            // Bind tooltip help for both the tip icons and checkboxes
-            toolTip.AutoPopDelay = 10000;
-            toolTip.InitialDelay = 350;
-            toolTip.ReshowDelay = 150;
-            toolTip.ShowAlways = true;
-
-            BindTip(credMatchingCheckbox, tipMatching, "Filters out broader domain entries when a more specific path or subdomain matches.");
-            BindTip(unlockDatabaseCheckbox, tipUnlock, "Prompts KeePass to request master password unlock if queried while locked.");
-            BindTip(hideExpiredCheckbox, tipExpired, "Do not return credentials that have reached their configured expiration date.");
-            BindTip(matchSchemesCheckbox, tipSchemes, "Separates HTTP and HTTPS logins. Recommended to prevent leakage to cleartext sites.");
-            BindTip(chkSearchUrls, tipSearchUrls, "Also checks custom string attributes (URL1, URL2, KP2A_URL_1) for alternative login URLs.");
-            BindTip(credAllowAccessCheckbox, tipAllowAccess, "Bypasses user confirmation when a browser extension queries stored credentials.");
-            BindTip(credAllowUpdatesCheckbox, tipAllowUpdates, "Bypasses user confirmation when a browser extension creates or updates stored credentials.");
-
             // Favicon options initialization
             chkFaviconPrefixUrls.Checked = _config.FaviconPrefixUrls;
             chkFaviconUseTitle.Checked = _config.FaviconUseTitle;
@@ -149,12 +135,6 @@ namespace KeePassNatMsg.Options
             {
                 txtFaviconCustomUrl.Text = selected.UrlTemplate ?? string.Empty;
             }
-        }
-
-        private void BindTip(Control ctrl, PictureBox icon, string tipText)
-        {
-            if (ctrl != null) toolTip.SetToolTip(ctrl, tipText);
-            if (icon != null) toolTip.SetToolTip(icon, tipText);
         }
 
         private void okButton_Click(object sender, EventArgs e)
