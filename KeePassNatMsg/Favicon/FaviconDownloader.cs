@@ -334,7 +334,9 @@ namespace KeePassNatMsg.Favicon
 
             if (h == "::1" || h == "0:0:0:0:0:0:0:1") return true;
             if (h.StartsWith("fe80:", StringComparison.Ordinal)) return true;
-            if (h.StartsWith("fc", StringComparison.Ordinal) || h.StartsWith("fd", StringComparison.Ordinal)) return true;
+            // IPv6 unique-local prefixes apply only to numeric addresses, not hostnames.
+            IPAddress parsedHost;
+            if (IPAddress.TryParse(h, out parsedHost) && !IsAllowedResolvedAddress(parsedHost)) return true;
             if (h.StartsWith("::ffff:", StringComparison.Ordinal))
             {
                 h = h.Substring(7);
