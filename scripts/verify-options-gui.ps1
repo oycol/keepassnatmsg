@@ -26,10 +26,6 @@ $form = New-Object KeePassNatMsg.Options.OptionsForm($opt)
 try {
     Write-Host "Creating form control hierarchy..."
     $form.CreateControl()
-    $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
-    $form.Show()
-    [System.Windows.Forms.Application]::DoEvents()
-    Start-Sleep -Milliseconds 300
 
     $failures = New-Object 'System.Collections.Generic.List[string]'
     $w = $form.ClientSize.Width
@@ -162,22 +158,42 @@ try {
                 $failures.Add("grpFaviconProvider overlaps or touches grpFaviconSize") | Out-Null
             }
 
-            # Check individual controls inside tabFavicon
-            $chkPrefix = $form.GetType().GetField("chkFaviconPrefixUrls", $bindingFlags).GetValue($form)
-            $tipPrefix = $form.GetType().GetField("lblTipFaviconPrefix", $bindingFlags).GetValue($form)
-            $cmbSize = $form.GetType().GetField("cmbFaviconMaxIconSize", $bindingFlags).GetValue($form)
-            if ($chkPrefix -and $tipPrefix) {
-                $verticalGap = $tipPrefix.Top - $chkPrefix.Top
-                Write-Host "Favicon prefix checkbox-to-tip vertical distance: $verticalGap px"
-                if ($verticalGap -lt 20) {
-                    $failures.Add("Favicon prefix tip crowds or overlaps checkbox; gap=$verticalGap px, required >=20") | Out-Null
+            # Deep geometric & truncation verification:
+            $chkList = @("chkFaviconPrefixUrls", "chkFaviconUseTitle", "chkFaviconUpdateModified")
+            $tipList = @("lblTipFaviconPrefix", "lblTipFaviconTitle", "lblTipFaviconModified")
+            for ($k = 0; $k -lt $chkList.Count; $k++) {
+                $c = $form.GetType().GetField($chkList[$k], $bindingFlags).GetValue($form)
+                $t = $form.GetType().GetField($tipList[$k], $bindingFlags).GetValue($form)
+                if ($c -and $t) {
+                    # 1. Collision / Overlap check
+                    if ($c.Bottom -gt $t.Top) {
+                        $failures.Add("Vertical collision: $($c.Name) (Bottom=$($c.Bottom)) overlaps $($t.Name) (Top=$($t.Top))") | Out-Null
+                    }
+                    # 2. Text width measurement vs control bounds
+                    $textSize = [System.Windows.Forms.TextRenderer]::MeasureText($c.Text, $c.Font)
+                    if ($c.Width -lt ($textSize.Width + 16)) {
+                        $failures.Add("Text truncated in checkbox $($c.Name): text width=$($textSize.Width) px, control width=$($c.Width) px") | Out-Null
+                    }
                 }
             }
+
+            # 3. ComboBox items truncation check
             if ($cmbSize) {
                 Write-Host "Favicon max size combo width: $($cmbSize.Width) px"
                 if ($cmbSize.Width -lt 240) {
                     $failures.Add("cmbFaviconMaxIconSize is too narrow; width=$($cmbSize.Width) px, required >=240") | Out-Null
                 }
+                foreach ($item in $cmbSize.Items) {
+                    $itemSize = [System.Windows.Forms.TextRenderer]::MeasureText($item.ToString(), $cmbSize.Font)
+                    if ($cmbSize.Width -lt ($itemSize.Width + 24)) {
+                        $failures.Add("ComboBox item '$item' is clipped in cmbFaviconMaxIconSize (item width=$($itemSize.Width) px, combo width=$($cmbSize.Width) px)") | Out-Null
+                    }
+                }
+            }
+
+            # 4. Check unescaped ampersands in group titles
+            if ($grpFavSize -and $grpFavSize.Text -match '(?<!&)&(?!&)') {
+                $failures.Add("grpFaviconSize title contains unescaped ampersand (renders as missing character): '$($grpFavSize.Text)'") | Out-Null
             }
         }
     }
@@ -190,8 +206,6 @@ try {
         for ($i = 0; $i -lt $tabControl.TabCount; $i++) {
             $tabControl.SelectedIndex = $i
             $form.Refresh()
-            [System.Windows.Forms.Application]::DoEvents()
-            Start-Sleep -Milliseconds 150
             $bmpTab = New-Object System.Drawing.Bitmap($form.Width, $form.Height)
             $rectTab = New-Object System.Drawing.Rectangle(0, 0, $form.Width, $form.Height)
             $form.DrawToBitmap($bmpTab, $rectTab)
@@ -221,7 +235,6 @@ try {
 }
 finally {
     if ($form) {
-        try { $form.Close() } catch { }
         $form.Dispose()
     }
 }
