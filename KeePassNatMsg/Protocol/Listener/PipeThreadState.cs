@@ -15,6 +15,11 @@ namespace KeePassNatMsg.Protocol.Listener
 
         public void Close()
         {
+            Close(false);
+        }
+
+        public void Close(bool waitForExit)
+        {
             try
             {
                 if (Server != null)
@@ -25,16 +30,17 @@ namespace KeePassNatMsg.Protocol.Listener
             }
             catch { }
 
-            // Do not block indefinitely on Thread.Join() while shutting down,
-            // which risks deadlock if the thread is completing an event dispatch.
-            try
+            if (waitForExit)
             {
-                if (Thread != null && Thread.IsAlive && Thread != System.Threading.Thread.CurrentThread)
+                try
                 {
-                    Thread.Join(500);
+                    if (Thread != null && Thread.IsAlive && Thread != Thread.CurrentThread)
+                    {
+                        Thread.Join(50);
+                    }
                 }
+                catch { }
             }
-            catch { }
         }
     }
 }

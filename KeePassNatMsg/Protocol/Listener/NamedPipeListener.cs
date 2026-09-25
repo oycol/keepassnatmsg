@@ -41,10 +41,11 @@ namespace KeePassNatMsg.Protocol.Listener
             lock (_threads)
             {
                 snapshot = new List<PipeThreadState>(_threads);
+                _threads.Clear();
             }
             foreach (var pts in snapshot)
             {
-                pts.Close();
+                pts.Close(false);
             }
         }
 
@@ -81,13 +82,16 @@ namespace KeePassNatMsg.Protocol.Listener
             {
                 _threads.Remove(oldPts);
             }
-            oldPts.Close();
+            oldPts.Close(false);
+
+            if (!_active) return;
 
             // Spawn a fresh replacement thread to keep the pool full.
             var t = new Thread(Run) { IsBackground = true };
             PipeThreadState newPts;
             lock (_threads)
             {
+                if (!_active) return;
                 newPts = new PipeThreadState(t);
                 _threads.Add(newPts);
             }

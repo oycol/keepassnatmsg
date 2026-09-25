@@ -75,6 +75,7 @@ namespace KeePassNatMsg
         private Handlers _handlers;
         private bool _isLocked;
 
+        private ToolStripMenuItem _optionsMenu;
         private Favicon.FaviconManager _faviconManager;
         private ToolStripSeparator _entryFaviconSep;
         private ToolStripMenuItem _entryFaviconItem;
@@ -180,10 +181,10 @@ namespace KeePassNatMsg
             ExtInstance = this;
             CryptoHelper = new Helper();
 
-            var optionsMenu = new ToolStripMenuItem("KeePassNatMsg Options...");
-            optionsMenu.Image = KeePassNatMsg.Properties.Resources.icon_16;
-            optionsMenu.Click += OnOptions_Click;
-            HostInstance.MainWindow.ToolsMenu.DropDownItems.Add(optionsMenu);
+            _optionsMenu = new ToolStripMenuItem("KeePassNatMsg Options...");
+            _optionsMenu.Image = KeePassNatMsg.Properties.Resources.icon_16;
+            _optionsMenu.Click += OnOptions_Click;
+            HostInstance.MainWindow.ToolsMenu.DropDownItems.Add(_optionsMenu);
 
             _faviconManager = new Favicon.FaviconManager(HostInstance, new ConfigOpt(HostInstance.CustomConfig));
 
@@ -334,19 +335,34 @@ namespace KeePassNatMsg
 
         public override void Terminate()
         {
-            if (_listener != null)
-                _listener.Stop();
-
             if (HostInstance != null && HostInstance.MainWindow != null)
             {
-                if (_entryFaviconSep != null)
-                    HostInstance.MainWindow.EntryContextMenu.Items.Remove(_entryFaviconSep);
-                if (_entryFaviconItem != null)
-                    HostInstance.MainWindow.EntryContextMenu.Items.Remove(_entryFaviconItem);
-                if (_groupFaviconSep != null)
-                    HostInstance.MainWindow.GroupContextMenu.Items.Remove(_groupFaviconSep);
-                if (_groupFaviconItem != null)
-                    HostInstance.MainWindow.GroupContextMenu.Items.Remove(_groupFaviconItem);
+                try
+                {
+                    HostInstance.MainWindow.FileClosingPre -= MainWindow_FileClosingPre;
+                    HostInstance.MainWindow.FileOpened -= MainWindow_FileOpened;
+                }
+                catch { }
+
+                try
+                {
+                    if (_optionsMenu != null)
+                        HostInstance.MainWindow.ToolsMenu.DropDownItems.Remove(_optionsMenu);
+                    if (_entryFaviconSep != null)
+                        HostInstance.MainWindow.EntryContextMenu.Items.Remove(_entryFaviconSep);
+                    if (_entryFaviconItem != null)
+                        HostInstance.MainWindow.EntryContextMenu.Items.Remove(_entryFaviconItem);
+                    if (_groupFaviconSep != null)
+                        HostInstance.MainWindow.GroupContextMenu.Items.Remove(_groupFaviconSep);
+                    if (_groupFaviconItem != null)
+                        HostInstance.MainWindow.GroupContextMenu.Items.Remove(_groupFaviconItem);
+                }
+                catch { }
+            }
+
+            if (_listener != null)
+            {
+                try { _listener.Stop(); } catch { }
             }
         }
 
