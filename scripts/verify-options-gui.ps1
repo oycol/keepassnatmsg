@@ -179,6 +179,11 @@ try {
         }
         $check = $checkField.GetValue($form)
         $tip = $tipField.GetValue($form)
+        $tabControl.SelectedTab = if ($check.Parent.Name -eq 'grpMatching') { $tabControl.TabPages['tabMatching'] } else { $tabControl.TabPages['tabDatabase'] }
+        $form.PerformLayout()
+        if ($tip.Visible -ne $check.Visible) {
+            $failures.Add("Help visibility differs from checkbox $($check.Name)") | Out-Null
+        }
         if (-not ($tip -is [System.Windows.Forms.Label]) -or -not $tip.Parent.Controls.Contains($tip) -or
             $tip.Parent -ne $check.Parent -or $tip.ForeColor -ne [System.Drawing.SystemColors]::GrayText -or
             [string]::IsNullOrWhiteSpace($tip.Text)) {
