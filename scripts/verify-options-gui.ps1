@@ -37,6 +37,22 @@ try {
         $failures.Add("Unexpected Form ClientSize: ${w}x${h} (expected 720x590)") | Out-Null
     }
 
+    # Verify the dialog itself fits the active monitor, not just its 100% layout.
+    $working = [System.Windows.Forms.Screen]::FromControl($form).WorkingArea
+    if ($form.Bounds.Left -lt $working.Left -or $form.Bounds.Top -lt $working.Top -or
+        $form.Bounds.Right -gt $working.Right -or $form.Bounds.Bottom -gt $working.Bottom) {
+        $failures.Add("Options dialog outside working area: form=$($form.Bounds) work=$working") | Out-Null
+    }
+    if ($form.WindowState -ne [System.Windows.Forms.FormWindowState]::Normal -or
+        $form.FormBorderStyle -ne [System.Windows.Forms.FormBorderStyle]::FixedDialog) {
+        $failures.Add('Options dialog must remain a normal fixed-size dialog') | Out-Null
+    }
+    foreach ($button in @($form.AcceptButton, $form.CancelButton)) {
+        if ($button.Left -lt 0 -or $button.Top -lt 0 -or $button.Right -gt $w -or $button.Bottom -gt $h) {
+            $failures.Add("Dialog button $($button.Name) clipped by client area") | Out-Null
+        }
+    }
+
     $bindingFlags = [System.Reflection.BindingFlags]'NonPublic,Instance,Public'
 
     $lblVersion = $form.GetType().GetField("lblVersion", $bindingFlags).GetValue($form)
@@ -144,8 +160,8 @@ try {
         }
         $check = $checkField.GetValue($form)
         $tip = $tipField.GetValue($form)
-        if (-not ($tip -is [System.Windows.Forms.Label]) -or $tip.Parent -ne $check.Parent -or
-            -not $tip.Visible -or $tip.ForeColor -ne [System.Drawing.SystemColors]::GrayText -or
+        if (-not ($tip -is [System.Windows.Forms.Label]) -or -not $tip.Parent.Controls.Contains($tip) -or
+            $tip.Parent -ne $check.Parent -or $tip.ForeColor -ne [System.Drawing.SystemColors]::GrayText -or
             [string]::IsNullOrWhiteSpace($tip.Text)) {
             $failures.Add("Persistent gray help not visible under $($check.Name)") | Out-Null
             continue
