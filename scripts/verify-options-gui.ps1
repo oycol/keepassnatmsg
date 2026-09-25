@@ -49,16 +49,35 @@ try {
     $pnlCenter = $form.GetType().GetField("pnlVersionCenter", $bindingFlags).GetValue($form)
     if (-not $pnlCenter) { throw "pnlVersionCenter control not found" }
     Write-Host "pnlVersionCenter Location: X=$($pnlCenter.Location.X), Y=$($pnlCenter.Location.Y), Size=$($pnlCenter.Size.Width)x$($pnlCenter.Size.Height)"
-    if ($pnlCenter.Location.X -lt 230 -or $pnlCenter.Location.X -gt 250) {
-        throw "pnlVersionCenter not horizontally centered! X=$($pnlCenter.Location.X)"
+    if ($pnlCenter.Location.X -gt 24) {
+        throw "Version area must stay at the lower-left; actual X=$($pnlCenter.Location.X)"
+    }
+
+    $picFormLogo = $form.GetType().GetField("picFormLogo", $bindingFlags).GetValue($form)
+    if (-not $picFormLogo -or -not $picFormLogo.Image) { throw "picFormLogo or its image is missing" }
+    if ($lblVersion.AutoSize) {
+        throw "lblVersion must use a fixed height so text can be vertically centered with the icon"
+    }
+    $iconCenterY = $picFormLogo.Top + ($picFormLogo.Height / 2.0)
+    $labelCenterY = $lblVersion.Top + ($lblVersion.Height / 2.0)
+    Write-Host "Footer vertical centers: icon=$iconCenterY, label=$labelCenterY"
+    if ([Math]::Abs($iconCenterY - $labelCenterY) -gt 1) {
+        throw "Version text is not vertically centered with the icon"
     }
 
     # Verify Database Search Scope radio buttons are vertically arranged (no horizontal overlap)
     $rbActive = $form.GetType().GetField("credOnlySearchInSelectedDatabaseRadioButton", $bindingFlags).GetValue($form)
     $rbAll = $form.GetType().GetField("credSearchInAllOpenedDatabasesRadioButton", $bindingFlags).GetValue($form)
+    $rbRestrict = $form.GetType().GetField("credRestrictSearchInSpecificDatabaseRadioButton", $bindingFlags).GetValue($form)
+    $targetDbCombo = $form.GetType().GetField("comboBoxSearchDatabases", $bindingFlags).GetValue($form)
     Write-Host "rbActive Top=$($rbActive.Top), rbAll Top=$($rbAll.Top)"
     if ($rbAll.Top -le $rbActive.Top) {
         throw "Database search radio buttons are not vertically separated!"
+    }
+    $targetGap = $targetDbCombo.Left - $rbRestrict.Right
+    Write-Host "Target database input gap: $targetGap px"
+    if ($targetGap -lt 32) {
+        throw "Target database input overlaps or crowds the radio text; gap=$targetGap px, required >=32"
     }
 
     # Verify Danger zone checkboxes are vertically arranged
