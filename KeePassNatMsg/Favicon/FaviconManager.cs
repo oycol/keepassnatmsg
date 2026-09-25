@@ -240,11 +240,10 @@ namespace KeePassNatMsg.Favicon
         public void DownloadFaviconsForGroup(PwGroup group)
         {
             if (group == null) return;
-            PwObjectList<PwEntry> list = group.GetEntries(true);
             List<PwEntry> entries = new List<PwEntry>();
-            for (int i = 0; i < list.Count; i++)
+            foreach (PwEntry entry in group.GetEntries(true))
             {
-                entries.Add(list[i]);
+                entries.Add(entry);
             }
             DownloadFaviconsForEntries(entries.ToArray());
         }
