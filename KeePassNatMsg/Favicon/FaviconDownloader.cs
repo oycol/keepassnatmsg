@@ -364,7 +364,7 @@ namespace KeePassNatMsg.Favicon
         }
 
         // Parsed icon candidate with priority (higher = larger = preferred)
-        private sealed class IconCandidate
+        public sealed class IconCandidate
         {
             public string RawHref;
             public int Priority; // higher = preferred
