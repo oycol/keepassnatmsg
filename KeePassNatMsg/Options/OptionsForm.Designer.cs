@@ -674,51 +674,51 @@ namespace KeePassNatMsg.Options
             this.grpFaviconOptions.TabIndex = 0;
             this.grpFaviconOptions.TabStop = false;
             this.grpFaviconOptions.Text = "Download Options";
-            //
+            // 
             // chkFaviconPrefixUrls
-            //
+            // 
             this.chkFaviconPrefixUrls.AutoSize = true;
             this.chkFaviconPrefixUrls.Location = new System.Drawing.Point(16, 22);
             this.chkFaviconPrefixUrls.Name = "chkFaviconPrefixUrls";
-            this.chkFaviconPrefixUrls.Size = new System.Drawing.Size(248, 17);
+            this.chkFaviconPrefixUrls.Size = new System.Drawing.Size(450, 20);
             this.chkFaviconPrefixUrls.TabIndex = 0;
             this.chkFaviconPrefixUrls.Text = "Automatically prefix URLs with http(s)://";
             this.chkFaviconPrefixUrls.UseVisualStyleBackColor = true;
-            //
+            // 
             // lblTipFaviconPrefix
-            //
+            // 
             this.lblTipFaviconPrefix.ForeColor = System.Drawing.SystemColors.GrayText;
             this.lblTipFaviconPrefix.Location = new System.Drawing.Point(36, 44);
             this.lblTipFaviconPrefix.Name = "lblTipFaviconPrefix";
             this.lblTipFaviconPrefix.Size = new System.Drawing.Size(610, 18);
             this.lblTipFaviconPrefix.TabIndex = 1;
             this.lblTipFaviconPrefix.Text = "If scheme is missing, try HTTPS first then fallback to HTTP automatically.";
-            //
+            // 
             // chkFaviconUseTitle
-            //
+            // 
             this.chkFaviconUseTitle.AutoSize = true;
             this.chkFaviconUseTitle.Location = new System.Drawing.Point(16, 74);
             this.chkFaviconUseTitle.Name = "chkFaviconUseTitle";
-            this.chkFaviconUseTitle.Size = new System.Drawing.Size(225, 17);
+            this.chkFaviconUseTitle.Size = new System.Drawing.Size(450, 20);
             this.chkFaviconUseTitle.TabIndex = 2;
             this.chkFaviconUseTitle.Text = "Use entry Title field if URL is empty";
             this.chkFaviconUseTitle.UseVisualStyleBackColor = true;
-            //
+            // 
             // lblTipFaviconTitle
-            //
+            // 
             this.lblTipFaviconTitle.ForeColor = System.Drawing.SystemColors.GrayText;
             this.lblTipFaviconTitle.Location = new System.Drawing.Point(36, 96);
             this.lblTipFaviconTitle.Name = "lblTipFaviconTitle";
             this.lblTipFaviconTitle.Size = new System.Drawing.Size(610, 18);
             this.lblTipFaviconTitle.TabIndex = 3;
             this.lblTipFaviconTitle.Text = "Attempt to look up website domain from entry title if URL is not specified.";
-            //
+            // 
             // chkFaviconUpdateModified
-            //
+            // 
             this.chkFaviconUpdateModified.AutoSize = true;
             this.chkFaviconUpdateModified.Location = new System.Drawing.Point(16, 126);
             this.chkFaviconUpdateModified.Name = "chkFaviconUpdateModified";
-            this.chkFaviconUpdateModified.Size = new System.Drawing.Size(275, 17);
+            this.chkFaviconUpdateModified.Size = new System.Drawing.Size(450, 20);
             this.chkFaviconUpdateModified.TabIndex = 4;
             this.chkFaviconUpdateModified.Text = "Update entry last modification time on icon changes";
             this.chkFaviconUpdateModified.UseVisualStyleBackColor = true;
