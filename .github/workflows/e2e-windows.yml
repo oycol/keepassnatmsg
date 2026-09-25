@@ -325,6 +325,17 @@ jobs:
           Start-Sleep -Seconds 8
           Write-Host "Chrome is running with extension loaded (PID: $($chromeProc.Id))." -ForegroundColor Green
 
+          # 5.6.1 Assert that Chrome extension and plugin actually communicated
+          $pluginLog = "$env:LOCALAPPDATA\KeePassNatMsg\plugin.log"
+          if (-not (Test-Path $pluginLog)) {
+            throw "plugin.log not found at $pluginLog — plugin did not write any diagnostic output"
+          }
+          $pluginLogContent = Get-Content $pluginLog -Raw
+          if ($pluginLogContent -notmatch 'change-public-keys' -and $pluginLogContent -notmatch 'RECV') {
+            throw "Communication assertion failed: plugin.log does not contain 'change-public-keys' or 'RECV' entries — Chrome extension did not successfully communicate with the plugin"
+          }
+          Write-Host "Communication assertion PASSED: plugin.log contains expected native messaging exchange entries." -ForegroundColor Green
+
           # Clean up processes
           Stop-Process -Id $chromeProc.Id -Force -ErrorAction SilentlyContinue
           Stop-Process -Id $kpProc.Id -Force -ErrorAction SilentlyContinue
@@ -336,7 +347,6 @@ jobs:
             Write-Host "`n=== Proxy Diagnostic Log ===" -ForegroundColor Yellow
             Get-Content $proxyLog | ForEach-Object { Write-Host "  $_" }
           }
-          $pluginLog = "$env:LOCALAPPDATA\KeePassNatMsg\plugin.log"
           if (Test-Path $pluginLog) {
             Write-Host "`n=== Plugin Diagnostic Log ===" -ForegroundColor Yellow
             Get-Content $pluginLog | ForEach-Object { Write-Host "  $_" }

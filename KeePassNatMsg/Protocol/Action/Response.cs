@@ -62,9 +62,9 @@ namespace KeePassNatMsg.Protocol.Action
             {
                 {"hash", KeePassNatMsgExt.ExtInstance.GetDbHashForMessage()},
                 {"version", KeePassNatMsgExt.GetVersion()},
-                {"success", "true"},
-                {"nonce", Nonce}
+                {"success", "true"}
             };
+            _msg.AddBytes("nonce", Nonce);
         }
     }
 }

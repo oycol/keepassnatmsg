@@ -58,9 +58,10 @@ namespace KeePassNatMsg.Favicon
         public static string BuildProviderUrl(string template, string hostname, int iconSize)
         {
             if (string.IsNullOrEmpty(template)) return string.Empty;
+            string safeHost = hostname ?? string.Empty;
             string url = template;
-            url = Regex.Replace(url, @"\{URL:HOST\}", hostname ?? string.Empty, RegexOptions.IgnoreCase);
-            url = Regex.Replace(url, @"\{YAFD:ICON_SIZE\}", iconSize.ToString(), RegexOptions.IgnoreCase);
+            url = Regex.Replace(url, @"\{URL:HOST\}", m => safeHost, RegexOptions.IgnoreCase);
+            url = Regex.Replace(url, @"\{YAFD:ICON_SIZE\}", m => iconSize.ToString(), RegexOptions.IgnoreCase);
             return url;
         }
     }

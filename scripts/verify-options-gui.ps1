@@ -42,8 +42,8 @@ try {
     $lblVersion = $form.GetType().GetField("lblVersion", $bindingFlags).GetValue($form)
     if (-not $lblVersion) { throw "lblVersion control not found" }
     Write-Host "lblVersion text: '$($lblVersion.Text)'"
-    if ($lblVersion.Text -ne "KeePassNatMsg v2.4.2") {
-        $failures.Add("lblVersion text mismatch: expected 'KeePassNatMsg v2.4.2', got '$($lblVersion.Text)'") | Out-Null
+    if ($lblVersion.Text -ne "KeePassNatMsg v2.4.3") {
+        $failures.Add("lblVersion text mismatch: expected 'KeePassNatMsg v2.4.3', got '$($lblVersion.Text)'") | Out-Null
     }
 
     $pnlCenter = $form.GetType().GetField("pnlVersionCenter", $bindingFlags).GetValue($form)
@@ -178,6 +178,7 @@ try {
             }
 
             # 3. ComboBox items truncation check
+            $cmbSize = $form.GetType().GetField("cmbFaviconMaxIconSize", $bindingFlags).GetValue($form)
             if ($cmbSize) {
                 Write-Host "Favicon max size combo width: $($cmbSize.Width) px"
                 if ($cmbSize.Width -lt 240) {

@@ -36,7 +36,7 @@ namespace KeePassNatMsg.Options
                 }
                 catch { }
 
-                return "2.4.2";
+                return "2.4.3";
             }
         }
 
@@ -176,7 +176,6 @@ namespace KeePassNatMsg.Options
             _config.UnlockDatabaseRequest = unlockDatabaseCheckbox.Checked;
             _config.AlwaysAllowAccess = credAllowAccessCheckbox.Checked;
             _config.AlwaysAllowUpdates = credAllowUpdatesCheckbox.Checked;
-            _config.SearchDatabaseHash = (comboBoxSearchDatabases.SelectedItem as DatabaseItem) == null ? null : (comboBoxSearchDatabases.SelectedItem as DatabaseItem).DbHash;
             _config.HideExpired = hideExpiredCheckbox.Checked;
             _config.MatchSchemes = matchSchemesCheckbox.Checked;
             _config.ConnectionDatabaseHash = (comboBoxDatabases.SelectedItem as DatabaseItem) == null ? null : (comboBoxDatabases.SelectedItem as DatabaseItem).DbHash;
@@ -188,6 +187,16 @@ namespace KeePassNatMsg.Options
                 _config.AllowSearchDatabase = (ulong)AllowSearchDatabase.SearchInAllOpenedDatabases;
             else
                 _config.AllowSearchDatabase = (ulong)AllowSearchDatabase.RestrictSearchInSpecificDatabase;
+
+            // Clear SearchDatabaseHash when not in Restrict mode to prevent stale hash
+            if (!_config.AllowSearchDatabase.Equals((ulong)AllowSearchDatabase.RestrictSearchInSpecificDatabase))
+            {
+                _config.SearchDatabaseHash = string.Empty;
+            }
+            else
+            {
+                _config.SearchDatabaseHash = (comboBoxSearchDatabases.SelectedItem as DatabaseItem) == null ? null : (comboBoxSearchDatabases.SelectedItem as DatabaseItem).DbHash;
+            }
 
             // Save Favicon settings
             _config.FaviconPrefixUrls = chkFaviconPrefixUrls.Checked;
@@ -250,19 +259,24 @@ namespace KeePassNatMsg.Options
 
                 foreach (var entry in entries)
                 {
+                    var keysToRemove = new List<string>();
                     foreach (var str in entry.CustomData)
                     {
                         if (str.Key.Equals(KeePassNatMsgExt.SettingKey))
                         {
-                            entry.History = entry.History.CloneDeep();
-                            entry.CreateBackup(null);
-                            entry.CustomData.Remove(str.Key);
-                            entry.Touch(true);
-
-                            counter++;
-
+                            keysToRemove.Add(str.Key);
                             break;
                         }
+                    }
+
+                    foreach (var keyToRemove in keysToRemove)
+                    {
+                        entry.History = entry.History.CloneDeep();
+                        entry.CreateBackup(null);
+                        entry.CustomData.Remove(keyToRemove);
+                        entry.Touch(true);
+
+                        counter++;
                     }
                 }
 

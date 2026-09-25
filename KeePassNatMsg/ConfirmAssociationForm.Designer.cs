@@ -58,7 +58,7 @@
             label1.Name = "label1";
             label1.Size = new System.Drawing.Size(80, 13);
             label1.TabIndex = 0;
-            label1.Text = "Encryption key:";
+            label1.Text = "Key fingerprint (SHA-256):";
             // 
             // KeyLabel
             // 

@@ -15,14 +15,20 @@ namespace KeePassNatMsg.Protocol.Action
 
         public static Request ReadFromStream(System.IO.Stream s)
         {
-            var reader = new JsonTextReader(new System.IO.StreamReader(s));
-            return new Request((JObject)ReadFrom(reader));
+            using (var sr = new System.IO.StreamReader(s, System.Text.Encoding.UTF8, true, 1024, true))
+            using (var reader = new JsonTextReader(sr))
+            {
+                return new Request((JObject)ReadFrom(reader));
+            }
         }
 
         public static Request FromString(string s)
         {
-            var rdr = new JsonTextReader(new System.IO.StringReader(s));
-            return new Request((JObject)ReadFrom(rdr));
+            using (var sr = new System.IO.StringReader(s))
+            using (var rdr = new JsonTextReader(sr))
+            {
+                return new Request((JObject)ReadFrom(rdr));
+            }
         }
 
         public string ClientId

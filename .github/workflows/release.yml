@@ -114,6 +114,15 @@ jobs:
             exit 1
           }
 
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results.xml
+          if-no-files-found: ignore
+          retention-days: 30
+
       - name: Build .plgx
         shell: pwsh
         run: |
@@ -148,6 +157,7 @@ jobs:
           $notes += "#### Changes in this release`n"
           $notes += "- **Instant App Shutdown (Eliminated 2.5s Exit Hang)**: Removed sequential Thread.Join(500) blocks across the 5 background listener threads during Terminate(). Stopped ghost worker resurrection in RunThreadClosed, allowing KeePass to exit instantly (<5ms).`n"
           $notes += "- **Clean Lifecycle Deregistration**: Explicitly unhooked FileClosingPre and FileOpened events and removed Options Tools menu upon plugin Terminate.`n"
+          $notes += "- **CI/E2E Hardening**: Added .plgx build timeout (60s) with force-kill fallback in CI, test-results artifact upload in Release workflow, and native-messaging communication assertion in E2E (checks plugin.log for change-public-keys/RECV before teardown).`n"
           $notes += "- **Version Sync**: Synchronized AssemblyVersion, AssemblyFileVersion, Options display, tag, and Release title to $tagName.`n`n"
           $notes += "#### Installation`n"
           $notes += "1. Download KeePassNatMsg.plgx`n"

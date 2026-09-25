@@ -41,14 +41,20 @@ namespace KeePassNatMsg.Protocol.Listener
         {
             _active = false;
             _cts.Cancel();
-            _socket.Close();
-            _t.Join();
+            if (_socket != null)
+            {
+                _socket.Close();
+            }
+            if (_t != null)
+            {
+                _t.Join();
+            }
             DeleteSocketFile();
         }
 
         public void Write(string msg)
         {
-            if (_socket.Connected)
+            if (_socket != null && _socket.Connected)
             {
                 var sw = new SocketWriter(_socket);
                 sw.Send(msg);
@@ -66,7 +72,10 @@ namespace KeePassNatMsg.Protocol.Listener
             if (disposing)
             {
                 // dispose managed resources
-                _socket.Close();
+                if (_socket != null)
+                {
+                    _socket.Close();
+                }
                 _cts.Dispose();
             }
             // free native resources

@@ -139,7 +139,10 @@ jobs:
         run: |
           $kpPath = Resolve-Path "build\KeePass.exe"
           $p = Start-Process -FilePath $kpPath -ArgumentList "--plgx-create","$pwd\KeePassNatMsg" -PassThru
-          $p.WaitForExit()
+          if (-not $p.WaitForExit(60000)) {
+            Write-Host ".plgx build timed out after 60s, killing KeePass process..."
+            Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          }
           if (Test-Path "KeePassNatMsg.plgx") {
             $hash = (Get-FileHash "KeePassNatMsg.plgx" -Algorithm SHA256).Hash.ToLower()
             Write-Host "KeePassNatMsg.plgx SHA256: $hash"

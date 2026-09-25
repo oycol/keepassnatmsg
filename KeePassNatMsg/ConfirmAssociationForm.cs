@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
@@ -63,7 +64,17 @@ namespace KeePassNatMsg
             }
             set
             {
-                KeyLabel.Text = value;
+                KeyLabel.Text = CreateFingerprint(value);
+            }
+        }
+
+        private static string CreateFingerprint(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "(empty)";
+            using (var sha256 = SHA256.Create())
+            {
+                var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(value));
+                return string.Join(":", hash.Take(8).Select(x => x.ToString("X2")));
             }
         }
     }

@@ -106,12 +106,14 @@ namespace KeePassNatMsg.NativeMessaging
 
         public Version GetLatestProxyVersion()
         {
-            var web = new System.Net.WebClient();
-            var latestVersion = web.DownloadString(string.Format("{0}/raw/master/version.txt", GithubRepo));
-            Version lv;
-            if (Version.TryParse(latestVersion, out lv))
+            using (var web = new System.Net.WebClient())
             {
-                return lv;
+                var latestVersion = web.DownloadString(string.Format("{0}/raw/master/version.txt", GithubRepo));
+                Version lv;
+                if (Version.TryParse(latestVersion, out lv))
+                {
+                    return lv;
+                }
             }
             return null;
         }
@@ -126,8 +128,10 @@ namespace KeePassNatMsg.NativeMessaging
 
                 if (newVersion)
                 {
-                    var web = new System.Net.WebClient();
-                    web.DownloadFile(string.Format("{0}/releases/download/v{1}/{2}", GithubRepo, latestVersion, ProxyExecutable), ProxyExePath);
+                    using (var web = new System.Net.WebClient())
+                    {
+                        web.DownloadFile(string.Format("{0}/releases/download/v{1}/{2}", GithubRepo, latestVersion, ProxyExecutable), ProxyExePath);
+                    }
                 }
 
                 return true;

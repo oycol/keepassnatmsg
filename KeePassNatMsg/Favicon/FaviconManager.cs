@@ -18,11 +18,21 @@ namespace KeePassNatMsg.Favicon
     {
         private readonly IPluginHost _host;
         private readonly ConfigOpt _config;
+        private volatile bool _isRunning;
+        private BackgroundWorker _activeWorker;
 
         public FaviconManager(IPluginHost host, ConfigOpt config)
         {
             _host = host;
             _config = config;
+        }
+
+        public void Cancel()
+        {
+            if (_activeWorker != null && _activeWorker.IsBusy)
+            {
+                try { _activeWorker.CancelAsync(); } catch { }
+            }
         }
 
         private sealed class DownloadProgress
@@ -46,6 +56,14 @@ namespace KeePassNatMsg.Favicon
             {
                 return;
             }
+
+            if (_isRunning)
+            {
+                MessageBox.Show("A favicon download is already in progress. Please wait or cancel it first.", "KeePassNatMsg", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            _isRunning = true;
 
             Form statusForm;
             IStatusLogger logger = StatusUtil.CreateStatusDialog(
@@ -273,12 +291,20 @@ namespace KeePassNatMsg.Favicon
 
             worker.RunWorkerCompleted += delegate(object sender, RunWorkerCompletedEventArgs e)
             {
+                _isRunning = false;
+                _activeWorker = null;
                 try
                 {
                     _host.MainWindow.UIBlockInteraction(false);
                     if (statusForm != null && !statusForm.IsDisposed)
                     {
                         statusForm.Close();
+                    }
+
+                    // Mark database as modified so icons are saved
+                    if (_host != null && _host.Database != null && _host.Database.IsOpen)
+                    {
+                        _host.Database.Modified = true;
                     }
 
                     _host.MainWindow.UpdateUI(false, null, true, null, true, null, true);
@@ -308,6 +334,7 @@ namespace KeePassNatMsg.Favicon
                 catch { }
             };
 
+            _activeWorker = worker;
             worker.RunWorkerAsync();
         }
 

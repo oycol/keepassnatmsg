@@ -88,23 +88,61 @@ namespace KeePassNatMsg.Favicon
             if (!Uri.TryCreate(currentUrl, UriKind.Absolute, out baseUri))
                 throw new FaviconDownloaderException(FaviconErrorStatus.NotFound);
 
+            // SSRF guard: block private/loopback/link-local targets for the page fetch
+            if (IsPrivateAddress(baseUri.Host))
+                throw new FaviconDownloaderException(FaviconErrorStatus.NotFound);
+
             try
             {
                 string html;
                 Uri responseUri;
                 bool pageLoaded = TryFetchPage(baseUri, out html, out responseUri);
 
-                List<Uri> candidateUrls = new List<Uri>();
+                List<string> candidates = new List<string>();
 
                 if (pageLoaded && !string.IsNullOrEmpty(html))
                 {
-                    List<string> hrefs = ExtractFaviconHrefsFromHtml(html);
+                    string baseUrl;
+                    List<string> hrefs = ExtractFaviconHrefsFromHtml(html, out baseUrl);
+
+                    // Resolve the page-provided <base href> (if any) for relative link resolution.
+                    Uri baseForResolve = responseUri ?? baseUri;
+                    if (!string.IsNullOrEmpty(baseUrl))
+                    {
+                        Uri baseUrlParsed;
+                        if (Uri.TryCreate(baseUrl, UriKind.Absolute, out baseUrlParsed))
+                        {
+                            baseForResolve = baseUrlParsed;
+                        }
+                        else if (Uri.TryCreate(responseUri ?? baseUri, baseUrl, out baseUrlParsed))
+                        {
+                            baseForResolve = baseUrlParsed;
+                        }
+                    }
+
                     for (int i = 0; i < hrefs.Count; i++)
                     {
-                        Uri parsed;
-                        if (Uri.TryCreate(responseUri ?? baseUri, hrefs[i], out parsed))
+                        string href = hrefs[i];
+                        if (string.IsNullOrEmpty(href)) continue;
+
+                        // data: URIs cannot be resolved via Uri.TryCreate; keep the raw URI for inline decoding.
+                        if (href.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
                         {
-                            candidateUrls.Add(parsed);
+                            if (!candidates.Contains(href))
+                            {
+                                candidates.Add(href);
+                            }
+                            continue;
+                        }
+
+                        Uri parsed;
+                        if (Uri.TryCreate(baseForResolve, href, out parsed))
+                        {
+                            string abs = parsed.AbsoluteUri;
+                            if (!candidates.Contains(abs))
+                            {
+                                candidates.Add(abs);
+                            }
                         }
                     }
                 }
@@ -113,15 +151,34 @@ namespace KeePassNatMsg.Favicon
                 Uri rootFavicon;
                 if (Uri.TryCreate(new Uri(baseUri.GetLeftPart(UriPartial.Authority)), "/favicon.ico", out rootFavicon))
                 {
-                    if (!candidateUrls.Contains(rootFavicon))
+                    string rootUrl = rootFavicon.AbsoluteUri;
+                    if (!candidates.Contains(rootUrl))
                     {
-                        candidateUrls.Add(rootFavicon);
+                        candidates.Add(rootUrl);
                     }
                 }
 
-                for (int i = 0; i < candidateUrls.Count; i++)
+                for (int i = 0; i < candidates.Count; i++)
                 {
-                    byte[] rawData = TryDownloadAsset(candidateUrls[i]);
+                    string candidate = candidates[i];
+
+                    byte[] rawData;
+                    if (candidate.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Decode data: URI inline instead of performing an HTTP download.
+                        if (!TryDecodeDataUri(candidate, out rawData)) continue;
+                    }
+                    else
+                    {
+                        Uri candidateUri;
+                        if (!Uri.TryCreate(candidate, UriKind.Absolute, out candidateUri)) continue;
+
+                        // SSRF guard: skip candidate URLs resolving to private/loopback addresses
+                        if (IsPrivateAddress(candidateUri.Host)) continue;
+
+                        rawData = TryDownloadAsset(candidateUri);
+                    }
+
                     if (rawData != null && rawData.Length > 0)
                     {
                         byte[] resized;
@@ -178,6 +235,10 @@ namespace KeePassNatMsg.Favicon
             if (!Uri.TryCreate(requestUrl, UriKind.Absolute, out providerUri))
                 throw new FaviconDownloaderException(FaviconErrorStatus.NotFound);
 
+            // SSRF guard: block private/loopback/link-local provider targets
+            if (IsPrivateAddress(providerUri.Host))
+                throw new FaviconDownloaderException(FaviconErrorStatus.NotFound);
+
             byte[] data = TryDownloadAsset(providerUri);
             if (data == null || data.Length == 0)
                 throw new FaviconDownloaderException(FaviconErrorStatus.NotFound);
@@ -208,8 +269,118 @@ namespace KeePassNatMsg.Favicon
             return string.Empty;
         }
 
+        private static bool IsPrivateAddress(string host)
+        {
+            if (string.IsNullOrEmpty(host)) return false;
+            string h = host.Trim().ToLowerInvariant();
+
+            // IPv6 loopback
+            if (h == "::1") return true;
+            // IPv6 link-local
+            if (h.StartsWith("fe80:", StringComparison.Ordinal)) return true;
+            // IPv6 unique-local (fc00::/7)
+            if (h.StartsWith("fc", StringComparison.Ordinal) || h.StartsWith("fd", StringComparison.Ordinal)) return true;
+
+            // Strip IPv6 brackets and IPv6 zone
+            if (h.StartsWith("[", StringComparison.Ordinal) && h.EndsWith("]", StringComparison.Ordinal))
+            {
+                h = h.Substring(1, h.Length - 2);
+            }
+            int zoneIdx = h.LastIndexOf('%');
+            if (zoneIdx >= 0) h = h.Substring(0, zoneIdx);
+
+            // Normalize IPv6 loopback variants
+            if (h == "0:0:0:0:0:0:0:1") return true;
+
+            // IPv4 literal checks
+            // 127.x.x.x
+            if (h.StartsWith("127.", StringComparison.Ordinal)) return true;
+            // 169.254.x.x (link-local)
+            if (h.StartsWith("169.254.", StringComparison.Ordinal)) return true;
+            // 10.x.x.x
+            if (h.StartsWith("10.", StringComparison.Ordinal)) return true;
+            // 192.168.x.x
+            if (h.StartsWith("192.168.", StringComparison.Ordinal)) return true;
+            // 172.16.x.x - 172.31.x.x
+            if (h.StartsWith("172.", StringComparison.Ordinal))
+            {
+                string rest = h.Substring(4);
+                int dot = rest.IndexOf('.');
+                if (dot > 0)
+                {
+                    string second = rest.Substring(0, dot);
+                    int secondOctet;
+                    if (int.TryParse(second, out secondOctet) && secondOctet >= 16 && secondOctet <= 31)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            // localhost
+            if (h == "localhost") return true;
+
+            return false;
+        }
+
+        private static bool TryDecodeDataUri(string dataUri, out byte[] data)
+        {
+            data = null;
+            if (string.IsNullOrEmpty(dataUri)) return false;
+            Match m = DataSchemaRegex.Match(dataUri);
+            if (!m.Success) return false;
+
+            string mediaType = m.Groups["mediatype"].Value;
+            string base64Flag = m.Groups["base64"].Success ? m.Groups["base64"].Value : string.Empty;
+            string encoded = m.Groups["data"].Value;
+
+            if (string.IsNullOrEmpty(encoded)) return false;
+
+            // Only accept image/* media types, or empty (treated as image).
+            if (!string.IsNullOrEmpty(mediaType) &&
+                !mediaType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (base64Flag != null && base64Flag.ToLowerInvariant() == "base64")
+            {
+                try
+                {
+                    // data: URIs may contain URL-encoded characters in the base64 payload.
+                    string cleaned = encoded.Replace("%2F", "/").Replace("%2B", "+").Replace("%3D", "=");
+                    data = Convert.FromBase64String(cleaned);
+                    return data != null && data.Length > 0;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // URL-encoded raw bytes (e.g. data:image/png,%89PNG...)
+                try
+                {
+                    data = Encoding.UTF8.GetBytes(Uri.UnescapeDataString(encoded));
+                    return data != null && data.Length > 0;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
         public static List<string> ExtractFaviconHrefsFromHtml(string html)
         {
+            string baseUrl;
+            return ExtractFaviconHrefsFromHtml(html, out baseUrl);
+        }
+
+        public static List<string> ExtractFaviconHrefsFromHtml(string html, out string baseUrl)
+        {
+            baseUrl = null;
             List<string> results = new List<string>();
             if (string.IsNullOrEmpty(html)) return results;
 
@@ -221,7 +392,6 @@ namespace KeePassNatMsg.Favicon
             headContent = Regex.Replace(headContent, @"<(script|style)\b[^>]*>.*?</\1>", string.Empty, RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
             // Check base tag
-            string baseUrl = null;
             Match baseMatch = BaseTagRegex.Match(headContent);
             if (baseMatch.Success)
             {
@@ -315,8 +485,9 @@ namespace KeePassNatMsg.Favicon
             catch
             {
                 // Fallback: If image cannot be converted by GDI+ directly (e.g. multi-frame ICO or raw bytes),
-                // but is valid ICO header, return rawData if within size.
-                if (rawData.Length >= 4 && rawData[0] == 0 && rawData[1] == 0 && (rawData[2] == 1 || rawData[2] == 2))
+                // but is a valid ICO file (type 1), return raw data as-is; GDI+ will handle it.
+                // CUR files (type 2) are not accepted.
+                if (rawData.Length >= 4 && rawData[0] == 0 && rawData[1] == 0 && rawData[2] == 1)
                 {
                     processed = rawData;
                     return true;
@@ -394,6 +565,7 @@ namespace KeePassNatMsg.Favicon
                 req.CookieContainer = _cookies;
                 req.Proxy = _proxy;
                 req.AllowAutoRedirect = true;
+                req.MaximumAutomaticRedirections = 5;
 
                 lock (_reqLock)
                 {

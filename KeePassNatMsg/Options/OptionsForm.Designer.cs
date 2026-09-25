@@ -651,10 +651,10 @@ namespace KeePassNatMsg.Options
             this.tabFavicon.Controls.Add(this.grpFaviconOptions);
             this.tabFavicon.Controls.Add(this.grpFaviconSize);
             this.tabFavicon.Controls.Add(this.grpFaviconProvider);
-            this.tabFavicon.Location = new System.Drawing.Point(4, 22);
+            this.tabFavicon.Location = new System.Drawing.Point(4, 24);
             this.tabFavicon.Name = "tabFavicon";
-            this.tabFavicon.Padding = new System.Windows.Forms.Padding(3);
-            this.tabFavicon.Size = new System.Drawing.Size(688, 504);
+            this.tabFavicon.Padding = new System.Windows.Forms.Padding(14);
+            this.tabFavicon.Size = new System.Drawing.Size(688, 492);
             this.tabFavicon.TabIndex = 4;
             this.tabFavicon.Text = "Favicon Downloader";
             this.tabFavicon.UseVisualStyleBackColor = true;
@@ -859,7 +859,7 @@ namespace KeePassNatMsg.Options
             this.lblVersion.Name = "lblVersion";
             this.lblVersion.Size = new System.Drawing.Size(190, 24);
             this.lblVersion.TabIndex = 1;
-            this.lblVersion.Text = "KeePassNatMsg v2.3.9";
+            this.lblVersion.Text = "KeePassNatMsg v2.4.3";
             this.lblVersion.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // okButton
@@ -920,6 +920,13 @@ namespace KeePassNatMsg.Options
             this.grpDangerZone.ResumeLayout(false);
             this.grpDangerZone.PerformLayout();
             this.tabAssociations.ResumeLayout(false);
+            this.tabFavicon.ResumeLayout(false);
+            this.grpFaviconOptions.ResumeLayout(false);
+            this.grpFaviconOptions.PerformLayout();
+            this.grpFaviconSize.ResumeLayout(false);
+            this.grpFaviconSize.PerformLayout();
+            this.grpFaviconProvider.ResumeLayout(false);
+            this.grpFaviconProvider.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvKeys)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.picFormLogo)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.tipMatching)).EndInit();

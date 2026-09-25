@@ -244,7 +244,8 @@ namespace KeePassNatMsg
 
                 var resp = new Response(Actions.DATABASE_UNLOCKED);
 
-                _listener.Write(resp.GetEncryptedResponse());
+                if (_listener != null)
+                    _listener.Write(resp.GetEncryptedResponse());
             }
 
             PromptToMigrate(e.Database);
@@ -258,7 +259,8 @@ namespace KeePassNatMsg
 
                 var resp = new Response(Actions.DATABASE_LOCKED);
 
-                _listener.Write(resp.GetEncryptedResponse());
+                if (_listener != null)
+                    _listener.Write(resp.GetEncryptedResponse());
             }
         }
 
@@ -292,7 +294,8 @@ namespace KeePassNatMsg
                 LogDiag("ERROR: " + ex.ToString());
                 try
                 {
-                    e.Writer.Send("{\"action\":\"error\",\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}");
+                    var errObj = new { action = "error", error = ex.Message };
+                    e.Writer.Send(Newtonsoft.Json.JsonConvert.SerializeObject(errObj));
                 }
                 catch { }
             }
@@ -335,6 +338,12 @@ namespace KeePassNatMsg
 
         public override void Terminate()
         {
+            // Cancel any running Favicon download first
+            if (_faviconManager != null)
+            {
+                try { _faviconManager.Cancel(); } catch { }
+            }
+
             if (HostInstance != null && HostInstance.MainWindow != null)
             {
                 try
@@ -363,6 +372,7 @@ namespace KeePassNatMsg
             if (_listener != null)
             {
                 try { _listener.Stop(); } catch { }
+                _listener = null;
             }
         }
 
