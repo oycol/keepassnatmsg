@@ -75,6 +75,12 @@ namespace KeePassNatMsg
         private Handlers _handlers;
         private bool _isLocked;
 
+        private Favicon.FaviconManager _faviconManager;
+        private ToolStripSeparator _entryFaviconSep;
+        private ToolStripMenuItem _entryFaviconItem;
+        private ToolStripSeparator _groupFaviconSep;
+        private ToolStripMenuItem _groupFaviconItem;
+
         internal static string SettingKey
         {
             get
@@ -179,6 +185,20 @@ namespace KeePassNatMsg
             optionsMenu.Click += OnOptions_Click;
             HostInstance.MainWindow.ToolsMenu.DropDownItems.Add(optionsMenu);
 
+            _faviconManager = new Favicon.FaviconManager(HostInstance, new ConfigOpt(HostInstance.CustomConfig));
+
+            // Entry context menu
+            _entryFaviconSep = new ToolStripSeparator();
+            _entryFaviconItem = new ToolStripMenuItem("Download Favicons", KeePassNatMsg.Properties.Resources.icon_16, OnDownloadEntryFavicons_Click);
+            HostInstance.MainWindow.EntryContextMenu.Items.Add(_entryFaviconSep);
+            HostInstance.MainWindow.EntryContextMenu.Items.Add(_entryFaviconItem);
+
+            // Group context menu
+            _groupFaviconSep = new ToolStripSeparator();
+            _groupFaviconItem = new ToolStripMenuItem("Download Favicons (recursively)", KeePassNatMsg.Properties.Resources.icon_16, OnDownloadGroupFavicons_Click);
+            HostInstance.MainWindow.GroupContextMenu.Items.Add(_groupFaviconSep);
+            HostInstance.MainWindow.GroupContextMenu.Items.Add(_groupFaviconItem);
+
             pluginHost.MainWindow.FileClosingPre += MainWindow_FileClosingPre;
             pluginHost.MainWindow.FileOpened += MainWindow_FileOpened;
 
@@ -277,6 +297,26 @@ namespace KeePassNatMsg
             }
         }
 
+        private void OnDownloadEntryFavicons_Click(object sender, EventArgs e)
+        {
+            if (_faviconManager == null || HostInstance == null || HostInstance.MainWindow == null) return;
+            var entries = HostInstance.MainWindow.GetSelectedEntries();
+            if (entries != null && entries.Length > 0)
+            {
+                _faviconManager.DownloadFaviconsForEntries(entries);
+            }
+        }
+
+        private void OnDownloadGroupFavicons_Click(object sender, EventArgs e)
+        {
+            if (_faviconManager == null || HostInstance == null || HostInstance.MainWindow == null) return;
+            var group = HostInstance.MainWindow.GetSelectedGroup();
+            if (group != null)
+            {
+                _faviconManager.DownloadFaviconsForGroup(group);
+            }
+        }
+
         void OnOptions_Click(object sender, EventArgs e)
         {
             var form = new OptionsForm(new ConfigOpt(HostInstance.CustomConfig));
@@ -296,6 +336,18 @@ namespace KeePassNatMsg
         {
             if (_listener != null)
                 _listener.Stop();
+
+            if (HostInstance != null && HostInstance.MainWindow != null)
+            {
+                if (_entryFaviconSep != null)
+                    HostInstance.MainWindow.EntryContextMenu.Items.Remove(_entryFaviconSep);
+                if (_entryFaviconItem != null)
+                    HostInstance.MainWindow.EntryContextMenu.Items.Remove(_entryFaviconItem);
+                if (_groupFaviconSep != null)
+                    HostInstance.MainWindow.GroupContextMenu.Items.Remove(_groupFaviconSep);
+                if (_groupFaviconItem != null)
+                    HostInstance.MainWindow.GroupContextMenu.Items.Remove(_groupFaviconItem);
+            }
         }
 
         internal void UpdateUI(PwGroup group)

@@ -42,8 +42,8 @@ try {
     $lblVersion = $form.GetType().GetField("lblVersion", $bindingFlags).GetValue($form)
     if (-not $lblVersion) { throw "lblVersion control not found" }
     Write-Host "lblVersion text: '$($lblVersion.Text)'"
-    if ($lblVersion.Text -ne "KeePassNatMsg v2.3.9") {
-        $failures.Add("lblVersion text mismatch: expected 'KeePassNatMsg v2.3.9', got '$($lblVersion.Text)'") | Out-Null
+    if ($lblVersion.Text -ne "KeePassNatMsg v2.4.0") {
+        $failures.Add("lblVersion text mismatch: expected 'KeePassNatMsg v2.4.0', got '$($lblVersion.Text)'") | Out-Null
     }
 
     $pnlCenter = $form.GetType().GetField("pnlVersionCenter", $bindingFlags).GetValue($form)
@@ -130,6 +130,34 @@ try {
     }
     else {
         Write-Host "tipMatching icon verified: Size=$($tipMatching.Image.Width)x$($tipMatching.Image.Height)"
+    }
+
+    # Verify TabControl count and Favicon Tab
+    $tabControl = $form.GetType().GetField("tabControl", $bindingFlags).GetValue($form)
+    if (-not $tabControl) { throw "tabControl control not found" }
+    Write-Host "TabControl TabCount: $($tabControl.TabCount)"
+    if ($tabControl.TabCount -ne 5) {
+        $failures.Add("TabControl must have 5 tabs; found $($tabControl.TabCount)") | Out-Null
+    }
+    $tabFavicon = $form.GetType().GetField("tabFavicon", $bindingFlags).GetValue($form)
+    if (-not $tabFavicon) {
+        $failures.Add("tabFavicon control not found") | Out-Null
+    } else {
+        Write-Host "tabFavicon verified: '$($tabFavicon.Text)'"
+        $grpFavOptions = $form.GetType().GetField("grpFaviconOptions", $bindingFlags).GetValue($form)
+        $grpFavSize = $form.GetType().GetField("grpFaviconSize", $bindingFlags).GetValue($form)
+        $grpFavProvider = $form.GetType().GetField("grpFaviconProvider", $bindingFlags).GetValue($form)
+        if (-not $grpFavOptions -or -not $grpFavSize -or -not $grpFavProvider) {
+            $failures.Add("One or more Favicon Downloader GroupBoxes are missing") | Out-Null
+        } else {
+            Write-Host "Favicon group boxes: Options Top=$($grpFavOptions.Top), Size Top=$($grpFavSize.Top), Provider Top=$($grpFavProvider.Top)"
+            if ($grpFavSize.Top -le $grpFavOptions.Bottom) {
+                $failures.Add("grpFaviconSize overlaps or touches grpFaviconOptions") | Out-Null
+            }
+            if ($grpFavProvider.Top -le $grpFavSize.Bottom) {
+                $failures.Add("grpFaviconProvider overlaps or touches grpFaviconSize") | Out-Null
+            }
+        }
     }
 
     New-Item -ItemType Directory -Force -Path $outputDir | Out-Null

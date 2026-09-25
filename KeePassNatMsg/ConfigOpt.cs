@@ -34,6 +34,12 @@ namespace KeePassNatMsg
         const string UseKeePassXcSettingsKey = "KeePassNatMsg_UseKeePassXcSettings";
         const string DefaultGroupKey = "KeePassNatMsg_DefaultGroup";
         const string DefaultGroupAlwaysAllowKey = "KeePassNatMsg_DefaultGroupAlwaysAllow";
+        const string FaviconPrefixUrlsKey = "KeePassNatMsg_Favicon_PrefixUrls";
+        const string FaviconUseTitleKey = "KeePassNatMsg_Favicon_UseTitle";
+        const string FaviconUpdateModifiedKey = "KeePassNatMsg_Favicon_UpdateModified";
+        const string FaviconMaxIconSizeKey = "KeePassNatMsg_Favicon_MaxIconSize";
+        const string FaviconProviderKey = "KeePassNatMsg_Favicon_Provider";
+        const string FaviconCustomUrlKey = "KeePassNatMsg_Favicon_CustomUrl";
 
         public ConfigOpt(AceCustomConfig config)
         {
@@ -128,6 +134,42 @@ namespace KeePassNatMsg
         {
             get { return _config.GetBool(DefaultGroupAlwaysAllowKey, false); }
             set { _config.SetBool(DefaultGroupAlwaysAllowKey, value); }
+        }
+
+        public bool FaviconPrefixUrls
+        {
+            get { return _config.GetBool(FaviconPrefixUrlsKey, true); }
+            set { _config.SetBool(FaviconPrefixUrlsKey, value); }
+        }
+
+        public bool FaviconUseTitle
+        {
+            get { return _config.GetBool(FaviconUseTitleKey, false); }
+            set { _config.SetBool(FaviconUseTitleKey, value); }
+        }
+
+        public bool FaviconUpdateModified
+        {
+            get { return _config.GetBool(FaviconUpdateModifiedKey, true); }
+            set { _config.SetBool(FaviconUpdateModifiedKey, value); }
+        }
+
+        public int FaviconMaxIconSize
+        {
+            get { return (int)_config.GetLong(FaviconMaxIconSizeKey, 128); }
+            set { _config.SetLong(FaviconMaxIconSizeKey, (long)value); }
+        }
+
+        public string FaviconProvider
+        {
+            get { return _config.GetString(FaviconProviderKey, "Direct Website (Default & Private)"); }
+            set { _config.SetString(FaviconProviderKey, value); }
+        }
+
+        public string FaviconCustomUrl
+        {
+            get { return _config.GetString(FaviconCustomUrlKey, string.Empty); }
+            set { _config.SetString(FaviconCustomUrlKey, value); }
         }
     }
 }

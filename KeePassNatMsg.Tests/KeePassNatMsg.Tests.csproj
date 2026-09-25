@@ -48,8 +48,18 @@
     <Compile Include="UrlMatchingTests.cs" />
     <Compile Include="NativeMessagingFramingTests.cs" />
     <Compile Include="ChromeIntegrationTests.cs" />
+    <Compile Include="FaviconTests.cs" />
     <Compile Include="..\KeePassNatMsg\NativeMessaging\ChromeIntegrationService.cs">
       <Link>NativeMessaging\ChromeIntegrationService.cs</Link>
+    </Compile>
+    <Compile Include="..\KeePassNatMsg\Favicon\FaviconDownloader.cs">
+      <Link>Favicon\FaviconDownloader.cs</Link>
+    </Compile>
+    <Compile Include="..\KeePassNatMsg\Favicon\FaviconDownloaderException.cs">
+      <Link>Favicon\FaviconDownloaderException.cs</Link>
+    </Compile>
+    <Compile Include="..\KeePassNatMsg\Favicon\FaviconProvider.cs">
+      <Link>Favicon\FaviconProvider.cs</Link>
     </Compile>
     <!-- Include only standalone source files that don't depend on KeePass -->
     <Compile Include="..\KeePassNatMsg\Protocol\Actions.cs">
