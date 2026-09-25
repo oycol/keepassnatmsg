@@ -216,6 +216,10 @@ namespace KeePassNatMsg.Favicon
             Match headMatch = HeadTagRegex.Match(html);
             string headContent = headMatch.Success ? headMatch.Groups["content"].Value : html;
 
+            // Strip HTML comments and script/style tags to avoid extracting commented-out or script-generated links
+            headContent = Regex.Replace(headContent, @"<!--.*?-->", string.Empty, RegexOptions.Singleline);
+            headContent = Regex.Replace(headContent, @"<(script|style)\b[^>]*>.*?</\1>", string.Empty, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
             // Check base tag
             string baseUrl = null;
             Match baseMatch = BaseTagRegex.Match(headContent);
