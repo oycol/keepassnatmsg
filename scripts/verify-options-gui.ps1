@@ -161,6 +161,7 @@ try {
 
     # Each security/matching choice must explain itself without hovering. Check the
     # actual control tree and measured bounds, not source text or a screenshot alone.
+    $tabControl = $form.GetType().GetField('tabControl', $bindingFlags).GetValue($form)
     $helpPairs = @(
         @('credMatchingCheckbox', 'lblTipMatching'),
         @('unlockDatabaseCheckbox', 'lblTipUnlock'),
@@ -179,7 +180,8 @@ try {
         }
         $check = $checkField.GetValue($form)
         $tip = $tipField.GetValue($form)
-        $tabControl.SelectedTab = if ($check.Parent.Name -eq 'grpMatching') { $tabControl.TabPages['tabMatching'] } else { $tabControl.TabPages['tabDatabase'] }
+        if ($check.Parent.Name -eq 'grpMatching') { $tabControl.SelectedTab = $form.GetType().GetField('tabMatching', $bindingFlags).GetValue($form) }
+        else { $tabControl.SelectedTab = $form.GetType().GetField('tabDatabase', $bindingFlags).GetValue($form) }
         $form.PerformLayout()
         if ($tip.Visible -ne $check.Visible) {
             $failures.Add("Help visibility differs from checkbox $($check.Name)") | Out-Null
