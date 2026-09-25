@@ -17,7 +17,6 @@ namespace KeePassNatMsg.Options
         private readonly ChromeIntegrationService _chromeService = new ChromeIntegrationService();
         private bool _initialAlwaysAllowAccess;
         private bool _initialAlwaysAllowUpdates;
-        private bool _initialDefaultGroupAlwaysAllow;
 
         private string AssemblyVersion
         {
@@ -36,7 +35,7 @@ namespace KeePassNatMsg.Options
                 }
                 catch { }
 
-                return "2.3.8";
+                return "2.3.9";
             }
         }
 
@@ -49,7 +48,6 @@ namespace KeePassNatMsg.Options
 
         private void OptionsForm_Load(object sender, EventArgs e)
         {
-            credNotifyCheckbox.Checked = _config.ReceiveCredentialNotification;
             credMatchingCheckbox.Checked = _config.SpecificMatchingOnly;
             unlockDatabaseCheckbox.Checked = _config.UnlockDatabaseRequest;
             credAllowAccessCheckbox.Checked = _config.AlwaysAllowAccess;
@@ -64,14 +62,9 @@ namespace KeePassNatMsg.Options
             comboBoxSearchDatabases.Enabled = credRestrictSearchInSpecificDatabaseRadioButton.Checked;
             hideExpiredCheckbox.Checked = _config.HideExpired;
             matchSchemesCheckbox.Checked = _config.MatchSchemes;
-            SortByUsernameRadioButton.Checked = _config.SortResultByUsername;
-            SortByTitleRadioButton.Checked = !_config.SortResultByUsername;
             chkSearchUrls.Checked = _config.SearchUrls;
-            txtDefaultGroup.Text = _config.DefaultGroup;
-            chkDefaultGroupAlwaysAllow.Checked = _config.DefaultGroupAlwaysAllow;
             _initialAlwaysAllowAccess = credAllowAccessCheckbox.Checked;
             _initialAlwaysAllowUpdates = credAllowUpdatesCheckbox.Checked;
-            _initialDefaultGroupAlwaysAllow = chkDefaultGroupAlwaysAllow.Checked;
 
             InitDatabasesDropdown();
 
@@ -102,13 +95,11 @@ namespace KeePassNatMsg.Options
             toolTip.ReshowDelay = 150;
             toolTip.ShowAlways = true;
 
-            BindTip(credNotifyCheckbox, tipNotify, "Shows a system tray notification whenever a browser extension queries entries.");
             BindTip(credMatchingCheckbox, tipMatching, "Filters out broader domain entries when a more specific path or subdomain matches.");
             BindTip(unlockDatabaseCheckbox, tipUnlock, "Prompts KeePass to request master password unlock if queried while locked.");
             BindTip(hideExpiredCheckbox, tipExpired, "Do not return credentials that have reached their configured expiration date.");
             BindTip(matchSchemesCheckbox, tipSchemes, "Separates HTTP and HTTPS logins. Recommended to prevent leakage to cleartext sites.");
             BindTip(chkSearchUrls, tipSearchUrls, "Also checks custom string attributes (URL1, URL2, KP2A_URL_1) for alternative login URLs.");
-            BindTip(chkDefaultGroupAlwaysAllow, tipDefaultGroup, "Automatically grants browser access to entries saved under this group without confirmation.");
             BindTip(credAllowAccessCheckbox, tipAllowAccess, "Bypasses user confirmation when a browser extension queries stored credentials.");
             BindTip(credAllowUpdatesCheckbox, tipAllowUpdates, "Bypasses user confirmation when a browser extension creates or updates stored credentials.");
         }
@@ -122,8 +113,7 @@ namespace KeePassNatMsg.Options
         private void okButton_Click(object sender, EventArgs e)
         {
             if ((!_initialAlwaysAllowAccess && credAllowAccessCheckbox.Checked) ||
-                (!_initialAlwaysAllowUpdates && credAllowUpdatesCheckbox.Checked) ||
-                (!_initialDefaultGroupAlwaysAllow && chkDefaultGroupAlwaysAllow.Checked))
+                (!_initialAlwaysAllowUpdates && credAllowUpdatesCheckbox.Checked))
             {
                 var confirm = MessageBox.Show(
                     this,
@@ -135,7 +125,6 @@ namespace KeePassNatMsg.Options
                 if (confirm != DialogResult.Yes) return;
             }
 
-            _config.ReceiveCredentialNotification = credNotifyCheckbox.Checked;
             _config.SpecificMatchingOnly = credMatchingCheckbox.Checked;
             _config.UnlockDatabaseRequest = unlockDatabaseCheckbox.Checked;
             _config.AlwaysAllowAccess = credAllowAccessCheckbox.Checked;
@@ -143,11 +132,8 @@ namespace KeePassNatMsg.Options
             _config.SearchDatabaseHash = (comboBoxSearchDatabases.SelectedItem as DatabaseItem) == null ? null : (comboBoxSearchDatabases.SelectedItem as DatabaseItem).DbHash;
             _config.HideExpired = hideExpiredCheckbox.Checked;
             _config.MatchSchemes = matchSchemesCheckbox.Checked;
-            _config.SortResultByUsername = SortByUsernameRadioButton.Checked;
             _config.ConnectionDatabaseHash = (comboBoxDatabases.SelectedItem as DatabaseItem) == null ? null : (comboBoxDatabases.SelectedItem as DatabaseItem).DbHash;
             _config.SearchUrls = chkSearchUrls.Checked;
-            _config.DefaultGroup = txtDefaultGroup.Text;
-            _config.DefaultGroupAlwaysAllow = chkDefaultGroupAlwaysAllow.Checked;
 
             if (credOnlySearchInSelectedDatabaseRadioButton.Checked)
                 _config.AllowSearchDatabase = (ulong)AllowSearchDatabase.SearchInOnlySelectedDatabase;

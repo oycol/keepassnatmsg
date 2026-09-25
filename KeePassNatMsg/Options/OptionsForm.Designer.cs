@@ -31,15 +31,11 @@ namespace KeePassNatMsg.Options
             this.btnUninstallIntegration = new System.Windows.Forms.Button();
             this.tabMatching = new System.Windows.Forms.TabPage();
             this.grpMatching = new System.Windows.Forms.GroupBox();
-            this.credNotifyCheckbox = new System.Windows.Forms.CheckBox();
             this.credMatchingCheckbox = new System.Windows.Forms.CheckBox();
             this.unlockDatabaseCheckbox = new System.Windows.Forms.CheckBox();
             this.hideExpiredCheckbox = new System.Windows.Forms.CheckBox();
             this.matchSchemesCheckbox = new System.Windows.Forms.CheckBox();
             this.chkSearchUrls = new System.Windows.Forms.CheckBox();
-            this.grpSorting = new System.Windows.Forms.GroupBox();
-            this.SortByTitleRadioButton = new System.Windows.Forms.RadioButton();
-            this.SortByUsernameRadioButton = new System.Windows.Forms.RadioButton();
             this.tabDatabase = new System.Windows.Forms.TabPage();
             this.grpDatabase = new System.Windows.Forms.GroupBox();
             this.credOnlySearchInSelectedDatabaseRadioButton = new System.Windows.Forms.RadioButton();
@@ -48,10 +44,6 @@ namespace KeePassNatMsg.Options
             this.comboBoxSearchDatabases = new System.Windows.Forms.ComboBox();
             this.labelConnDb = new System.Windows.Forms.Label();
             this.comboBoxDatabases = new System.Windows.Forms.ComboBox();
-            this.grpNewLogins = new System.Windows.Forms.GroupBox();
-            this.lblDefaultGroup = new System.Windows.Forms.Label();
-            this.txtDefaultGroup = new System.Windows.Forms.TextBox();
-            this.chkDefaultGroupAlwaysAllow = new System.Windows.Forms.CheckBox();
             this.grpDangerZone = new System.Windows.Forms.GroupBox();
             this.lblDangerWarning = new System.Windows.Forms.Label();
             this.credAllowAccessCheckbox = new System.Windows.Forms.CheckBox();
@@ -68,13 +60,11 @@ namespace KeePassNatMsg.Options
             this.lblVersion = new System.Windows.Forms.Label();
             this.pnlVersionCenter = new System.Windows.Forms.Panel();
             this.toolTip = new System.Windows.Forms.ToolTip();
-            this.tipNotify = new System.Windows.Forms.PictureBox();
             this.tipMatching = new System.Windows.Forms.PictureBox();
             this.tipUnlock = new System.Windows.Forms.PictureBox();
             this.tipExpired = new System.Windows.Forms.PictureBox();
             this.tipSchemes = new System.Windows.Forms.PictureBox();
             this.tipSearchUrls = new System.Windows.Forms.PictureBox();
-            this.tipDefaultGroup = new System.Windows.Forms.PictureBox();
             this.tipAllowAccess = new System.Windows.Forms.PictureBox();
             this.tipAllowUpdates = new System.Windows.Forms.PictureBox();
             this.okButton = new System.Windows.Forms.Button();
@@ -84,21 +74,17 @@ namespace KeePassNatMsg.Options
             this.grpIntegration.SuspendLayout();
             this.tabMatching.SuspendLayout();
             this.grpMatching.SuspendLayout();
-            this.grpSorting.SuspendLayout();
             this.tabDatabase.SuspendLayout();
             this.grpDatabase.SuspendLayout();
-            this.grpNewLogins.SuspendLayout();
             this.grpDangerZone.SuspendLayout();
             this.tabAssociations.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvKeys)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.picFormLogo)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.tipNotify)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.tipMatching)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.tipUnlock)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.tipExpired)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.tipSchemes)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.tipSearchUrls)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.tipDefaultGroup)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.tipAllowAccess)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.tipAllowUpdates)).BeginInit();
             this.pnlVersionCenter.SuspendLayout();
@@ -241,7 +227,6 @@ namespace KeePassNatMsg.Options
             // tabMatching
             //
             this.tabMatching.Controls.Add(this.grpMatching);
-            this.tabMatching.Controls.Add(this.grpSorting);
             this.tabMatching.Location = new System.Drawing.Point(4, 24);
             this.tabMatching.Name = "tabMatching";
             this.tabMatching.Padding = new System.Windows.Forms.Padding(14);
@@ -254,8 +239,6 @@ namespace KeePassNatMsg.Options
             //
             this.grpMatching.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpMatching.Controls.Add(this.credNotifyCheckbox);
-            this.grpMatching.Controls.Add(this.tipNotify);
             this.grpMatching.Controls.Add(this.credMatchingCheckbox);
             this.grpMatching.Controls.Add(this.tipMatching);
             this.grpMatching.Controls.Add(this.unlockDatabaseCheckbox);
@@ -268,27 +251,16 @@ namespace KeePassNatMsg.Options
             this.grpMatching.Controls.Add(this.tipSearchUrls);
             this.grpMatching.Location = new System.Drawing.Point(14, 14);
             this.grpMatching.Name = "grpMatching";
-            this.grpMatching.Size = new System.Drawing.Size(660, 220);
+            this.grpMatching.Size = new System.Drawing.Size(660, 188);
             this.grpMatching.TabIndex = 0;
             this.grpMatching.TabStop = false;
             this.grpMatching.Text = "Credential & URL Matching";
-            //
-            // credNotifyCheckbox
-            //
-            this.credNotifyCheckbox.AutoSize = true;
-            this.credNotifyCheckbox.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.credNotifyCheckbox.Location = new System.Drawing.Point(18, 24);
-            this.credNotifyCheckbox.Name = "credNotifyCheckbox";
-            this.credNotifyCheckbox.Size = new System.Drawing.Size(254, 19);
-            this.credNotifyCheckbox.TabIndex = 0;
-            this.credNotifyCheckbox.Text = "Notify when credentials are requested";
-            this.credNotifyCheckbox.UseVisualStyleBackColor = true;
             // 
             // credMatchingCheckbox
             //
             this.credMatchingCheckbox.AutoSize = true;
             this.credMatchingCheckbox.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.credMatchingCheckbox.Location = new System.Drawing.Point(18, 56);
+            this.credMatchingCheckbox.Location = new System.Drawing.Point(18, 24);
             this.credMatchingCheckbox.Name = "credMatchingCheckbox";
             this.credMatchingCheckbox.Size = new System.Drawing.Size(206, 19);
             this.credMatchingCheckbox.TabIndex = 2;
@@ -299,7 +271,7 @@ namespace KeePassNatMsg.Options
             //
             this.unlockDatabaseCheckbox.AutoSize = true;
             this.unlockDatabaseCheckbox.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.unlockDatabaseCheckbox.Location = new System.Drawing.Point(18, 88);
+            this.unlockDatabaseCheckbox.Location = new System.Drawing.Point(18, 56);
             this.unlockDatabaseCheckbox.Name = "unlockDatabaseCheckbox";
             this.unlockDatabaseCheckbox.Size = new System.Drawing.Size(222, 19);
             this.unlockDatabaseCheckbox.TabIndex = 4;
@@ -310,7 +282,7 @@ namespace KeePassNatMsg.Options
             //
             this.hideExpiredCheckbox.AutoSize = true;
             this.hideExpiredCheckbox.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.hideExpiredCheckbox.Location = new System.Drawing.Point(18, 120);
+            this.hideExpiredCheckbox.Location = new System.Drawing.Point(18, 88);
             this.hideExpiredCheckbox.Name = "hideExpiredCheckbox";
             this.hideExpiredCheckbox.Size = new System.Drawing.Size(166, 19);
             this.hideExpiredCheckbox.TabIndex = 6;
@@ -321,7 +293,7 @@ namespace KeePassNatMsg.Options
             //
             this.matchSchemesCheckbox.AutoSize = true;
             this.matchSchemesCheckbox.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.matchSchemesCheckbox.Location = new System.Drawing.Point(18, 152);
+            this.matchSchemesCheckbox.Location = new System.Drawing.Point(18, 120);
             this.matchSchemesCheckbox.Name = "matchSchemesCheckbox";
             this.matchSchemesCheckbox.Size = new System.Drawing.Size(206, 19);
             this.matchSchemesCheckbox.TabIndex = 8;
@@ -332,29 +304,18 @@ namespace KeePassNatMsg.Options
             //
             this.chkSearchUrls.AutoSize = true;
             this.chkSearchUrls.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.chkSearchUrls.Location = new System.Drawing.Point(18, 184);
+            this.chkSearchUrls.Location = new System.Drawing.Point(18, 152);
             this.chkSearchUrls.Name = "chkSearchUrls";
             this.chkSearchUrls.Size = new System.Drawing.Size(244, 19);
             this.chkSearchUrls.TabIndex = 10;
             this.chkSearchUrls.Text = "Search additional URL and KP2A_URL fields";
             this.chkSearchUrls.UseVisualStyleBackColor = true;
             //
-            // tipNotify
-            //
-            this.tipNotify.Cursor = System.Windows.Forms.Cursors.Help;
-            this.tipNotify.Image = global::KeePassNatMsg.Properties.Resources.info_16;
-            this.tipNotify.Location = new System.Drawing.Point(276, 25);
-            this.tipNotify.Name = "tipNotify";
-            this.tipNotify.Size = new System.Drawing.Size(16, 16);
-            this.tipNotify.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this.tipNotify.TabIndex = 11;
-            this.tipNotify.TabStop = false;
-            //
             // tipMatching
             //
             this.tipMatching.Cursor = System.Windows.Forms.Cursors.Help;
             this.tipMatching.Image = global::KeePassNatMsg.Properties.Resources.info_16;
-            this.tipMatching.Location = new System.Drawing.Point(228, 57);
+            this.tipMatching.Location = new System.Drawing.Point(228, 25);
             this.tipMatching.Name = "tipMatching";
             this.tipMatching.Size = new System.Drawing.Size(16, 16);
             this.tipMatching.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -365,7 +326,7 @@ namespace KeePassNatMsg.Options
             //
             this.tipUnlock.Cursor = System.Windows.Forms.Cursors.Help;
             this.tipUnlock.Image = global::KeePassNatMsg.Properties.Resources.info_16;
-            this.tipUnlock.Location = new System.Drawing.Point(244, 89);
+            this.tipUnlock.Location = new System.Drawing.Point(244, 57);
             this.tipUnlock.Name = "tipUnlock";
             this.tipUnlock.Size = new System.Drawing.Size(16, 16);
             this.tipUnlock.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -376,7 +337,7 @@ namespace KeePassNatMsg.Options
             //
             this.tipExpired.Cursor = System.Windows.Forms.Cursors.Help;
             this.tipExpired.Image = global::KeePassNatMsg.Properties.Resources.info_16;
-            this.tipExpired.Location = new System.Drawing.Point(188, 121);
+            this.tipExpired.Location = new System.Drawing.Point(188, 89);
             this.tipExpired.Name = "tipExpired";
             this.tipExpired.Size = new System.Drawing.Size(16, 16);
             this.tipExpired.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -387,7 +348,7 @@ namespace KeePassNatMsg.Options
             //
             this.tipSchemes.Cursor = System.Windows.Forms.Cursors.Help;
             this.tipSchemes.Image = global::KeePassNatMsg.Properties.Resources.info_16;
-            this.tipSchemes.Location = new System.Drawing.Point(228, 153);
+            this.tipSchemes.Location = new System.Drawing.Point(228, 121);
             this.tipSchemes.Name = "tipSchemes";
             this.tipSchemes.Size = new System.Drawing.Size(16, 16);
             this.tipSchemes.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -398,52 +359,17 @@ namespace KeePassNatMsg.Options
             //
             this.tipSearchUrls.Cursor = System.Windows.Forms.Cursors.Help;
             this.tipSearchUrls.Image = global::KeePassNatMsg.Properties.Resources.info_16;
-            this.tipSearchUrls.Location = new System.Drawing.Point(266, 185);
+            this.tipSearchUrls.Location = new System.Drawing.Point(266, 153);
             this.tipSearchUrls.Name = "tipSearchUrls";
             this.tipSearchUrls.Size = new System.Drawing.Size(16, 16);
             this.tipSearchUrls.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.tipSearchUrls.TabIndex = 16;
             this.tipSearchUrls.TabStop = false;
-            // 
-            // grpSorting
-            //
-            this.grpSorting.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpSorting.Controls.Add(this.SortByTitleRadioButton);
-            this.grpSorting.Controls.Add(this.SortByUsernameRadioButton);
-            this.grpSorting.Location = new System.Drawing.Point(14, 246);
-            this.grpSorting.Name = "grpSorting";
-            this.grpSorting.Size = new System.Drawing.Size(660, 68);
-            this.grpSorting.TabIndex = 1;
-            this.grpSorting.TabStop = false;
-            this.grpSorting.Text = "Result Sorting Order";
-            //
-            // SortByTitleRadioButton
-            //
-            this.SortByTitleRadioButton.AutoSize = true;
-            this.SortByTitleRadioButton.Location = new System.Drawing.Point(20, 28);
-            this.SortByTitleRadioButton.Name = "SortByTitleRadioButton";
-            this.SortByTitleRadioButton.Size = new System.Drawing.Size(86, 19);
-            this.SortByTitleRadioButton.TabIndex = 0;
-            this.SortByTitleRadioButton.TabStop = true;
-            this.SortByTitleRadioButton.Text = "Sort by Title";
-            this.SortByTitleRadioButton.UseVisualStyleBackColor = true;
-            //
-            // SortByUsernameRadioButton
-            //
-            this.SortByUsernameRadioButton.AutoSize = true;
-            this.SortByUsernameRadioButton.Location = new System.Drawing.Point(160, 28);
-            this.SortByUsernameRadioButton.Name = "SortByUsernameRadioButton";
-            this.SortByUsernameRadioButton.Size = new System.Drawing.Size(118, 19);
-            this.SortByUsernameRadioButton.TabIndex = 1;
-            this.SortByUsernameRadioButton.TabStop = true;
-            this.SortByUsernameRadioButton.Text = "Sort by Username";
-            this.SortByUsernameRadioButton.UseVisualStyleBackColor = true;
             //
             // tabDatabase
             //
             this.tabDatabase.Controls.Add(this.grpDatabase);
-            this.tabDatabase.Controls.Add(this.grpNewLogins);
             this.tabDatabase.Controls.Add(this.grpDangerZone);
             this.tabDatabase.Location = new System.Drawing.Point(4, 24);
             this.tabDatabase.Name = "tabDatabase";
@@ -532,58 +458,7 @@ namespace KeePassNatMsg.Options
             this.comboBoxDatabases.Name = "comboBoxDatabases";
             this.comboBoxDatabases.Size = new System.Drawing.Size(400, 23);
             this.comboBoxDatabases.TabIndex = 5;
-            //
-            // grpNewLogins
-            //
-            this.grpNewLogins.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpNewLogins.Controls.Add(this.lblDefaultGroup);
-            this.grpNewLogins.Controls.Add(this.txtDefaultGroup);
-            this.grpNewLogins.Controls.Add(this.chkDefaultGroupAlwaysAllow);
-            this.grpNewLogins.Controls.Add(this.tipDefaultGroup);
-            this.grpNewLogins.Location = new System.Drawing.Point(14, 164);
-            this.grpNewLogins.Name = "grpNewLogins";
-            this.grpNewLogins.Size = new System.Drawing.Size(660, 116);
-            this.grpNewLogins.TabIndex = 1;
-            this.grpNewLogins.TabStop = false;
-            this.grpNewLogins.Text = "New Logins & Default Group";
-            //
-            // lblDefaultGroup
-            //
-            this.lblDefaultGroup.AutoSize = true;
-            this.lblDefaultGroup.Location = new System.Drawing.Point(18, 28);
-            this.lblDefaultGroup.Name = "lblDefaultGroup";
-            this.lblDefaultGroup.Size = new System.Drawing.Size(108, 15);
-            this.lblDefaultGroup.TabIndex = 0;
-            this.lblDefaultGroup.Text = "Default group path:";
-            //
-            // txtDefaultGroup
-            //
-            this.txtDefaultGroup.Location = new System.Drawing.Point(135, 25);
-            this.txtDefaultGroup.Name = "txtDefaultGroup";
-            this.txtDefaultGroup.Size = new System.Drawing.Size(495, 23);
-            this.txtDefaultGroup.TabIndex = 1;
-            //
-            // chkDefaultGroupAlwaysAllow
-            //
-            this.chkDefaultGroupAlwaysAllow.AutoSize = true;
-            this.chkDefaultGroupAlwaysAllow.Location = new System.Drawing.Point(21, 60);
-            this.chkDefaultGroupAlwaysAllow.Name = "chkDefaultGroupAlwaysAllow";
-            this.chkDefaultGroupAlwaysAllow.Size = new System.Drawing.Size(293, 19);
-            this.chkDefaultGroupAlwaysAllow.TabIndex = 2;
-            this.chkDefaultGroupAlwaysAllow.Text = "Allow entries in the default group without prompting";
-            this.chkDefaultGroupAlwaysAllow.UseVisualStyleBackColor = true;
-            //
-            // tipDefaultGroup
-            //
-            this.tipDefaultGroup.Cursor = System.Windows.Forms.Cursors.Help;
-            this.tipDefaultGroup.Image = global::KeePassNatMsg.Properties.Resources.info_16;
-            this.tipDefaultGroup.Location = new System.Drawing.Point(318, 61);
-            this.tipDefaultGroup.Name = "tipDefaultGroup";
-            this.tipDefaultGroup.Size = new System.Drawing.Size(16, 16);
-            this.tipDefaultGroup.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this.tipDefaultGroup.TabIndex = 3;
-            this.tipDefaultGroup.TabStop = false;
             // 
             // grpDangerZone
             //
@@ -596,7 +471,7 @@ namespace KeePassNatMsg.Options
             this.grpDangerZone.Controls.Add(this.tipAllowUpdates);
             this.grpDangerZone.Controls.Add(this.removePermissionsButton);
             this.grpDangerZone.ForeColor = System.Drawing.Color.DarkRed;
-            this.grpDangerZone.Location = new System.Drawing.Point(14, 296);
+            this.grpDangerZone.Location = new System.Drawing.Point(14, 164);
             this.grpDangerZone.Name = "grpDangerZone";
             this.grpDangerZone.Size = new System.Drawing.Size(660, 168);
             this.grpDangerZone.TabIndex = 2;
@@ -778,7 +653,7 @@ namespace KeePassNatMsg.Options
             this.lblVersion.Name = "lblVersion";
             this.lblVersion.Size = new System.Drawing.Size(190, 24);
             this.lblVersion.TabIndex = 1;
-            this.lblVersion.Text = "KeePassNatMsg v2.3.8";
+            this.lblVersion.Text = "KeePassNatMsg v2.3.9";
             this.lblVersion.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // okButton
@@ -833,25 +708,19 @@ namespace KeePassNatMsg.Options
             this.tabMatching.ResumeLayout(false);
             this.grpMatching.ResumeLayout(false);
             this.grpMatching.PerformLayout();
-            this.grpSorting.ResumeLayout(false);
-            this.grpSorting.PerformLayout();
             this.tabDatabase.ResumeLayout(false);
             this.grpDatabase.ResumeLayout(false);
             this.grpDatabase.PerformLayout();
-            this.grpNewLogins.ResumeLayout(false);
-            this.grpNewLogins.PerformLayout();
             this.grpDangerZone.ResumeLayout(false);
             this.grpDangerZone.PerformLayout();
             this.tabAssociations.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvKeys)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.picFormLogo)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.tipNotify)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.tipMatching)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.tipUnlock)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.tipExpired)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.tipSchemes)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.tipSearchUrls)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.tipDefaultGroup)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.tipAllowAccess)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.tipAllowUpdates)).EndInit();
             this.pnlVersionCenter.ResumeLayout(false);
@@ -876,15 +745,11 @@ namespace KeePassNatMsg.Options
         private System.Windows.Forms.Button btnUninstallIntegration;
         private System.Windows.Forms.TabPage tabMatching;
         private System.Windows.Forms.GroupBox grpMatching;
-        private System.Windows.Forms.CheckBox credNotifyCheckbox;
         private System.Windows.Forms.CheckBox credMatchingCheckbox;
         private System.Windows.Forms.CheckBox unlockDatabaseCheckbox;
         private System.Windows.Forms.CheckBox hideExpiredCheckbox;
         private System.Windows.Forms.CheckBox matchSchemesCheckbox;
         private System.Windows.Forms.CheckBox chkSearchUrls;
-        private System.Windows.Forms.GroupBox grpSorting;
-        private System.Windows.Forms.RadioButton SortByTitleRadioButton;
-        private System.Windows.Forms.RadioButton SortByUsernameRadioButton;
         private System.Windows.Forms.TabPage tabDatabase;
         private System.Windows.Forms.GroupBox grpDatabase;
         private System.Windows.Forms.RadioButton credOnlySearchInSelectedDatabaseRadioButton;
@@ -893,10 +758,6 @@ namespace KeePassNatMsg.Options
         private System.Windows.Forms.ComboBox comboBoxSearchDatabases;
         private System.Windows.Forms.Label labelConnDb;
         private System.Windows.Forms.ComboBox comboBoxDatabases;
-        private System.Windows.Forms.GroupBox grpNewLogins;
-        private System.Windows.Forms.Label lblDefaultGroup;
-        private System.Windows.Forms.TextBox txtDefaultGroup;
-        private System.Windows.Forms.CheckBox chkDefaultGroupAlwaysAllow;
         private System.Windows.Forms.GroupBox grpDangerZone;
         private System.Windows.Forms.Label lblDangerWarning;
         private System.Windows.Forms.CheckBox credAllowAccessCheckbox;
@@ -913,13 +774,11 @@ namespace KeePassNatMsg.Options
         private System.Windows.Forms.Label lblVersion;
         private System.Windows.Forms.Panel pnlVersionCenter;
         private System.Windows.Forms.ToolTip toolTip;
-        private System.Windows.Forms.PictureBox tipNotify;
         private System.Windows.Forms.PictureBox tipMatching;
         private System.Windows.Forms.PictureBox tipUnlock;
         private System.Windows.Forms.PictureBox tipExpired;
         private System.Windows.Forms.PictureBox tipSchemes;
         private System.Windows.Forms.PictureBox tipSearchUrls;
-        private System.Windows.Forms.PictureBox tipDefaultGroup;
         private System.Windows.Forms.PictureBox tipAllowAccess;
         private System.Windows.Forms.PictureBox tipAllowUpdates;
         private System.Windows.Forms.Button okButton;
