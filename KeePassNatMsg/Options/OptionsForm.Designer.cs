@@ -365,7 +365,6 @@ namespace KeePassNatMsg.Options
             this.tipSearchUrls.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.tipSearchUrls.TabIndex = 16;
             this.tipSearchUrls.TabStop = false;
-            | System.Windows.Forms.AnchorStyles.Right)));
             //
             // tabDatabase
             //
@@ -458,8 +457,7 @@ namespace KeePassNatMsg.Options
             this.comboBoxDatabases.Name = "comboBoxDatabases";
             this.comboBoxDatabases.Size = new System.Drawing.Size(400, 23);
             this.comboBoxDatabases.TabIndex = 5;
-            | System.Windows.Forms.AnchorStyles.Right)));
-            // 
+            //
             // grpDangerZone
             //
             this.grpDangerZone.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
