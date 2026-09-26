@@ -67,33 +67,47 @@ function serve() {
   if (!host.allowed_origins.includes(origin)) host.allowed_origins.push(origin);
   fs.writeFileSync(hostPath, JSON.stringify(host));
   const options = await context.newPage();
-  await options.goto(`${origin}options/options.html`);
-  await options.locator('a[href="#connected-databases"]').click();
-  await options.locator('#connect-button').waitFor({state:'visible', timeout:20000});
-  assert(await options.locator('#tab-connected-databases table tbody tr:not(.clone):not(.empty)').count() === 0, 'Extension profile is not fresh');
-  await withApproval('association', async () => {
-    await options.locator('#connect-button').click();
-    await options.locator('#tab-connected-databases table tbody tr:not(.clone):not(.empty)').first().waitFor({state:'visible',timeout:35000});
-  });
-  const rows = options.locator('#tab-connected-databases table tbody tr:not(.clone):not(.empty)');
-  assert(await rows.count() === 1 && await rows.first().locator('td.identifier').innerText() === association, 'Association not reflected by official extension');
-  // Use the extension's own options UI, never call its crypto/protocol APIs directly.
-  await options.locator('a[href="#general-settings"]').click();
-  const autoFill = options.locator('#autoFillSingleEntry');
-  await autoFill.check();
-  await options.reload();
-  assert(await options.locator('#autoFillSingleEntry').isChecked(), 'Official autofill setting not persisted');
-  const page = await context.newPage();
-  const url = `http://127.0.0.1:${server.address().port}/login`;
-  // Without approval, the extension must not fill the page; DB fixture is a CIDR-only match.
-  const gate = approve('access');
+  const step = (s) => { step.current = s; console.error('E2E step: ' + s); };
   try {
-    await page.goto(url);
-    assert(await gate.result === 0, 'Real KeePass access prompt absent or mismatched');
-    await page.waitForFunction(({user, password}) => document.querySelector('#user')?.value === user && document.querySelector('#pass')?.value === password,
-      {user, password}, {timeout:20000});
-  } finally { if (!gate.isDone()) approval.kill(); approval = null; }
-  assert(await page.locator('#user').inputValue() === user && await page.locator('#pass').inputValue() === password, 'Extension did not autofill the exact fixture values');
+    step('open-options');
+    await options.goto(`${origin}options/options.html`);
+    step('open-connected-tab');
+    await options.locator('a[href="#connected-databases"]').click();
+    step('wait-connect-button');
+    await options.locator('#connect-button').waitFor({state:'visible', timeout:20000});
+    step('check-fresh-profile');
+    assert(await options.locator('#tab-connected-databases table tbody tr:not(.clone):not(.empty)').count() === 0, 'Extension profile is not fresh');
+    step('association');
+    await withApproval('association', async () => {
+      await options.locator('#connect-button').click();
+      await options.locator('#tab-connected-databases table tbody tr:not(.clone):not(.empty)').first().waitFor({state:'visible',timeout:35000});
+    });
+    step('verify-association-row');
+    const rows = options.locator('#tab-connected-databases table tbody tr:not(.clone):not(.empty)');
+    assert(await rows.count() === 1 && await rows.first().locator('td.identifier').innerText() === association, 'Association not reflected by official extension');
+    // Use the extension's own options UI, never call its crypto/protocol APIs directly.
+    step('enable-autofill');
+    await options.locator('a[href="#general-settings"]').click();
+    const autoFill = options.locator('#autoFillSingleEntry');
+    await autoFill.check();
+    await options.reload();
+    assert(await options.locator('#autoFillSingleEntry').isChecked(), 'Official autofill setting not persisted');
+    step('open-page');
+    const page = await context.newPage();
+    const url = `http://127.0.0.1:${server.address().port}/login`;
+    // Without approval, the extension must not fill the page; DB fixture is a CIDR-only match.
+    const gate = approve('access');
+    try {
+      await page.goto(url);
+      assert(await gate.result === 0, 'Real KeePass access prompt absent or mismatched');
+      step('wait-autofill');
+      await page.waitForFunction(({user, password}) => document.querySelector('#user')?.value === user && document.querySelector('#pass')?.value === password,
+        {user, password}, {timeout:20000});
+    } finally { if (!gate.isDone()) approval.kill(); approval = null; }
+    step('verify-autofill');
+    assert(await page.locator('#user').inputValue() === user && await page.locator('#pass').inputValue() === password, 'Extension did not autofill the exact fixture values');
+    step('write-evidence');
+  } catch (e) { throw new Error(`step=${step.current}: ${e && e.message ? e.message.split('\n')[0] : e}`); }
   fs.mkdirSync(resultDir, {recursive:true});
   fs.writeFileSync(path.join(resultDir, 'browser-cidr-e2e.json'), JSON.stringify({version:'1.10.4', zipSha256:hash, associationUi:true, accessUi:true, encryptedGetLoginsViaOfficialExtension:true, cidrAutofill:true, profileIsolated:true},null,2));
   console.log('Official 1.10.4 extension association, access approval, CIDR credential retrieval and webpage autofill passed');
