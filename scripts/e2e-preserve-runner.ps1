@@ -86,7 +86,10 @@ foreach ($item in $state.registry) {
     }
     $actual = Get-RegSnapshot $item.path
     if ([bool]$actual.exists -ne [bool]$item.snapshot.exists -or ($item.snapshot.exists -and [string]$actual.value -cne [string]$item.snapshot.value)) { throw 'Registry read-back mismatch' }
-  } catch { $failures += ('registry-' + [string]([array]::IndexOf($state.registry, $item)) + ' restore failure') }
+  } catch {
+    $category = if ($_.Exception -is [System.Management.Automation.ItemNotFoundException]) { 'item-not-found' } elseif ($_.Exception -is [System.UnauthorizedAccessException]) { 'access-denied' } elseif ($_.Exception -is [System.Management.Automation.MethodException]) { 'method-error' } else { $_.Exception.GetType().Name }
+    $failures += ('registry-' + [string]([array]::IndexOf($state.registry, $item)) + '-' + $category)
+  }
 }
 if ($failures.Count) { throw ('Restore incomplete (' + $failures.Count + '): ' + ($failures -join ', ') + '; backup retained on runner') }
 Remove-Item -LiteralPath $StateDir -Recurse -Force
