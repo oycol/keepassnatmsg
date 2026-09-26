@@ -96,7 +96,7 @@ function serve() {
     if (switchTab !== 'switched') throw new Error('tab switch failed: ' + switchTab);
     await options.waitForFunction(() => !document.querySelector('#tab-connected-databases').className.includes('d-none'), {timeout:10000});
     step('wait-connect-button');
-    await options.locator('#connect-button').waitFor({state:'visible', timeout:30000}).catch(async (e) => {
+    await options.locator('#tab-connected-databases #connect-button').waitFor({state:'visible', timeout:30000}).catch(async (e) => {
       const diag = await options.evaluate(() => ({
         url: location.href,
         readyState: document.readyState,
@@ -115,7 +115,7 @@ function serve() {
     assert(await options.locator('#tab-connected-databases table tbody tr:not(.clone):not(.empty)').count() === 0, 'Extension profile is not fresh');
     step('association');
     await withApproval('association', async () => {
-      await options.locator('#connect-button').click();
+      await options.locator('#tab-connected-databases #connect-button').click();
       await options.locator('#tab-connected-databases table tbody tr:not(.clone):not(.empty)').first().waitFor({state:'visible',timeout:35000});
     });
     step('verify-association-row');
