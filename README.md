@@ -30,7 +30,8 @@ KeePassNatMsg 是 KeePass 2.x 的 Native Messaging 插件，使 Chrome 和 Edge 
 ## Options
 
 - **Browser Integration**：分别显示代理、Manifest、Chrome、Edge 的状态，并提供安装、修复、卸载。
-- **Preferences**：匹配规则、数据库范围、新登录默认组和高风险免确认设置。
+- **Matching Rules**：URL 匹配、数据库解锁、过期条目和附加 URL 字段等设置。
+- **Database & Security**：数据库搜索范围与高风险免确认设置。
 - **Associations**：管理当前数据库的浏览器关联；界面只显示密钥指纹，不显示密钥原文。
 
 ## URL 匹配

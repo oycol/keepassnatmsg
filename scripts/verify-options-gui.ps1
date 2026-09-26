@@ -116,20 +116,6 @@ try {
         }
     }
 
-    # Favicon commands must use their own icon, never the Options/plugin logo.
-    $favProp = if ($resType) { $resType.GetProperty("favicon_download_16", [System.Reflection.BindingFlags]'Static,NonPublic,Public') } else { $null }
-    $favIcon = if ($favProp) { $favProp.GetValue($null, $null) } else { $null }
-    if (-not $favIcon -or $favIcon.Width -ne 16 -or $favIcon.Height -ne 16) {
-        $failures.Add("Embedded favicon download menu icon missing or not 16x16") | Out-Null
-    } else {
-        $pluginIconPath = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\KeePassNatMsg\Resources\icon_16.png"))
-        $faviconIconPath = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\KeePassNatMsg\Resources\favicon_download_16.png"))
-        if ((Get-FileHash $faviconIconPath -Algorithm SHA256).Hash -eq (Get-FileHash $pluginIconPath -Algorithm SHA256).Hash) {
-            $failures.Add("Favicon download command icon duplicates the plugin icon") | Out-Null
-        }
-        Write-Host "Favicon download icon embedded: $($favIcon.Width)x$($favIcon.Height)"
-    }
-
     # Verify file-level official icon hash
     $officialIconPath = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\KeePassNatMsg\Resources\icon_16.png"))
     $officialIconHash = (Get-FileHash $officialIconPath -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -226,71 +212,12 @@ try {
         }
     }
 
-    # Verify TabControl count and Favicon Tab
+    # Verify four core tabs; optional downloader tab has been removed.
     $tabControl = $form.GetType().GetField("tabControl", $bindingFlags).GetValue($form)
     if (-not $tabControl) { throw "tabControl control not found" }
     Write-Host "TabControl TabCount: $($tabControl.TabCount)"
-    if ($tabControl.TabCount -ne 5) {
-        $failures.Add("TabControl must have 5 tabs; found $($tabControl.TabCount)") | Out-Null
-    }
-    $tabFavicon = $form.GetType().GetField("tabFavicon", $bindingFlags).GetValue($form)
-    if (-not $tabFavicon) {
-        $failures.Add("tabFavicon control not found") | Out-Null
-    } else {
-        Write-Host "tabFavicon verified: '$($tabFavicon.Text)'"
-        $grpFavOptions = $form.GetType().GetField("grpFaviconOptions", $bindingFlags).GetValue($form)
-        $grpFavSize = $form.GetType().GetField("grpFaviconSize", $bindingFlags).GetValue($form)
-        $grpFavProvider = $form.GetType().GetField("grpFaviconProvider", $bindingFlags).GetValue($form)
-        if (-not $grpFavOptions -or -not $grpFavSize -or -not $grpFavProvider) {
-            $failures.Add("One or more Favicon Downloader GroupBoxes are missing") | Out-Null
-        } else {
-            Write-Host "Favicon group boxes: Options Top=$($grpFavOptions.Top), Size Top=$($grpFavSize.Top), Provider Top=$($grpFavProvider.Top)"
-            if ($grpFavSize.Top -le $grpFavOptions.Bottom) {
-                $failures.Add("grpFaviconSize overlaps or touches grpFaviconOptions") | Out-Null
-            }
-            if ($grpFavProvider.Top -le $grpFavSize.Bottom) {
-                $failures.Add("grpFaviconProvider overlaps or touches grpFaviconSize") | Out-Null
-            }
-
-            # Deep geometric & truncation verification:
-            $chkList = @("chkFaviconPrefixUrls", "chkFaviconUseTitle", "chkFaviconUpdateModified")
-            $tipList = @("lblTipFaviconPrefix", "lblTipFaviconTitle", "lblTipFaviconModified")
-            for ($k = 0; $k -lt $chkList.Count; $k++) {
-                $c = $form.GetType().GetField($chkList[$k], $bindingFlags).GetValue($form)
-                $t = $form.GetType().GetField($tipList[$k], $bindingFlags).GetValue($form)
-                if ($c -and $t) {
-                    # 1. Collision / Overlap check
-                    if ($c.Bottom -gt $t.Top) {
-                        $failures.Add("Vertical collision: $($c.Name) (Bottom=$($c.Bottom)) overlaps $($t.Name) (Top=$($t.Top))") | Out-Null
-                    }
-                    # 2. Text width measurement vs control bounds
-                    $textSize = [System.Windows.Forms.TextRenderer]::MeasureText($c.Text, $c.Font)
-                    if ($c.Width -lt ($textSize.Width + 16)) {
-                        $failures.Add("Text truncated in checkbox $($c.Name): text width=$($textSize.Width) px, control width=$($c.Width) px") | Out-Null
-                    }
-                }
-            }
-
-            # 3. ComboBox items truncation check
-            $cmbSize = $form.GetType().GetField("cmbFaviconMaxIconSize", $bindingFlags).GetValue($form)
-            if ($cmbSize) {
-                Write-Host "Favicon max size combo width: $($cmbSize.Width) px"
-                if ($cmbSize.Width -lt 240) {
-                    $failures.Add("cmbFaviconMaxIconSize is too narrow; width=$($cmbSize.Width) px, required >=240") | Out-Null
-                }
-                foreach ($item in $cmbSize.Items) {
-                    $itemSize = [System.Windows.Forms.TextRenderer]::MeasureText($item.ToString(), $cmbSize.Font)
-                    if ($cmbSize.Width -lt ($itemSize.Width + 24)) {
-                        $failures.Add("ComboBox item '$item' is clipped in cmbFaviconMaxIconSize (item width=$($itemSize.Width) px, combo width=$($cmbSize.Width) px)") | Out-Null
-                    }
-                }
-            }
-
-            # 4. Check unescaped ampersands in group titles
-            if ($grpFavSize -and $grpFavSize.Text -match '(?<!&)&(?!&)') {
-                $failures.Add("grpFaviconSize title contains unescaped ampersand (renders as missing character): '$($grpFavSize.Text)'") | Out-Null
-            }
-        }
+    if ($tabControl.TabCount -ne 4) {
+        $failures.Add("TabControl must have 4 tabs; found $($tabControl.TabCount)") | Out-Null
     }
 
     New-Item -ItemType Directory -Force -Path $outputDir | Out-Null

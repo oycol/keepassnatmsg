@@ -90,51 +90,6 @@ namespace KeePassNatMsg.Options
                 }
             }
 
-            // Favicon options initialization
-            chkFaviconPrefixUrls.Checked = _config.FaviconPrefixUrls;
-            chkFaviconUseTitle.Checked = _config.FaviconUseTitle;
-            chkFaviconUpdateModified.Checked = _config.FaviconUpdateModified;
-
-            cmbFaviconMaxIconSize.Items.Clear();
-            cmbFaviconMaxIconSize.Items.Add("16x16");
-            cmbFaviconMaxIconSize.Items.Add("32x32");
-            cmbFaviconMaxIconSize.Items.Add("48x48");
-            cmbFaviconMaxIconSize.Items.Add("64x64");
-            cmbFaviconMaxIconSize.Items.Add("128x128 (Recommended)");
-
-            int currentSize = _config.FaviconMaxIconSize;
-            if (currentSize <= 16) cmbFaviconMaxIconSize.SelectedIndex = 0;
-            else if (currentSize <= 32) cmbFaviconMaxIconSize.SelectedIndex = 1;
-            else if (currentSize <= 48) cmbFaviconMaxIconSize.SelectedIndex = 2;
-            else if (currentSize <= 64) cmbFaviconMaxIconSize.SelectedIndex = 3;
-            else cmbFaviconMaxIconSize.SelectedIndex = 4;
-
-            cmbFaviconProvider.Items.Clear();
-            Favicon.FaviconProvider[] providers = Favicon.FaviconProvider.GetProviders();
-            for (int pi = 0; pi < providers.Length; pi++)
-            {
-                cmbFaviconProvider.Items.Add(providers[pi]);
-                if (string.Equals(providers[pi].Name, _config.FaviconProvider, StringComparison.OrdinalIgnoreCase))
-                {
-                    cmbFaviconProvider.SelectedIndex = pi;
-                }
-            }
-            if (cmbFaviconProvider.SelectedIndex < 0) cmbFaviconProvider.SelectedIndex = 0;
-
-            txtFaviconCustomUrl.Text = _config.FaviconCustomUrl ?? string.Empty;
-            UpdateFaviconCustomUrlState();
-            cmbFaviconProvider.SelectedIndexChanged += delegate { UpdateFaviconCustomUrlState(); };
-        }
-
-        private void UpdateFaviconCustomUrlState()
-        {
-            Favicon.FaviconProvider selected = cmbFaviconProvider.SelectedItem as Favicon.FaviconProvider;
-            bool isCustom = selected != null && string.Equals(selected.Name, Favicon.FaviconProvider.ProviderCustom, StringComparison.OrdinalIgnoreCase);
-            txtFaviconCustomUrl.Enabled = isCustom;
-            if (!isCustom && selected != null)
-            {
-                txtFaviconCustomUrl.Text = selected.UrlTemplate ?? string.Empty;
-            }
         }
 
         private void okButton_Click(object sender, EventArgs e)
@@ -177,27 +132,6 @@ namespace KeePassNatMsg.Options
             {
                 _config.SearchDatabaseHash = (comboBoxSearchDatabases.SelectedItem as DatabaseItem) == null ? null : (comboBoxSearchDatabases.SelectedItem as DatabaseItem).DbHash;
             }
-
-            // Save Favicon settings
-            _config.FaviconPrefixUrls = chkFaviconPrefixUrls.Checked;
-            _config.FaviconUseTitle = chkFaviconUseTitle.Checked;
-            _config.FaviconUpdateModified = chkFaviconUpdateModified.Checked;
-
-            int selectedSizeIdx = cmbFaviconMaxIconSize.SelectedIndex;
-            int saveSize = 128;
-            if (selectedSizeIdx == 0) saveSize = 16;
-            else if (selectedSizeIdx == 1) saveSize = 32;
-            else if (selectedSizeIdx == 2) saveSize = 48;
-            else if (selectedSizeIdx == 3) saveSize = 64;
-            else saveSize = 128;
-            _config.FaviconMaxIconSize = saveSize;
-
-            Favicon.FaviconProvider selectedProvider = cmbFaviconProvider.SelectedItem as Favicon.FaviconProvider;
-            if (selectedProvider != null)
-            {
-                _config.FaviconProvider = selectedProvider.Name;
-            }
-            _config.FaviconCustomUrl = txtFaviconCustomUrl.Text != null ? txtFaviconCustomUrl.Text.Trim() : string.Empty;
 
             DialogResult = DialogResult.OK;
             Close();

@@ -180,7 +180,6 @@ namespace KeePassNatMsg.Protocol
                 var submitUrl = reqMsg.GetString("submitUrl");
                 var groupUuid = reqMsg.GetString("groupUuid");
                 var group = reqMsg.GetString("group");
-                // downloadFavicon is sent by the browser but favicon download is not implemented.
 
                 bool result;
 
