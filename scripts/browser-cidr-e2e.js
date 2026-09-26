@@ -126,6 +126,15 @@ function serve() {
         viewport: {w: innerWidth, h: innerHeight},
         mainContentDisplay: document.querySelector('#main-content') ? getComputedStyle(document.querySelector('#main-content')).display : 'absent',
         ancestorsHidden: (() => { let n = btn, hidden = []; while (n && n !== document.body) { if (getComputedStyle(n).display === 'none') hidden.push(n.tagName + '#' + (n.id || '')); n = n.parentElement; } return hidden; })(),
+        swProbe: await (async () => {
+          // Ask the SW for a handler only it registers; classify the failure.
+          try {
+            const pong = await chrome.runtime.sendMessage({ action: 'load_settings' });
+            return { load_settings: 'answered', keys: typeof pong === 'object' && pong ? Object.keys(pong).slice(0, 5) : String(pong) };
+          } catch (err) {
+            return { load_settings: 'failed', error: String(err).slice(0, 200) };
+          }
+        })(),
         };
       });
       diag.console = consoleLog.slice(0, 30);
