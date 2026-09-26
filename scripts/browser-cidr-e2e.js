@@ -67,6 +67,10 @@ function serve() {
   if (!host.allowed_origins.includes(origin)) host.allowed_origins.push(origin);
   fs.writeFileSync(hostPath, JSON.stringify(host));
   const options = await context.newPage();
+  const consoleLog = [];
+  options.on('console', msg => { if (consoleLog.length < 50) consoleLog.push({source:'options', type: msg.type(), text: msg.text().slice(0, 400)}); });
+  options.on('pageerror', err => { if (consoleLog.length < 50) consoleLog.push({source:'options', type:'pageerror', text: String(err).slice(0, 400)}); });
+  context.on('serviceworker', worker => { if (consoleLog.length < 50) worker.on('console', msg => consoleLog.push({source:'serviceworker', type: msg.type(), text: msg.text().slice(0, 400)})); });
   const step = (s) => { step.current = s; console.error('E2E step: ' + s); };
   try {
     step('open-options');
@@ -124,6 +128,7 @@ function serve() {
         ancestorsHidden: (() => { let n = btn, hidden = []; while (n && n !== document.body) { if (getComputedStyle(n).display === 'none') hidden.push(n.tagName + '#' + (n.id || '')); n = n.parentElement; } return hidden; })(),
         };
       });
+      diag.console = consoleLog.slice(0, 30);
       fs.mkdirSync(resultDir, {recursive:true});
       fs.writeFileSync(path.join(resultDir, 'options-diagnostic.json'), JSON.stringify(diag, null, 2));
       await options.screenshot({path: path.join(resultDir, 'options-diagnostic.png'), fullPage: true}).catch(() => {});
