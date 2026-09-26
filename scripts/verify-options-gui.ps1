@@ -116,6 +116,20 @@ try {
         }
     }
 
+    # Favicon commands must use their own icon, never the Options/plugin logo.
+    $favProp = if ($resType) { $resType.GetProperty("favicon_download_16", [System.Reflection.BindingFlags]'Static,NonPublic,Public') } else { $null }
+    $favIcon = if ($favProp) { $favProp.GetValue($null, $null) } else { $null }
+    if (-not $favIcon -or $favIcon.Width -ne 16 -or $favIcon.Height -ne 16) {
+        $failures.Add("Embedded favicon download menu icon missing or not 16x16") | Out-Null
+    } else {
+        $pluginIconPath = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\KeePassNatMsg\Resources\icon_16.png"))
+        $faviconIconPath = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\KeePassNatMsg\Resources\favicon_download_16.png"))
+        if ((Get-FileHash $faviconIconPath -Algorithm SHA256).Hash -eq (Get-FileHash $pluginIconPath -Algorithm SHA256).Hash) {
+            $failures.Add("Favicon download command icon duplicates the plugin icon") | Out-Null
+        }
+        Write-Host "Favicon download icon embedded: $($favIcon.Width)x$($favIcon.Height)"
+    }
+
     # Verify file-level official icon hash
     $officialIconPath = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\KeePassNatMsg\Resources\icon_16.png"))
     $officialIconHash = (Get-FileHash $officialIconPath -Algorithm SHA256).Hash.ToLowerInvariant()

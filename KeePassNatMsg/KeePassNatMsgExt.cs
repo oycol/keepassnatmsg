@@ -192,13 +192,13 @@ namespace KeePassNatMsg
 
             // Entry context menu
             _entryFaviconSep = new ToolStripSeparator();
-            _entryFaviconItem = new ToolStripMenuItem("Download Favicons", KeePassNatMsg.Properties.Resources.icon_16, OnDownloadEntryFavicons_Click);
+            _entryFaviconItem = new ToolStripMenuItem("Download Favicons", KeePassNatMsg.Properties.Resources.favicon_download_16, OnDownloadEntryFavicons_Click);
             HostInstance.MainWindow.EntryContextMenu.Items.Add(_entryFaviconSep);
             HostInstance.MainWindow.EntryContextMenu.Items.Add(_entryFaviconItem);
 
             // Group context menu
             _groupFaviconSep = new ToolStripSeparator();
-            _groupFaviconItem = new ToolStripMenuItem("Download Favicons (recursively)", KeePassNatMsg.Properties.Resources.icon_16, OnDownloadGroupFavicons_Click);
+            _groupFaviconItem = new ToolStripMenuItem("Download Favicons (recursively)", KeePassNatMsg.Properties.Resources.favicon_download_16, OnDownloadGroupFavicons_Click);
             HostInstance.MainWindow.GroupContextMenu.Items.Add(_groupFaviconSep);
             HostInstance.MainWindow.GroupContextMenu.Items.Add(_groupFaviconItem);
 

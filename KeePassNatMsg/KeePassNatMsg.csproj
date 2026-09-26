@@ -152,6 +152,7 @@
          share/branding/png/keepassxc-256x256.png (KeePassXC/keepassxc@9e0f57a4a4c6c629fa6d0a593acb7d089b1d95cd).
          Original vector artwork copyright (C) 2016 Lorenzo Stella, licensed under LGPL-2.0-or-later. -->
     <None Include="Resources\icon_16.png" />
+    <None Include="Resources\favicon_download_16.png" />
     <None Include="Resources\info_16.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
