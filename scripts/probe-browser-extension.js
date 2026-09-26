@@ -31,6 +31,9 @@ if (manifest.version !== '1.10.4' || !manifest.permissions.includes('nativeMessa
     if (!fs.existsSync(hostManifestPath)) throw new Error('Native messaging test manifest absent');
     originalManifest = fs.readFileSync(hostManifestPath);
     const hostManifest = JSON.parse(originalManifest.toString('utf8'));
+    const registry = require('child_process').spawnSync('reg', ['query', 'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\org.keepassxc.keepassxc_browser', '/ve'], {encoding:'utf8'});
+    if (registry.status !== 0 || !registry.stdout.includes(hostManifestPath)) throw new Error('Native host registry key missing or points elsewhere');
+    if (!fs.existsSync(hostManifest.path)) throw new Error('Registered native host executable absent');
     if (hostManifest.name !== 'org.keepassxc.keepassxc_browser' || !Array.isArray(hostManifest.allowed_origins)) throw new Error('Native host manifest mismatch');
     const testOrigin = `chrome-extension://${ids[0]}/`;
     if (!hostManifest.allowed_origins.includes(testOrigin)) hostManifest.allowed_origins.push(testOrigin);
@@ -43,7 +46,12 @@ if (manifest.version !== '1.10.4' || !manifest.permissions.includes('nativeMessa
         try {
           const port = chrome.runtime.connectNative('org.keepassxc.keepassxc_browser');
           port.onMessage.addListener(message => { clearTimeout(timer); finish(message && message.action === 'change-public-keys' ? 'reply' : 'unexpected'); port.disconnect(); });
-          port.onDisconnect.addListener(() => { clearTimeout(timer); finish('disconnected'); });
+          port.onDisconnect.addListener(() => {
+            clearTimeout(timer);
+            const reason = chrome.runtime.lastError?.message || 'without-runtime-error';
+            const category = /not found|not registered/i.test(reason) ? 'host-not-found' : /forbidden|not allowed|permission/i.test(reason) ? 'origin-not-allowed' : /failed to start|exited|terminated/i.test(reason) ? 'host-exited' : 'disconnected';
+            finish(category);
+          });
           port.postMessage({action:'change-public-keys', publicKey:btoa(String.fromCharCode(...Array(32).fill(1))), nonce:btoa(String.fromCharCode(...Array(24).fill(3))), clientID:btoa(String.fromCharCode(...Array(24).fill(2)))});
         } catch (_) { clearTimeout(timer); finish('error'); }
       });
