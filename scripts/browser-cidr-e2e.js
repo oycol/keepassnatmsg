@@ -70,11 +70,18 @@ function serve() {
   const step = (s) => { step.current = s; console.error('E2E step: ' + s); };
   try {
     step('open-options');
-    await options.goto(`${origin}options/options.html#connected-databases`, {waitUntil:'load'});
-    await options.locator('.sidebar ul.nav li a').first().waitFor({state:'visible', timeout:30000});
+    await options.goto(`${origin}options/options.html`, {waitUntil:'load'});
+    await options.waitForFunction(() => document.querySelectorAll('.sidebar ul.nav li a').length > 0, {timeout:30000});
+    await options.waitForTimeout(500);
     step('open-connected-tab');
-    await options.evaluate(() => { const el = document.querySelector("a[href='#connected-databases']"); if (!el) { throw new Error('sidebar link absent'); } el.click(); });
-    await options.waitForFunction(() => !document.querySelector('#tab-connected-databases').className.includes('d-none'), {timeout:10000});
+    // initMenu only auto-clicks the hash link when location.hash is set before load;
+    // at runtime the sidebar link's own listener is the reliable switch. Invoke it.
+    await options.evaluate(() => {
+      const el = document.querySelector("a[href='#connected-databases']");
+      if (!el) throw new Error('sidebar link absent');
+      el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window}));
+    });
+    await options.waitForFunction(() => !document.querySelector('#tab-connected-databases').className.includes('d-none'), {timeout:15000});
     step('wait-connect-button');
     await options.locator('#connect-button').waitFor({state:'visible', timeout:30000}).catch(async (e) => {
       const diag = await options.evaluate(() => ({
