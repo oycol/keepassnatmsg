@@ -31,9 +31,11 @@ function approve(phase) {
   const args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'approve-browser-e2e.ps1'),
     '-Phase', phase, '-KeePassPid', pidArg, '-DatabasePath', dbPath, '-ExpectedHost', `127.0.0.1:${server.address().port}`,
     '-ExpectedTitle', `${title} - ${user}`, '-AssociationName', association];
-  approval = spawn('powershell.exe', args, { stdio: 'ignore', windowsHide: true });
+  approval = spawn('powershell.exe', args, { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
   let done = false;
   const result = new Promise(resolve => {
+    approval.stdout.on('data', d => { const t = String(d).trim(); if (t) console.error(`approval-out: ${t.slice(0, 120)}`); });
+    approval.stderr.on('data', d => { const t = String(d).trim(); if (t) console.error(`approval-err: ${t.slice(0, 160)}`); });
     approval.once('exit', (code) => { done = true; resolve(code === null ? 1 : code); });
     approval.once('error', () => { done = true; resolve(1); });
     // Hard safety: the approval script's own deadline is 35s; never wait

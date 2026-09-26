@@ -27,7 +27,11 @@ try {
         if ($matches.Count -eq 1) { $window = $matches[0]; break }
         Start-Sleep -Milliseconds 200
     }
-    if (-not $window) { throw 'Expected approval window not found' }
+    if (-not $window) {
+        $seen = @($root.FindAll($scope, $condition) | Where-Object { $_.Current.ProcessId -eq $KeePassPid } | ForEach-Object { $_.Current.Name }) | Select-Object -First 8
+        [Console]::Error.WriteLine("approval-window-not-found title=$title pid=$KeePassPid windowsOfPid=$($seen -join '|')")
+        exit 1
+    }
     $all = @($window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition))
     function One($type, $name) {
         $found = @($all | Where-Object { $_.Current.ControlType -eq $type -and ($_.Current.AutomationId -eq $name -or $_.Current.Name -eq $name) })
@@ -51,6 +55,6 @@ try {
     $button.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
     Write-Output "approval=$Phase"
 } catch {
-    [Console]::Error.WriteLine('Approval failed closed (window, process, or fixture mismatch)')
+    [Console]::Error.WriteLine("approval-failed phase=$Phase step=$Phase reason=$($_.Exception.Message)")
     exit 1
 }
