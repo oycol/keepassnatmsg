@@ -56,7 +56,12 @@ if (manifest.version !== '1.10.4' || !manifest.permissions.includes('nativeMessa
         } catch (_) { clearTimeout(timer); finish('error'); }
       });
     });
-    if (result !== 'reply') throw new Error(`Extension-origin native messaging handshake failed: ${result}`);
+    if (result !== 'reply') {
+      const logPath = path.join(process.env.LOCALAPPDATA || '', 'KeePassNatMsg', 'proxy.log');
+      const newLog = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').slice(-12000) : '';
+      const proxyState = !newLog ? 'no-proxy-log' : /Connected to pipe successfully!/.test(newLog) ? 'pipe-connected' : /Connecting to named pipe:/.test(newLog) ? 'pipe-connection-attempted' : /Proxy started/.test(newLog) ? 'proxy-started' : 'log-without-start';
+      throw new Error(`Extension-origin native messaging handshake failed: ${result}; proxy=${proxyState}`);
+    }
     fs.mkdirSync(resultDir, {recursive:true});
     fs.writeFileSync(path.join(resultDir, 'extension-probe.json'), JSON.stringify({version:'1.10.4',zipSha256:expected,extensionLoaded:true,runtimeId:ids[0],profileIsolated:true,nativeMessagingVerified:true,getLoginsVerified:false},null,2));
     console.log(`Isolated extension native messaging handshake passed; runtime ID=${ids[0]}; get-logins UNVERIFIED`);
