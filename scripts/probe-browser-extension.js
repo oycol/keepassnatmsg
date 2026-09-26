@@ -13,6 +13,8 @@ if (manifest.version !== '1.10.4' || !manifest.permissions.includes('nativeMessa
 (async () => {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'keepass-playwright-profile-'));
   let context;
+  let originalManifest;
+  const hostManifestPath = path.join(process.env.LOCALAPPDATA || '', 'KeePassNatMsg', 'org.keepassxc.keepassxc_browser.json');
   try {
     context = await chromium.launchPersistentContext(profile, {
       headless: false,
@@ -26,11 +28,33 @@ if (manifest.version !== '1.10.4' || !manifest.permissions.includes('nativeMessa
     }
     const ids = workers.map(w => /^chrome-extension:\/\/([a-p]{32})\//.exec(w.url())).filter(Boolean).map(m => m[1]);
     if (ids.length !== 1) throw new Error('Official extension service worker was not observed');
+    if (!fs.existsSync(hostManifestPath)) throw new Error('Native messaging test manifest absent');
+    originalManifest = fs.readFileSync(hostManifestPath);
+    const hostManifest = JSON.parse(originalManifest.toString('utf8'));
+    if (hostManifest.name !== 'org.keepassxc.keepassxc_browser' || !Array.isArray(hostManifest.allowed_origins)) throw new Error('Native host manifest mismatch');
+    const testOrigin = `chrome-extension://${ids[0]}/`;
+    if (!hostManifest.allowed_origins.includes(testOrigin)) hostManifest.allowed_origins.push(testOrigin);
+    fs.writeFileSync(hostManifestPath, JSON.stringify(hostManifest));
+    const result = await workers[0].evaluate(async () => {
+      return await new Promise(resolve => {
+        let done = false;
+        const finish = (status) => { if (!done) { done=true; resolve(status); } };
+        const timer = setTimeout(() => finish('timeout'), 8000);
+        try {
+          const port = chrome.runtime.connectNative('org.keepassxc.keepassxc_browser');
+          port.onMessage.addListener(message => { clearTimeout(timer); finish(message && message.action === 'change-public-keys' ? 'reply' : 'unexpected'); port.disconnect(); });
+          port.onDisconnect.addListener(() => { clearTimeout(timer); finish('disconnected'); });
+          port.postMessage({action:'change-public-keys', publicKey:btoa(String.fromCharCode(...Array(32).fill(1))), nonce:btoa(String.fromCharCode(...Array(24).fill(3))), clientID:btoa(String.fromCharCode(...Array(24).fill(2)))});
+        } catch (_) { clearTimeout(timer); finish('error'); }
+      });
+    });
+    if (result !== 'reply') throw new Error(`Extension-origin native messaging handshake failed: ${result}`);
     fs.mkdirSync(resultDir, {recursive:true});
-    fs.writeFileSync(path.join(resultDir, 'extension-probe.json'), JSON.stringify({version:'1.10.4',zipSha256:expected,extensionLoaded:true,runtimeId:ids[0],profileIsolated:true,nativeMessagingVerified:false,getLoginsVerified:false},null,2));
-    console.log(`Isolated extension loaded; runtime ID=${ids[0]}; native messaging and get-logins UNVERIFIED`);
+    fs.writeFileSync(path.join(resultDir, 'extension-probe.json'), JSON.stringify({version:'1.10.4',zipSha256:expected,extensionLoaded:true,runtimeId:ids[0],profileIsolated:true,nativeMessagingVerified:true,getLoginsVerified:false},null,2));
+    console.log(`Isolated extension native messaging handshake passed; runtime ID=${ids[0]}; get-logins UNVERIFIED`);
   } finally {
     if (context) await context.close();
+    if (originalManifest) fs.writeFileSync(hostManifestPath, originalManifest);
     fs.rmSync(profile, {recursive:true,force:true});
   }
 })().catch(e => { console.error(`Extension probe failed: ${e.message.split('\n')[0]}`); process.exitCode=1; });
