@@ -32,6 +32,11 @@ jobs:
           New-Item -ItemType Directory -Force -Path $env:E2E_OUTPUT_DIR | Out-Null
           New-Item -ItemType Directory -Force -Path $env:KEEPASS_E2E_DIR | Out-Null
 
+      - name: Back up Runner integration state before test
+        run: |
+          & "$PWD\scripts\e2e-preserve-runner.ps1" -Action Backup
+          if ($LASTEXITCODE -ne 0) { throw 'Runner backup failed; aborting E2E' }
+
       - name: Ensure test environment software (Chrome and KeePass)
         run: |
           if ($env:HTTP_PROXY) {
@@ -272,9 +277,12 @@ jobs:
             Write-Host "KeePassXC-Browser extension already unpacked at: $extDir" -ForegroundColor Green
           }
 
-          # 5.2 Create dedicated test database with a credential entry
-          $testDbPath = "C:\KeePassNatMsg-E2E\test.kdbx"
+          # 5.2 Unique disposable database; never reuse or delete an existing fixture.
+          $testDbPath = Join-Path $env:KEEPASS_E2E_DIR ("keepass-cidr-e2e-" + [guid]::NewGuid().ToString('N') + '.kdbx')
+          if (-not (Test-Path (Join-Path $env:RUNNER_TEMP 'keepassnatmsg-e2e-preserve\state.json'))) { throw 'No verified backup before fixture creation' }
+          $testDbPath | Set-Content -LiteralPath (Join-Path $env:RUNNER_TEMP 'keepassnatmsg-e2e-preserve\fixture-path.txt') -Encoding ASCII
           $testDbPass = "TestPassword2026!"
+          if (Test-Path $testDbPath) { throw 'Unique database path unexpectedly exists' }
           if (-not (Test-Path $testDbPath)) {
             Write-Host "Creating test database: $testDbPath"
             [System.Reflection.Assembly]::LoadFrom($kpExe) | Out-Null
@@ -287,14 +295,14 @@ jobs:
             $db.New($io, $compKey)
 
             $entry = New-Object KeePassLib.PwEntry($true, $true)
-            $entry.Strings.Set("Title", (New-Object KeePassLib.Security.ProtectedString($false, "Example Site")))
-            $entry.Strings.Set("UserName", (New-Object KeePassLib.Security.ProtectedString($false, "admin_tester")))
-            $entry.Strings.Set("Password", (New-Object KeePassLib.Security.ProtectedString($true, "MySuperSecretPassword2026!")))
-            $entry.Strings.Set("URL", (New-Object KeePassLib.Security.ProtectedString($false, "https://example.com/")))
+            $entry.Strings.Set("Title", (New-Object KeePassLib.Security.ProtectedString($false, "CIDR E2E")))
+            $entry.Strings.Set("UserName", (New-Object KeePassLib.Security.ProtectedString($false, "cidr_tester")))
+            $entry.Strings.Set("Password", (New-Object KeePassLib.Security.ProtectedString($true, "SyntheticOnly2026!")))
+            $entry.Strings.Set("URL", (New-Object KeePassLib.Security.ProtectedString($false, "CIDR:127.0.0.0/8")))
             $db.RootGroup.AddEntry($entry, $true)
             $db.Save($null)
             $db.Close()
-            Write-Host "Test database created with entry for https://example.com/" -ForegroundColor Green
+            Write-Host 'Fresh synthetic CIDR database created.'
           } else {
             Write-Host "Test database already exists at: $testDbPath" -ForegroundColor Green
           }
@@ -322,7 +330,7 @@ jobs:
           }
           Write-Host "Direct named-pipe roundtrip passed (not evidence of browser-origin communication)." -ForegroundColor Green
 
-          # 5.6 Exercise Native Messaging from the actual isolated extension worker.
+          # 5.6 Exercise the actual extension association and CIDR autofill against this disposable DB.
           $pkg = Join-Path $env:TEMP 'keepass-playwright-cli'
           $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $env:TEMP 'keepass-playwright-browsers'
           New-Item -ItemType Directory -Force -Path $pkg | Out-Null
@@ -341,9 +349,19 @@ jobs:
             [System.IO.Compression.ZipFile]::ExtractToDirectory($officialZip, $probeExt)
             node "$PWD\scripts\probe-browser-extension.js" $probeExt $env:E2E_OUTPUT_DIR
             if ($LASTEXITCODE -ne 0) { throw 'Extension-origin native messaging handshake failed' }
+            $env:E2E_USER = 'cidr_tester'
+            $env:E2E_PASSWORD = 'SyntheticOnly2026!'
+            node "$PWD\scripts\browser-cidr-e2e.js" $probeExt $env:E2E_OUTPUT_DIR $testDbPath $kpProc.Id 'CIDR E2E'
+            if ($LASTEXITCODE -ne 0) { throw 'Official extension association/CIDR/autofill E2E failed' }
+            foreach ($mode in @(@(2560,1440,'2k'), @(3840,2160,'4k'))) {
+              & powershell -NoProfile -ExecutionPolicy Bypass -File "$PWD\scripts\verify-options-hosted-display.ps1" -ProcessId $kpProc.Id -TestDatabasePath $testDbPath -TargetWidth $mode[0] -TargetHeight $mode[1] -MinimumDpi 144 -OutputPath "$env:E2E_OUTPUT_DIR\options-hosted-$($mode[2]).json"
+              if ($LASTEXITCODE -ne 0) { throw "Hosted high-DPI Options validation unavailable or failed: $($mode[2])" }
+            }
           } finally {
             Remove-Item $probeExt -Recurse -Force -ErrorAction SilentlyContinue
             Stop-Process -Id $kpProc.Id -Force -ErrorAction SilentlyContinue
+            Remove-Item Env:E2E_USER,Env:E2E_PASSWORD -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $testDbPath -Force -ErrorAction SilentlyContinue
           }
           Write-Host 'Extension-origin native messaging handshake passed. get-logins and autofill remain UNVERIFIED.'
 
@@ -357,6 +375,12 @@ jobs:
           }
 
           Write-Host "`n=== Windows E2E deployment, direct IPC, extension-origin handshake and GUI checks completed; get-logins and autofill UNVERIFIED ===" -ForegroundColor Yellow
+
+      - name: Restore Runner integration state and verify read-back
+        if: always()
+        run: |
+          & "$PWD\scripts\e2e-preserve-runner.ps1" -Action Restore
+          if ($LASTEXITCODE -ne 0) { throw 'Runner restore failed; stop further tests and recover from backup' }
 
       - name: Upload E2E Test Artifacts and GUI Screenshot
         uses: actions/upload-artifact@v4
