@@ -37,7 +37,7 @@ jobs:
               'chrome-extension://oboonakemofpalcgghocfoadofidjkkk/' -notin $origins -or $origins.Count -ne 2) { throw 'Manifest is not verified standard installation' }
           foreach ($key in @('HKCU:\Software\Google\Chrome\NativeMessagingHosts\org.keepassxc.keepassxc_browser', 'HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\org.keepassxc.keepassxc_browser')) {
             New-Item -Path $key -Force | Out-Null
-            (Get-Item -LiteralPath $key).SetValue('', $manifest)
+            Set-Item -LiteralPath $key -Value $manifest -ErrorAction Stop
             if ((Get-Item -LiteralPath $key).GetValue('') -cne $manifest) { throw 'Host registry repair read-back failed' }
           }
           Write-Host 'Chrome and Edge host registry values repaired to existing verified manifest and read back.'

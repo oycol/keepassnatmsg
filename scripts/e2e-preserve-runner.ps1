@@ -82,7 +82,7 @@ foreach ($item in $state.registry) {
   try {
     if ($item.snapshot.exists) {
       New-Item -Path $item.path -Force | Out-Null
-      (Get-Item -LiteralPath $item.path).SetValue('', [string]$item.snapshot.value)
+      Set-Item -LiteralPath $item.path -Value ([string]$item.snapshot.value) -ErrorAction Stop
     } else {
       Remove-Item -LiteralPath $item.path -Recurse -Force -ErrorAction SilentlyContinue
     }
