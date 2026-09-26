@@ -71,7 +71,14 @@ function serve() {
   try {
     step('open-options');
     await options.goto(`${origin}options/options.html`, {waitUntil:'load'});
-    await options.waitForFunction(() => document.querySelectorAll('.sidebar ul.nav li a').length > 0, {timeout:30000});
+    // initGeneralSettings/permissions flows can take a moment; wait for the
+    // main content container the extension reveals after a successful init.
+    await options.waitForFunction(() => {
+      const mc = document.querySelector('#main-content');
+      return mc && getComputedStyle(mc).display !== 'none' && document.querySelectorAll('.sidebar ul.nav li a').length > 0;
+    }, {timeout:30000}).catch(() => {
+      // fall through: the diagnostic below will record main-content state
+    });
     await options.waitForTimeout(500);
     step('open-connected-tab');
     // Replicate exactly what the extension's own sidebar click handler does:
@@ -113,6 +120,8 @@ function serve() {
         buttonDisplay: btn ? getComputedStyle(btn).display : null,
         buttonVisibility: btn ? getComputedStyle(btn).visibility : null,
         viewport: {w: innerWidth, h: innerHeight},
+        mainContentDisplay: document.querySelector('#main-content') ? getComputedStyle(document.querySelector('#main-content')).display : 'absent',
+        ancestorsHidden: (() => { let n = btn, hidden = []; while (n && n !== document.body) { if (getComputedStyle(n).display === 'none') hidden.push(n.tagName + '#' + (n.id || '')); n = n.parentElement; } return hidden; })(),
         };
       });
       fs.mkdirSync(resultDir, {recursive:true});
