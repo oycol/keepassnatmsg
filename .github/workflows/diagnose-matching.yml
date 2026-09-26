@@ -28,3 +28,22 @@ jobs:
           Write-Host "Test database present: $(Test-Path $dbPath)"
           Write-Host 'No raw logs, config values, database entries, URLs, usernames, or credentials are published.'
           Write-Host 'Matching behavior and browser-origin communication remain UNVERIFIED by this diagnostic.'
+
+      - name: Probe isolated runner prerequisites without opening user data
+        shell: powershell
+        run: |
+          Add-Type -AssemblyName System.Windows.Forms
+          $screen = [System.Windows.Forms.Screen]::PrimaryScreen
+          $extensionDir = 'C:\KeePassNatMsg-E2E\extension'
+          $manifestPath = Join-Path $extensionDir 'manifest.json'
+          $manifest = if (Test-Path $manifestPath) { Get-Content $manifestPath -Raw | ConvertFrom-Json } else { $null }
+          $archive = Join-Path $env:TEMP 'kpxc-browser.zip'
+          $archiveHash = if (Test-Path $archive) { (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() } else { '(missing)' }
+          $chromeProfile = 'C:\KeePassNatMsg-E2E\chrome-user-data'
+          $running = @(Get-Process KeePass, chrome -ErrorAction SilentlyContinue | Select-Object -ExpandProperty ProcessName -Unique)
+          Write-Host "Interactive=$([Environment]::UserInteractive); session=$env:SESSIONNAME"
+          Write-Host "Screen=$($screen.Bounds.Width)x$($screen.Bounds.Height); working=$($screen.WorkingArea.Width)x$($screen.WorkingArea.Height)"
+          Write-Host "Extension directory present=$(Test-Path $extensionDir); manifest version=$($manifest.version); manifest has key=$([bool]$manifest.key)"
+          Write-Host "Cached extension ZIP SHA256=$archiveHash"
+          Write-Host "E2E browser profile present=$(Test-Path $chromeProfile); active app names=$($running -join ',')"
+          Write-Host 'This step does not inspect credentials, extension storage, or raw plugin logs.'
