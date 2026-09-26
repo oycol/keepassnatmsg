@@ -54,6 +54,16 @@ jobs:
           Write-Host "Standalone Chromium installed=$([bool]$chromium)"
           $chromeProcesses = @(Get-CimInstance Win32_Process -Filter "name='chrome.exe'" | Select-Object -First 3 -ExpandProperty ExecutablePath -Unique)
           Write-Host "Existing Chrome executable paths=$($chromeProcesses -join ',')"
+      - name: Install isolated Playwright Chromium
+        shell: powershell
+        run: |
+          $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $env:TEMP 'keepass-playwright-browsers'
+          $pkg = Join-Path $env:TEMP 'keepass-playwright-cli'
+          New-Item -ItemType Directory -Force -Path $pkg | Out-Null
+          npm install --prefix $pkg playwright@1.58.2 --no-save --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw 'Playwright install failed' }
+          & (Join-Path $pkg 'node_modules\.bin\playwright.cmd') install chromium
+          if ($LASTEXITCODE -ne 0) { throw 'Isolated Chromium install failed' }
       - name: Probe isolated official browser extension
         shell: powershell
         continue-on-error: true

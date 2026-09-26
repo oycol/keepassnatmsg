@@ -3,8 +3,10 @@ $ErrorActionPreference = 'Stop'
 $expected = 'd5b780e28870deb8da260311bf141ac3a7a88d142b4b9e5c58156270c10ea3f7'
 $zip = Join-Path $env:TEMP 'kpxc-browser.zip'
 if (-not (Test-Path $zip) -or (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Verified KeePassXC-Browser 1.10.4 archive not available on runner' }
-$chrome = @('C:\Program Files\Google\Chrome\Application\chrome.exe','C:\Program Files (x86)\Google\Chrome\Application\chrome.exe') | Where-Object { Test-Path $_ } | Select-Object -First 1
-if (-not $chrome) { throw 'Chrome executable not available' }
+$browserRoot = Join-Path $env:TEMP 'keepass-playwright-browsers'
+$env:PLAYWRIGHT_BROWSERS_PATH = $browserRoot
+$chrome = Get-ChildItem -Path $browserRoot -Filter 'chrome.exe' -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match 'chromium-' } | Select-Object -First 1 -ExpandProperty FullName
+if (-not $chrome) { throw 'Isolated Playwright Chromium executable not available' }
 $root = Join-Path $env:TEMP ('keepass-browser-probe-' + [Guid]::NewGuid().ToString('N'))
 $extension = Join-Path $root 'extension'
 $profile = Join-Path $root 'profile'
