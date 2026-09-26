@@ -35,7 +35,11 @@ try {
     $all = @($window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition))
     function One($type, $name) {
         $found = @($all | Where-Object { $_.Current.ControlType -eq $type -and ($_.Current.AutomationId -eq $name -or $_.Current.Name -eq $name) })
-        if ($found.Count -ne 1 -or -not $found[0].Current.IsEnabled) { throw 'Expected unique enabled control absent' }
+        if ($found.Count -ne 1 -or -not $found[0].Current.IsEnabled) {
+            $inventory = @($all | ForEach-Object { "$($_.Current.ControlType.ProgrammaticName):id=$($_.Current.AutomationId):name=$($_.Current.Name):enabled=$($_.Current.IsEnabled)" }) | Select-Object -First 14
+            [Console]::Error.WriteLine("control-inventory wanted=$($type.ProgrammaticName)/$name found=$($found.Count) list=$($inventory -join ' | ')")
+            throw 'Expected unique enabled control absent'
+        }
         return $found[0]
     }
     if ($Phase -eq 'association') {
