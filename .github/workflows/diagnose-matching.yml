@@ -46,4 +46,17 @@ jobs:
           Write-Host "Extension directory present=$(Test-Path $extensionDir); manifest version=$($manifest.version); manifest has key=$([bool]$manifest.key)"
           Write-Host "Cached extension ZIP SHA256=$archiveHash"
           Write-Host "E2E browser profile present=$(Test-Path $chromeProfile); active app names=$($running -join ',')"
-          Write-Host 'This step does not inspect credentials, extension storage, or raw plugin logs.'
+      - name: Probe isolated official browser extension
+        shell: powershell
+        run: |
+          & "$PWD\scripts\probe-browser-extension.ps1" -OutputDir "$PWD\e2e-artifacts"
+          if ($LASTEXITCODE -ne 0) { throw 'Isolated extension probe failed' }
+
+      - name: Upload sanitized probe result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-probe
+          path: e2e-artifacts/extension-probe.json
+          retention-days: 7
+          if-no-files-found: ignore
