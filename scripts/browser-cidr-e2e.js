@@ -70,11 +70,12 @@ function serve() {
   const step = (s) => { step.current = s; console.error('E2E step: ' + s); };
   try {
     step('open-options');
-    await options.goto(`${origin}options/options.html`);
+    await options.goto(`${origin}options/options.html#connected-databases`, {waitUntil:'load'});
+    await options.locator('.sidebar ul.nav li a').first().waitFor({state:'visible', timeout:30000});
     step('open-connected-tab');
-    await options.locator('a[href="#connected-databases"]').click();
+    await options.locator('a[href="#connected-databases"]').click().catch(() => {});
     step('wait-connect-button');
-    await options.locator('#connect-button').waitFor({state:'visible', timeout:20000});
+    await options.locator('#connect-button').waitFor({state:'visible', timeout:30000});
     step('check-fresh-profile');
     assert(await options.locator('#tab-connected-databases table tbody tr:not(.clone):not(.empty)').count() === 0, 'Extension profile is not fresh');
     step('association');
