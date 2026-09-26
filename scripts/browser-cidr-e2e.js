@@ -33,7 +33,13 @@ function approve(phase) {
     '-ExpectedTitle', `${title} - ${user}`, '-AssociationName', association];
   approval = spawn('powershell.exe', args, { stdio: 'ignore', windowsHide: true });
   let done = false;
-  const result = new Promise(resolve => approval.once('exit', code => { done = true; resolve(code); }));
+  const result = new Promise(resolve => {
+    approval.once('exit', (code) => { done = true; resolve(code === null ? 1 : code); });
+    approval.once('error', () => { done = true; resolve(1); });
+    // Hard safety: the approval script's own deadline is 35s; never wait
+    // indefinitely for a Windows child process to report its exit.
+    setTimeout(() => { if (!done) { try { approval.kill(); } catch (_) {} done = true; resolve(1); } }, 60000);
+  });
   return { result, isDone: () => done };
 }
 async function withApproval(phase, action) {
@@ -50,6 +56,16 @@ function serve() {
     server.listen(0, '127.0.0.1', resolve);
   });
 }
+// Guard the whole E2E: if any stage stalls (a hung child process, an unresolved
+// protocol promise), fail the run instead of hanging the runner job forever.
+const OVERALL_DEADLINE_MS = 240000;
+const overallTimer = setTimeout(() => {
+  console.error(`Browser CIDR E2E failed: overall deadline exceeded at step=${(step.current || 'unknown')}`);
+  try { if (approval) approval.kill(); } catch (_) {}
+  try { if (context) context.close(); } catch (_) {}
+  process.exit(1);
+}, OVERALL_DEADLINE_MS);
+overallTimer.unref?.();
 (async () => {
   await serve();
   context = await chromium.launchPersistentContext(profile, {headless:false, args:[`--disable-extensions-except=${ext}`, `--load-extension=${ext}`], timeout:20000});
