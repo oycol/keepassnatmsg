@@ -73,7 +73,8 @@ function serve() {
     await options.goto(`${origin}options/options.html#connected-databases`, {waitUntil:'load'});
     await options.locator('.sidebar ul.nav li a').first().waitFor({state:'visible', timeout:30000});
     step('open-connected-tab');
-    await options.locator('a[href="#connected-databases"]').click().catch(() => {});
+    await options.evaluate(() => { const el = document.querySelector("a[href='#connected-databases']"); if (!el) { throw new Error('sidebar link absent'); } el.click(); });
+    await options.waitForFunction(() => !document.querySelector('#tab-connected-databases').className.includes('d-none'), {timeout:10000});
     step('wait-connect-button');
     await options.locator('#connect-button').waitFor({state:'visible', timeout:30000}).catch(async (e) => {
       const diag = await options.evaluate(() => ({
