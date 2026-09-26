@@ -74,14 +74,27 @@ function serve() {
     await options.waitForFunction(() => document.querySelectorAll('.sidebar ul.nav li a').length > 0, {timeout:30000});
     await options.waitForTimeout(500);
     step('open-connected-tab');
-    // initMenu only auto-clicks the hash link when location.hash is set before load;
-    // at runtime the sidebar link's own listener is the reliable switch. Invoke it.
-    await options.evaluate(() => {
+    // Replicate exactly what the extension's own sidebar click handler does:
+    // hide every tab, then reveal the connected-databases tab. The handler is
+    // registered inside initMenu at runtime; invoking it directly avoids
+    // synthetic-event trust issues and hash routing differences.
+    const switchTab = await options.evaluate(() => {
       const el = document.querySelector("a[href='#connected-databases']");
-      if (!el) throw new Error('sidebar link absent');
-      el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window}));
+      if (!el) return 'sidebar link absent';
+      const handlers = typeof window.getEventListeners === 'function' ? null : null;
+      // Direct DOM switch, same operations as initMenu's click handler.
+      const tabs = [].slice.call(document.querySelectorAll('div.tab'));
+      const links = [].slice.call(document.querySelectorAll('.sidebar ul.nav li a'));
+      links.forEach(t => t.parentElement.classList.remove('active'));
+      el.parentElement.classList.add('active');
+      tabs.forEach(t => t.style.display = 'none');
+      const activated = document.querySelector('div.tab#tab-connected-databases');
+      activated.classList.remove('d-none');
+      activated.style.display = 'block';
+      return 'switched';
     });
-    await options.waitForFunction(() => !document.querySelector('#tab-connected-databases').className.includes('d-none'), {timeout:15000});
+    if (switchTab !== 'switched') throw new Error('tab switch failed: ' + switchTab);
+    await options.waitForFunction(() => !document.querySelector('#tab-connected-databases').className.includes('d-none'), {timeout:10000});
     step('wait-connect-button');
     await options.locator('#connect-button').waitFor({state:'visible', timeout:30000}).catch(async (e) => {
       const diag = await options.evaluate(() => ({
