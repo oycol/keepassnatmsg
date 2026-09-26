@@ -91,6 +91,35 @@ namespace KeePassNatMsg.Tests
         }
 
         [Test]
+        public void InstalledProxy_EmbeddedBinaryIsAccepted()
+        {
+            var service = new ChromeIntegrationService();
+            var assembly = typeof(ChromeIntegrationService).Assembly;
+            var resourceName = assembly.GetManifestResourceNames()
+                .FirstOrDefault(n => n.EndsWith("keepassnatmsg-proxy.exe", StringComparison.OrdinalIgnoreCase));
+            Assert.IsNotNull(resourceName, "The test assembly must embed the current proxy");
+            var tempFile = Path.GetTempFileName();
+            try
+            {
+                using (var source = assembly.GetManifestResourceStream(resourceName))
+                using (var destination = File.Create(tempFile)) source.CopyTo(destination);
+                Assert.IsTrue(service.IsCurrentProxy(tempFile));
+                using (var file = new FileStream(tempFile, FileMode.Open, FileAccess.ReadWrite))
+                {
+                    file.Position = 2;
+                    int first = file.ReadByte();
+                    file.Position = 2;
+                    file.WriteByte((byte)(first ^ 0xFF));
+                }
+                Assert.IsFalse(service.IsCurrentProxy(tempFile), "Modified proxy must not be reported Ready");
+            }
+            finally
+            {
+                if (File.Exists(tempFile)) File.Delete(tempFile);
+            }
+        }
+
+        [Test]
         public void GenerateManifestContent_PathWithBackslashes_SurvivesJsonRoundTrip()
         {
             // Fix #13: hand-rolled JSON used Replace(@"\", @"\\") which could break UNC paths.

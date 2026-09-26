@@ -96,5 +96,10 @@
       <Link>Protocol\Listener\PipeThreadState.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\KeePassNatMsg\Resources\keepassnatmsg-proxy.exe">
+      <LogicalName>KeePassNatMsg.Tests.keepassnatmsg-proxy.exe</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

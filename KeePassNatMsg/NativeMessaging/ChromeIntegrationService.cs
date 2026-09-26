@@ -100,6 +100,33 @@ namespace KeePassNatMsg.NativeMessaging
             }
         }
 
+        public virtual bool IsCurrentProxy(string path)
+        {
+            if (!IsValidExecutable(path)) return false;
+            try
+            {
+                var asm = typeof(ChromeIntegrationService).Assembly;
+                foreach (var name in asm.GetManifestResourceNames())
+                {
+                    if (!name.EndsWith("keepassnatmsg-proxy.exe", StringComparison.OrdinalIgnoreCase)) continue;
+                    using (var embedded = asm.GetManifestResourceStream(name))
+                    using (var installed = File.OpenRead(path))
+                    using (var sha = SHA256.Create())
+                    {
+                        if (embedded == null) return false;
+                        var expected = sha.ComputeHash(embedded);
+                        var actual = sha.ComputeHash(installed);
+                        if (actual.Length != expected.Length) return false;
+                        int difference = 0;
+                        for (int i = 0; i < actual.Length; i++) difference |= actual[i] ^ expected[i];
+                        return difference == 0;
+                    }
+                }
+            }
+            catch { }
+            return false;
+        }
+
         private static bool IsRegistryKeyConfigured(string subKey, string expectedManifestPath)
         {
             try
@@ -152,8 +179,8 @@ namespace KeePassNatMsg.NativeMessaging
                 ChromeDetected = IsChromeInstalled()
             };
 
-            // 1. Verify Proxy (executable check, no brittle fixed hash)
-            status.ProxyOk = IsValidExecutable(status.ProxyPath);
+            // 1. Verify installed proxy matches the executable embedded in this plugin.
+            status.ProxyOk = IsCurrentProxy(status.ProxyPath);
 
             // 2. Verify Manifest
             if (File.Exists(status.ManifestPath))
@@ -275,9 +302,9 @@ namespace KeePassNatMsg.NativeMessaging
                     Directory.CreateDirectory(configDir);
                 }
 
-                // 1. Deploy Proxy if missing or not a valid executable
+                // 1. Replace a missing, corrupt, or previous-version proxy.
                 var proxyPath = GetProxyPath();
-                if (!IsValidExecutable(proxyPath))
+                if (!IsCurrentProxy(proxyPath))
                 {
                     if (!DeployEmbeddedProxy(proxyPath))
                     {
