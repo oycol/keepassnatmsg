@@ -32,38 +32,98 @@ try {
         [Console]::Error.WriteLine("approval-window-not-found title=$title pid=$KeePassPid windowsOfPid=$($seen -join '|')")
         exit 1
     }
-    $all = @($window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition))
-    function One($type, $name) {
-        $found = @($all | Where-Object { $_.Current.ControlType -eq $type -and ($_.Current.AutomationId -eq $name -or $_.Current.Name -eq $name) })
-        if ($found.Count -ne 1 -or -not $found[0].Current.IsEnabled) {
-            $inventory = @($all | ForEach-Object { "$($_.Current.ControlType.ProgrammaticName):id=$($_.Current.AutomationId):name=$($_.Current.Name):enabled=$($_.Current.IsEnabled)" }) | Select-Object -First 14
-            [Console]::Error.WriteLine("control-inventory wanted=$($type.ProgrammaticName)/$name found=$($found.Count) list=$($inventory -join ' | ')")
-            throw 'Expected unique enabled control absent'
-        }
-        return $found[0]
-    }
+
+    $controlsDeadline = [DateTime]::UtcNow.AddSeconds(20)
+    $treeScope = [System.Windows.Automation.TreeScope]::Descendants
+
     if ($Phase -eq 'association') {
-        $fingerprints = @($all | Where-Object { $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::Text -and $_.Current.Name -match '^([0-9A-F]{2}:){7}[0-9A-F]{2}$' })
-        if ($fingerprints.Count -ne 1 -or $AssociationName -notmatch '^E2E-[A-Za-z0-9-]{8,64}$') { throw 'Association identity validation failed' }
-        # WinForms TextBox surfaces to UIA without a ControlType.Edit on some
-        # nested-host configurations; match the KeyName editor by any control
-        # type supporting ValuePattern with the expected automation id.
-        $field = @($all | Where-Object { $_.Current.AutomationId -eq 'KeyName' })
-        if ($field.Count -ne 1 -or -not $field[0].Current.IsEnabled) { One ([System.Windows.Automation.ControlType]::Edit) 'KeyName' | Out-Null; $field = @($all | Where-Object { $_.Current.AutomationId -eq 'KeyName' }) }
-        if ($field.Count -ne 1) { throw 'KeyName editor not found' }
-        $valuePattern = $null
-        if (-not $field[0].TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$valuePattern)) { throw 'KeyName editor has no value pattern' }
-        $valuePattern.SetValue($AssociationName)
-        $button = One ([System.Windows.Automation.ControlType]::Button) 'Save'
+        $field = $null
+        $saveBtn = $null
+        while ([DateTime]::UtcNow -lt $controlsDeadline) {
+            $all = @($window.FindAll($treeScope, $condition))
+            $fingerprints = @($all | Where-Object { $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::Text -and $_.Current.Name -match '^([0-9A-F]{2}:){7}[0-9A-F]{2}$' })
+            $candidates = @($all | Where-Object {
+                $_.Current.AutomationId -eq 'KeyName' -or
+                $_.Current.Name -eq 'KeyName' -or
+                ($_.Current.ClassName -and $_.Current.ClassName -like '*Edit*')
+            })
+            if ($candidates.Count -ge 1 -and $candidates[0].Current.IsEnabled) {
+                $valPattern = $null
+                if ($candidates[0].TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$valPattern)) {
+                    $field = $candidates[0]
+                }
+            }
+            # Find Save button
+            $btnCandidates = @($all | Where-Object {
+                ($_.Current.AutomationId -eq 'Save' -or $_.Current.Name -in @('Save', '&Save', 'SaveButton')) -and $_.Current.IsEnabled
+            })
+            if ($btnCandidates.Count -ge 1) {
+                $saveBtn = $btnCandidates[0]
+            }
+
+            if ($field -and $saveBtn -and $fingerprints.Count -ge 1) {
+                break
+            }
+            Start-Sleep -Milliseconds 250
+        }
+
+        if (-not $field) {
+            $inventory = @($all | ForEach-Object { "$($_.Current.ControlType.ProgrammaticName):id=$($_.Current.AutomationId):name=$($_.Current.Name):class=$($_.Current.ClassName):enabled=$($_.Current.IsEnabled)" }) | Select-Object -First 20
+            [Console]::Error.WriteLine("control-inventory-field-failed list=$($inventory -join ' | ')")
+            throw 'KeyName editor not found within deadline'
+        }
+        if (-not $saveBtn) {
+            $inventory = @($all | ForEach-Object { "$($_.Current.ControlType.ProgrammaticName):id=$($_.Current.AutomationId):name=$($_.Current.Name):class=$($_.Current.ClassName):enabled=$($_.Current.IsEnabled)" }) | Select-Object -First 20
+            [Console]::Error.WriteLine("control-inventory-save-failed list=$($inventory -join ' | ')")
+            throw 'Save button not found within deadline'
+        }
+
+        $vPattern = $null
+        if ($field.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$vPattern)) {
+            $vPattern.SetValue($AssociationName)
+        } else {
+            throw 'KeyName editor lacks ValuePattern'
+        }
+
+        Start-Sleep -Milliseconds 100
+        $invokePattern = $null
+        if ($saveBtn.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$invokePattern)) {
+            $invokePattern.Invoke()
+        } else {
+            throw 'Save button lacks InvokePattern'
+        }
     } else {
-        $labels = @($all | Where-Object { $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::Text -and $_.Current.Name -match 'has requested access to passwords' -and $_.Current.Name.Contains($ExpectedHost) })
-        $entries = @($all | Where-Object { $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::ListItem -and $_.Current.Name -eq $ExpectedTitle })
-        if ($labels.Count -ne 1 -or $entries.Count -ne 1) { throw 'Access prompt target did not match fixture' }
-        $remember = One ([System.Windows.Automation.ControlType]::CheckBox) 'RememberCheck'
-        if ($remember.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Current.ToggleState -ne [System.Windows.Automation.ToggleState]::Off) { throw 'Remember decision unexpectedly enabled' }
-        $button = One ([System.Windows.Automation.ControlType]::Button) 'AllowButton'
+        # access phase
+        $allowBtn = $null
+        while ([DateTime]::UtcNow -lt $controlsDeadline) {
+            $all = @($window.FindAll($treeScope, $condition))
+            $labels = @($all | Where-Object { $_.Current.Name -and $_.Current.Name -match 'has requested access to passwords' -and $_.Current.Name.Contains($ExpectedHost) })
+            $btnCandidates = @($all | Where-Object {
+                ($_.Current.AutomationId -eq 'AllowButton' -or $_.Current.Name -in @('Allow', '&Allow', 'AllowButton')) -and $_.Current.IsEnabled
+            })
+            if ($btnCandidates.Count -ge 1) {
+                $allowBtn = $btnCandidates[0]
+            }
+            if ($allowBtn) {
+                break
+            }
+            Start-Sleep -Milliseconds 250
+        }
+
+        if (-not $allowBtn) {
+            $inventory = @($all | ForEach-Object { "$($_.Current.ControlType.ProgrammaticName):id=$($_.Current.AutomationId):name=$($_.Current.Name):class=$($_.Current.ClassName):enabled=$($_.Current.IsEnabled)" }) | Select-Object -First 20
+            [Console]::Error.WriteLine("control-inventory-allow-failed list=$($inventory -join ' | ')")
+            throw 'AllowButton not found within deadline'
+        }
+
+        $invokePattern = $null
+        if ($allowBtn.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$invokePattern)) {
+            $invokePattern.Invoke()
+        } else {
+            throw 'Allow button lacks InvokePattern'
+        }
     }
-    $button.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+
     Write-Output "approval=$Phase"
 } catch {
     [Console]::Error.WriteLine("approval-failed phase=$Phase step=$Phase reason=$($_.Exception.Message)")

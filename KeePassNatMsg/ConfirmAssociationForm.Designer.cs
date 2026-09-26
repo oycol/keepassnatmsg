@@ -81,6 +81,7 @@
             // 
             // KeyName
             // 
+            this.KeyName.AccessibleName = "KeyName";
             this.KeyName.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.KeyName.Location = new System.Drawing.Point(102, 53);
@@ -102,6 +103,7 @@
             // 
             // Save
             // 
+            this.Save.AccessibleName = "Save";
             this.Save.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.Save.Location = new System.Drawing.Point(296, 140);
             this.Save.Name = "Save";

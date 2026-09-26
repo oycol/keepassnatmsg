@@ -58,11 +58,13 @@ function serve() {
     server.listen(0, '127.0.0.1', resolve);
   });
 }
+let currentStep = 'initializing';
+const step = (s) => { currentStep = s; console.error('E2E step: ' + s); };
 // Guard the whole E2E: if any stage stalls (a hung child process, an unresolved
 // protocol promise), fail the run instead of hanging the runner job forever.
 const OVERALL_DEADLINE_MS = 240000;
 const overallTimer = setTimeout(() => {
-  console.error(`Browser CIDR E2E failed: overall deadline exceeded at step=${(step.current || 'unknown')}`);
+  console.error(`Browser CIDR E2E failed: overall deadline exceeded at step=${currentStep}`);
   try { if (approval) approval.kill(); } catch (_) {}
   try { if (context) context.close(); } catch (_) {}
   process.exit(1);
@@ -89,7 +91,6 @@ overallTimer.unref?.();
   options.on('console', msg => { if (consoleLog.length < 50) consoleLog.push({source:'options', type: msg.type(), text: msg.text().slice(0, 400)}); });
   options.on('pageerror', err => { if (consoleLog.length < 50) consoleLog.push({source:'options', type:'pageerror', text: String(err).slice(0, 400)}); });
   context.on('serviceworker', worker => { if (consoleLog.length < 50) worker.on('console', msg => consoleLog.push({source:'serviceworker', type: msg.type(), text: msg.text().slice(0, 400)})); });
-  const step = (s) => { step.current = s; console.error('E2E step: ' + s); };
   try {
     step('open-options');
     // MV3 cold-start race: the options page's init IIFE sends runtime messages

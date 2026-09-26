@@ -39,6 +39,7 @@
             // 
             // AllowButton
             // 
+            AllowButton.AccessibleName = "AllowButton";
             AllowButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             AllowButton.Location = new System.Drawing.Point(176, 207);
             AllowButton.Name = "AllowButton";
@@ -73,6 +74,7 @@
             // 
             // RememberCheck
             // 
+            this.RememberCheck.AccessibleName = "RememberCheck";
             this.RememberCheck.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.RememberCheck.AutoSize = true;
             this.RememberCheck.Location = new System.Drawing.Point(12, 211);
