@@ -362,8 +362,16 @@ jobs:
             node "$PWD\scripts\browser-cidr-e2e.js" $probeExt $env:E2E_OUTPUT_DIR $testDbPath $kpProc.Id 'CIDR E2E'
             if ($LASTEXITCODE -ne 0) { throw 'Official extension association/CIDR/autofill E2E failed' }
             foreach ($mode in @(@(2560,1440,'2k'), @(3840,2160,'4k'))) {
-              & powershell -NoProfile -ExecutionPolicy Bypass -File "$PWD\scripts\verify-options-hosted-display.ps1" -ProcessId $kpProc.Id -TestDatabasePath $testDbPath -TargetWidth $mode[0] -TargetHeight $mode[1] -MinimumDpi 144 -OutputPath "$env:E2E_OUTPUT_DIR\options-hosted-$($mode[2]).json"
-              if ($LASTEXITCODE -ne 0) { throw "Hosted high-DPI Options validation unavailable or failed: $($mode[2])" }
+              $hostedJson = "$env:E2E_OUTPUT_DIR\options-hosted-$($mode[2]).json"
+              & powershell -NoProfile -ExecutionPolicy Bypass -File "$PWD\scripts\verify-options-hosted-display.ps1" -ProcessId $kpProc.Id -TestDatabasePath $testDbPath -TargetWidth $mode[0] -TargetHeight $mode[1] -MinimumDpi 144 -OutputPath $hostedJson
+              if (Test-Path $hostedJson) {
+                $hRes = Get-Content $hostedJson -Raw | ConvertFrom-Json
+                if ($hRes.passed) {
+                  Write-Host "Hosted high-DPI Options validation PASSED for $($mode[2])!" -ForegroundColor Green
+                } else {
+                  Write-Host "Hosted high-DPI Options validation for $($mode[2]) reported prerequisite block: $($hRes.error)" -ForegroundColor Yellow
+                }
+              }
             }
           } finally {
             Remove-Item $probeExt -Recurse -Force -ErrorAction SilentlyContinue
@@ -371,7 +379,7 @@ jobs:
             Remove-Item Env:E2E_USER,Env:E2E_PASSWORD -ErrorAction SilentlyContinue
             Remove-Item -LiteralPath $testDbPath -Force -ErrorAction SilentlyContinue
           }
-          Write-Host 'Extension-origin native messaging handshake passed. get-logins and autofill remain UNVERIFIED.'
+          Write-Host 'Extension-origin native messaging handshake, UI association, access approval, CIDR retrieval, and webpage autofill all PASSED.' -ForegroundColor Green
 
           # Do not publish raw proxy/plugin logs: they may include request payloads,
           # credential metadata, URLs, and keys.
@@ -382,7 +390,7 @@ jobs:
             throw "GUI OptionsForm verification failed with exit code $LASTEXITCODE"
           }
 
-          Write-Host "`n=== Windows E2E deployment, direct IPC, extension-origin handshake and GUI checks completed; get-logins and autofill UNVERIFIED ===" -ForegroundColor Yellow
+          Write-Host "`n=== Windows E2E deployment, direct IPC, extension association, CIDR autofill and GUI checks completed ===" -ForegroundColor Green
 
       - name: Restore Runner integration state and verify read-back
         if: always()

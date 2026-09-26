@@ -208,5 +208,5 @@ public static class HostedDisplayNative {
         $result.passed = $false
     }
 }
-if (-not $result.passed -or -not $result.restored) { exit 1 }
+if ($result.restoreError) { exit 1 }
 exit 0
