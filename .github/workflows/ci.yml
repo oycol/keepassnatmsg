@@ -87,6 +87,10 @@ jobs:
             nuget restore KeePassNatMsg.Tests\packages.config -OutputDirectory packages
           }
 
+      - name: Build native proxy from current source
+        shell: pwsh
+        run: .\scripts\build-native-proxy.ps1
+
       - name: Build plugin (Release)
         run: msbuild /p:Configuration=Release /verbosity:minimal
 

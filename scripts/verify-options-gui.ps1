@@ -77,8 +77,8 @@ try {
     $lblVersion = $form.GetType().GetField("lblVersion", $bindingFlags).GetValue($form)
     if (-not $lblVersion) { throw "lblVersion control not found" }
     Write-Host "lblVersion text: '$($lblVersion.Text)'"
-    if ($lblVersion.Text -ne "KeePassNatMsg v2.4.5") {
-        $failures.Add("lblVersion text mismatch: expected 'KeePassNatMsg v2.4.5', got '$($lblVersion.Text)'") | Out-Null
+    if ($lblVersion.Text -ne "KeePassNatMsg v2.5.0") {
+        $failures.Add("lblVersion text mismatch: expected 'KeePassNatMsg v2.5.0', got '$($lblVersion.Text)'") | Out-Null
     }
 
     $pnlCenter = $form.GetType().GetField("pnlVersionCenter", $bindingFlags).GetValue($form)

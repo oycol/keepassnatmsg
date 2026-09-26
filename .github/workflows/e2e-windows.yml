@@ -130,6 +130,10 @@ jobs:
             }
           }
 
+          # Build the same native proxy source embedded by CI and Release.
+          & powershell -ExecutionPolicy Bypass -File "$PWD\scripts\build-native-proxy.ps1"
+          if ($LASTEXITCODE -ne 0) { throw "Native proxy compilation failed" }
+
           if ($msbuild) {
             Write-Host "Building fresh KeePassNatMsg.dll with MSBuild ($msbuild)..."
             & $msbuild KeePassNatMsg\KeePassNatMsg.csproj /p:Configuration=Release /verbosity:minimal

@@ -636,7 +636,7 @@ namespace KeePassNatMsg.Options
             this.lblVersion.Name = "lblVersion";
             this.lblVersion.Size = new System.Drawing.Size(190, 24);
             this.lblVersion.TabIndex = 1;
-            this.lblVersion.Text = "KeePassNatMsg v2.4.3";
+            this.lblVersion.Text = "KeePassNatMsg v2.5.0";
             this.lblVersion.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // okButton
