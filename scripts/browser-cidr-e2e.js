@@ -75,7 +75,21 @@ function serve() {
     step('open-connected-tab');
     await options.locator('a[href="#connected-databases"]').click().catch(() => {});
     step('wait-connect-button');
-    await options.locator('#connect-button').waitFor({state:'visible', timeout:30000});
+    await options.locator('#connect-button').waitFor({state:'visible', timeout:30000}).catch(async (e) => {
+      const diag = await options.evaluate(() => ({
+        url: location.href,
+        readyState: document.readyState,
+        connectButtonCount: document.querySelectorAll('#connect-button').length,
+        connectedTabClass: document.querySelector('#tab-connected-databases')?.className || null,
+        tabClasses: [].map.call(document.querySelectorAll('div.tab'), t => ({id: t.id, cls: t.className})),
+        visibleModal: !!document.querySelector('.modal.show, .modal[style*="display: block"]'),
+        bodyChildren: [].map.call(document.body.children, c => c.tagName + '.' + (c.className || '')).slice(0, 12),
+      }));
+      fs.mkdirSync(resultDir, {recursive:true});
+      fs.writeFileSync(path.join(resultDir, 'options-diagnostic.json'), JSON.stringify(diag, null, 2));
+      await options.screenshot({path: path.join(resultDir, 'options-diagnostic.png'), fullPage: true}).catch(() => {});
+      throw e;
+    });
     step('check-fresh-profile');
     assert(await options.locator('#tab-connected-databases table tbody tr:not(.clone):not(.empty)').count() === 0, 'Extension profile is not fresh');
     step('association');
