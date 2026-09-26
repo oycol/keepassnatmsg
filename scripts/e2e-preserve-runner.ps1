@@ -1,10 +1,12 @@
 param(
   [ValidateSet('Backup','Restore')][string]$Action,
-  [string]$StateDir = "$env:RUNNER_TEMP\keepassnatmsg-e2e-preserve"
+  [string]$StateDir = "$env:LOCALAPPDATA\keepassnatmsg-e2e-preserve"
 )
 $ErrorActionPreference = 'Stop'
 $stateFile = Join-Path $StateDir 'state.json'
 $fixtureMarker = Join-Path $StateDir 'fixture-path.txt'
+if (-not $env:LOCALAPPDATA) { throw 'LOCALAPPDATA unavailable' }
+if ([IO.Path]::GetFullPath($StateDir) -ine [IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA 'keepassnatmsg-e2e-preserve'))) { throw 'Backup location must be durable and fixed' }
 $pluginDir = 'C:\Program Files\KeePass Password Safe 2\Plugins'
 $nativeDir = Join-Path $env:LOCALAPPDATA 'KeePassNatMsg'
 $testDir = 'C:\KeePassNatMsg-E2E'

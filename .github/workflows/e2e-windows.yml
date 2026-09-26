@@ -34,7 +34,7 @@ jobs:
 
       - name: Recover pending integration backup before any new changes
         run: |
-          $state = Join-Path $env:RUNNER_TEMP 'keepassnatmsg-e2e-preserve\state.json'
+          $state = Join-Path $env:LOCALAPPDATA 'keepassnatmsg-e2e-preserve\state.json'
           if (Test-Path -LiteralPath $state) {
             & "$PWD\scripts\e2e-preserve-runner.ps1" -Action Restore
             if (Test-Path -LiteralPath $state) { throw 'Pending Runner recovery incomplete; aborting E2E' }
@@ -43,7 +43,7 @@ jobs:
       - name: Back up Runner integration state before test
         run: |
           & "$PWD\scripts\e2e-preserve-runner.ps1" -Action Backup
-          if (-not (Test-Path (Join-Path $env:RUNNER_TEMP 'keepassnatmsg-e2e-preserve\state.json'))) { throw 'Runner backup missing; aborting E2E' }
+          if (-not (Test-Path (Join-Path $env:LOCALAPPDATA 'keepassnatmsg-e2e-preserve\state.json'))) { throw 'Runner backup missing; aborting E2E' }
 
       - name: Ensure test environment software (Chrome and KeePass)
         run: |
@@ -287,8 +287,8 @@ jobs:
 
           # 5.2 Unique disposable database; never reuse or delete an existing fixture.
           $testDbPath = Join-Path $env:KEEPASS_E2E_DIR ("keepass-cidr-e2e-" + [guid]::NewGuid().ToString('N') + '.kdbx')
-          if (-not (Test-Path (Join-Path $env:RUNNER_TEMP 'keepassnatmsg-e2e-preserve\state.json'))) { throw 'No verified backup before fixture creation' }
-          $testDbPath | Set-Content -LiteralPath (Join-Path $env:RUNNER_TEMP 'keepassnatmsg-e2e-preserve\fixture-path.txt') -Encoding ASCII
+          if (-not (Test-Path (Join-Path $env:LOCALAPPDATA 'keepassnatmsg-e2e-preserve\state.json'))) { throw 'No verified backup before fixture creation' }
+          $testDbPath | Set-Content -LiteralPath (Join-Path $env:LOCALAPPDATA 'keepassnatmsg-e2e-preserve\fixture-path.txt') -Encoding ASCII
           $testDbPass = "TestPassword2026!"
           if (Test-Path $testDbPath) { throw 'Unique database path unexpectedly exists' }
           if (-not (Test-Path $testDbPath)) {
@@ -387,9 +387,9 @@ jobs:
       - name: Restore Runner integration state and verify read-back
         if: always()
         run: |
-          if (-not (Test-Path -LiteralPath (Join-Path $env:RUNNER_TEMP 'keepassnatmsg-e2e-preserve\state.json'))) { Write-Host 'No backup state; no test mutations to restore.'; return }
+          if (-not (Test-Path -LiteralPath (Join-Path $env:LOCALAPPDATA 'keepassnatmsg-e2e-preserve\state.json'))) { Write-Host 'No backup state; no test mutations to restore.'; return }
           & "$PWD\scripts\e2e-preserve-runner.ps1" -Action Restore
-          if (Test-Path -LiteralPath (Join-Path $env:RUNNER_TEMP 'keepassnatmsg-e2e-preserve\state.json')) { throw 'Runner restore incomplete; stop further tests and recover from backup' }
+          if (Test-Path -LiteralPath (Join-Path $env:LOCALAPPDATA 'keepassnatmsg-e2e-preserve\state.json')) { throw 'Runner restore incomplete; stop further tests and recover from backup' }
 
       - name: Upload E2E Test Artifacts and GUI Screenshot
         uses: actions/upload-artifact@v4

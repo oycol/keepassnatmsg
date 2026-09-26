@@ -12,7 +12,7 @@ jobs:
       - name: Restore and verify retained pre-test state
         shell: powershell
         run: |
-          $state = Join-Path $env:RUNNER_TEMP 'keepassnatmsg-e2e-preserve\state.json'
+          $state = Join-Path $env:LOCALAPPDATA 'keepassnatmsg-e2e-preserve\state.json'
           if (-not (Test-Path -LiteralPath $state)) { throw 'No retained backup found; do not guess original registry values' }
           & "$PWD\scripts\e2e-preserve-runner.ps1" -Action Restore
           if (Test-Path -LiteralPath $state) { throw 'Restoration not verified; backup retained' }

@@ -19,11 +19,28 @@ jobs:
         if: false
         shell: powershell
         run: |
-          $state = Join-Path $env:RUNNER_TEMP 'keepassnatmsg-e2e-preserve\state.json'
+          $state = Join-Path $env:LOCALAPPDATA 'keepassnatmsg-e2e-preserve\state.json'
           if (-not (Test-Path -LiteralPath $state)) { throw 'No retained backup found; do not guess original registry values' }
           & "$PWD\scripts\e2e-preserve-runner.ps1" -Action Restore
           if (Test-Path -LiteralPath $state) { throw 'Restoration not verified; backup retained' }
           Write-Host 'Runner original state restored and verified.'
+
+      - name: Repair broken HKCU host registrations to existing verified manifest
+        shell: powershell
+        run: |
+          $manifest = Join-Path $env:LOCALAPPDATA 'KeePassNatMsg\org.keepassxc.keepassxc_browser.json'
+          if (-not (Test-Path -LiteralPath $manifest)) { throw 'Manifest absent; refusing to repair registry' }
+          $m = Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json
+          $origins = @($m.allowed_origins)
+          if ($m.name -ne 'org.keepassxc.keepassxc_browser' -or -not (Test-Path -LiteralPath $m.path) -or
+              'chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/' -notin $origins -or
+              'chrome-extension://oboonakemofpalcgghocfoadofidjkkk/' -notin $origins -or $origins.Count -ne 2) { throw 'Manifest is not verified standard installation' }
+          foreach ($key in @('HKCU:\Software\Google\Chrome\NativeMessagingHosts\org.keepassxc.keepassxc_browser', 'HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\org.keepassxc.keepassxc_browser')) {
+            New-Item -Path $key -Force | Out-Null
+            (Get-Item -LiteralPath $key).SetValue('', $manifest)
+            if ((Get-Item -LiteralPath $key).GetValue('') -cne $manifest) { throw 'Host registry repair read-back failed' }
+          }
+          Write-Host 'Chrome and Edge host registry values repaired to existing verified manifest and read back.'
 
       - name: Read-only integration state after failed restoration
         shell: powershell
@@ -64,6 +81,7 @@ jobs:
           Write-Host 'Matching behavior and browser-origin communication remain UNVERIFIED by this diagnostic.'
 
       - name: Probe isolated runner prerequisites without opening user data
+        if: false
         shell: powershell
         run: |
           Add-Type -AssemblyName System.Windows.Forms
@@ -89,6 +107,7 @@ jobs:
           $chromeProcesses = @(Get-CimInstance Win32_Process -Filter "name='chrome.exe'" | Select-Object -First 3 -ExpandProperty ExecutablePath -Unique)
           Write-Host "Existing Chrome executable paths=$($chromeProcesses -join ',')"
       - name: Install isolated Playwright Chromium
+        if: false
         shell: powershell
         run: |
           $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $env:TEMP 'keepass-playwright-browsers'
@@ -99,6 +118,7 @@ jobs:
           & (Join-Path $pkg 'node_modules\.bin\playwright.cmd') install chromium
           if ($LASTEXITCODE -ne 0) { throw 'Isolated Chromium install failed' }
       - name: Probe isolated official browser extension
+        if: false
         shell: powershell
         run: |
           $extension = Join-Path $env:TEMP 'keepass-probe-extension'
