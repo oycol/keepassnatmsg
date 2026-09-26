@@ -45,8 +45,15 @@ try {
     if ($Phase -eq 'association') {
         $fingerprints = @($all | Where-Object { $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::Text -and $_.Current.Name -match '^([0-9A-F]{2}:){7}[0-9A-F]{2}$' })
         if ($fingerprints.Count -ne 1 -or $AssociationName -notmatch '^E2E-[A-Za-z0-9-]{8,64}$') { throw 'Association identity validation failed' }
-        $field = One ([System.Windows.Automation.ControlType]::Edit) 'KeyName'
-        $field.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($AssociationName)
+        # WinForms TextBox surfaces to UIA without a ControlType.Edit on some
+        # nested-host configurations; match the KeyName editor by any control
+        # type supporting ValuePattern with the expected automation id.
+        $field = @($all | Where-Object { $_.Current.AutomationId -eq 'KeyName' })
+        if ($field.Count -ne 1 -or -not $field[0].Current.IsEnabled) { One ([System.Windows.Automation.ControlType]::Edit) 'KeyName' | Out-Null; $field = @($all | Where-Object { $_.Current.AutomationId -eq 'KeyName' }) }
+        if ($field.Count -ne 1) { throw 'KeyName editor not found' }
+        $valuePattern = $null
+        if (-not $field[0].TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$valuePattern)) { throw 'KeyName editor has no value pattern' }
+        $valuePattern.SetValue($AssociationName)
         $button = One ([System.Windows.Automation.ControlType]::Button) 'Save'
     } else {
         $labels = @($all | Where-Object { $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::Text -and $_.Current.Name -match 'has requested access to passwords' -and $_.Current.Name.Contains($ExpectedHost) })
