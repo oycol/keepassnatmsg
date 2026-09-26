@@ -15,6 +15,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Recover retained E2E backup before any browser probes
+        shell: powershell
+        run: |
+          $state = Join-Path $env:RUNNER_TEMP 'keepassnatmsg-e2e-preserve\state.json'
+          if (-not (Test-Path -LiteralPath $state)) { throw 'No retained backup found; do not guess original registry values' }
+          & "$PWD\scripts\e2e-preserve-runner.ps1" -Action Restore
+          if (Test-Path -LiteralPath $state) { throw 'Restoration not verified; backup retained' }
+          Write-Host 'Runner original state restored and verified.'
+
       - name: Check diagnostic availability without exposing logs or credentials
         shell: powershell
         run: |
