@@ -40,8 +40,14 @@ jobs:
           for ($i=0; $i -lt $keys.Count; $i++) {
             $exists = Test-Path -LiteralPath $keys[$i]
             $value = if ($exists) { (Get-Item -LiteralPath $keys[$i]).GetValue('') } else { $null }
-            Write-Host "registry_$i-present=$exists points_to_current_manifest=$($exists -and $value -eq $manifest)"
+            $resolved = if ($value) { [Environment]::ExpandEnvironmentVariables([string]$value).Trim('"') } else { '' }
+            Write-Host "registry_$i-present=$exists points_to_current_manifest=$($exists -and $value -eq $manifest) equivalent_path=$($exists -and $resolved -ieq $manifest) target_exists=$([bool]($resolved -and (Test-Path -LiteralPath $resolved))) target_name_expected=$([bool]($resolved -and [IO.Path]::GetFileName($resolved) -eq 'org.keepassxc.keepassxc_browser.json'))"
           }
+          $roots = @($env:RUNNER_TEMP, (Join-Path $env:TEMP 'keepassnatmsg-e2e-preserve'), (Join-Path $env:LOCALAPPDATA 'keepassnatmsg-e2e-preserve'))
+          foreach ($root in $roots) {
+            Write-Host "candidate_backup_root_exists=$(Test-Path -LiteralPath $root) candidate_state_exists=$(Test-Path -LiteralPath (Join-Path $root 'state.json'))"
+          }
+          # Do not scan arbitrary user directories or publish the registry values.
 
       - name: Check diagnostic availability without exposing logs or credentials
         shell: powershell
