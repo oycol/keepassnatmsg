@@ -73,6 +73,24 @@ namespace KeePassNatMsg.Tests
             }
         }
         [Test]
+        public void InstalledProxy_MustMatchEmbeddedBinary()
+        {
+            var tempFile = Path.GetTempFileName();
+            try
+            {
+                var fake = new byte[2048];
+                fake[0] = (byte)'M';
+                fake[1] = (byte)'Z';
+                File.WriteAllBytes(tempFile, fake);
+                Assert.IsFalse(_service.IsCurrentProxy(tempFile), "An MZ header is not proof of the current protocol version");
+            }
+            finally
+            {
+                if (File.Exists(tempFile)) File.Delete(tempFile);
+            }
+        }
+
+        [Test]
         public void GenerateManifestContent_PathWithBackslashes_SurvivesJsonRoundTrip()
         {
             // Fix #13: hand-rolled JSON used Replace(@"\", @"\\") which could break UNC paths.
