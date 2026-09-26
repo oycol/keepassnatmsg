@@ -74,16 +74,21 @@ function serve() {
   const step = (s) => { step.current = s; console.error('E2E step: ' + s); };
   try {
     step('open-options');
+    // MV3 cold-start race: the options page's init IIFE sends runtime messages
+    // before the service worker registers its onMessage listener; if the send
+    // fails the page hides #main-content permanently. Retry fresh loads until
+    // the page initializes (deterministic, no protocol payloads involved).
     await options.goto(`${origin}options/options.html`, {waitUntil:'load'});
-    // initGeneralSettings/permissions flows can take a moment; wait for the
-    // main content container the extension reveals after a successful init.
-    await options.waitForFunction(() => {
+    const optionsReady = async () => options.waitForFunction(() => {
       const mc = document.querySelector('#main-content');
-      return mc && getComputedStyle(mc).display !== 'none' && document.querySelectorAll('.sidebar ul.nav li a').length > 0;
-    }, {timeout:30000}).catch(() => {
-      // fall through: the diagnostic below will record main-content state
-    });
-    await options.waitForTimeout(500);
+      return mc && getComputedStyle(mc).display !== 'none';
+    }, {timeout:8000}).then(() => true).catch(() => false);
+    let ready = await optionsReady();
+    for (let attempt = 0; attempt < 5 && !ready; attempt++) {
+      await options.reload({waitUntil:'load'});
+      ready = await optionsReady();
+    }
+    if (!ready) throw new Error('options page never initialized (SW onMessage race persists)');
     step('open-connected-tab');
     // Replicate exactly what the extension's own sidebar click handler does:
     // hide every tab, then reveal the connected-databases tab. The handler is
