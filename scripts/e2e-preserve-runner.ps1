@@ -73,7 +73,7 @@ foreach ($file in $state.files) {
     }
   } catch {
     if (-not $file.exists -and -not (Test-Path -LiteralPath $file.path)) { continue }
-    $failures += 'file restore failure'
+    $failures += ('file-' + [string]$file.copy + ' restore failure')
   }
 }
 foreach ($item in $state.registry) {
@@ -86,8 +86,8 @@ foreach ($item in $state.registry) {
     }
     $actual = Get-RegSnapshot $item.path
     if ([bool]$actual.exists -ne [bool]$item.snapshot.exists -or ($item.snapshot.exists -and [string]$actual.value -cne [string]$item.snapshot.value)) { throw 'Registry read-back mismatch' }
-  } catch { $failures += 'registry restore failure' }
+  } catch { $failures += ('registry-' + [string]([array]::IndexOf($state.registry, $item)) + ' restore failure') }
 }
-if ($failures.Count) { throw "Restore incomplete: $($failures.Count) targets failed; backup retained on runner for recovery" }
+if ($failures.Count) { throw ('Restore incomplete (' + $failures.Count + '): ' + ($failures -join ', ') + '; backup retained on runner') }
 Remove-Item -LiteralPath $StateDir -Recurse -Force
 Write-Host 'E2E target files and Native Messaging registration restored and verified.'
