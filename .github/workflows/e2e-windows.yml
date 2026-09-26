@@ -322,21 +322,30 @@ jobs:
           }
           Write-Host "Direct named-pipe roundtrip passed (not evidence of browser-origin communication)." -ForegroundColor Green
 
-          # 5.6 Test launching Chrome with extension loaded and open extension options page
-          $chromeExe = "C:\Program Files\Google\Chrome\Application\chrome.exe"
-          $chromeUserData = "C:\KeePassNatMsg-E2E\chrome-user-data"
-          Write-Host "Launching Chrome with KeePassXC-Browser extension..."
-          $chromeProc = Start-Process -FilePath $chromeExe -ArgumentList "--user-data-dir=`"$chromeUserData`" --load-extension=`"$extDir`" https://example.com/" -PassThru
-          Start-Sleep -Seconds 8
-          # Chrome launch alone does not prove that the extension loaded or sent a message.
-          # plugin.log RECV/change-public-keys can come from the preceding direct-pipe test;
-          # no browser-attributed signal is available here. Do not assert browser IPC.
-          Write-Host "Chrome launch attempted; extension loading and browser-origin native messaging are UNVERIFIED." -ForegroundColor Yellow
-
-          # Clean up processes
-          Stop-Process -Id $chromeProc.Id -Force -ErrorAction SilentlyContinue
-          Stop-Process -Id $kpProc.Id -Force -ErrorAction SilentlyContinue
-          Write-Host "KeePass and Chrome test process cleanup attempted."
+          # 5.6 Exercise Native Messaging from the actual isolated extension worker.
+          $pkg = Join-Path $env:TEMP 'keepass-playwright-cli'
+          $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $env:TEMP 'keepass-playwright-browsers'
+          New-Item -ItemType Directory -Force -Path $pkg | Out-Null
+          npm install --prefix $pkg playwright@1.58.2 --no-save --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw 'Playwright install failed' }
+          & (Join-Path $pkg 'node_modules\.bin\playwright.cmd') install chromium
+          if ($LASTEXITCODE -ne 0) { throw 'Isolated Chromium install failed' }
+          $probeExt = Join-Path $env:TEMP 'keepass-e2e-extension'
+          if (Test-Path $probeExt) { Remove-Item $probeExt -Recurse -Force }
+          New-Item -ItemType Directory -Force -Path $probeExt | Out-Null
+          try {
+            $officialZip = Join-Path $env:TEMP 'kpxc-browser.zip'
+            $officialHash = 'd5b780e28870deb8da260311bf141ac3a7a88d142b4b9e5c58156270c10ea3f7'
+            if (-not (Test-Path $officialZip) -or (Get-FileHash $officialZip -Algorithm SHA256).Hash.ToLowerInvariant() -ne $officialHash) { throw 'Official extension archive hash mismatch' }
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            [System.IO.Compression.ZipFile]::ExtractToDirectory($officialZip, $probeExt)
+            node "$PWD\scripts\probe-browser-extension.js" $probeExt $env:E2E_OUTPUT_DIR
+            if ($LASTEXITCODE -ne 0) { throw 'Extension-origin native messaging handshake failed' }
+          } finally {
+            Remove-Item $probeExt -Recurse -Force -ErrorAction SilentlyContinue
+            Stop-Process -Id $kpProc.Id -Force -ErrorAction SilentlyContinue
+          }
+          Write-Host 'Extension-origin native messaging handshake passed. get-logins and autofill remain UNVERIFIED.'
 
           # Do not publish raw proxy/plugin logs: they may include request payloads,
           # credential metadata, URLs, and keys.
@@ -347,7 +356,7 @@ jobs:
             throw "GUI OptionsForm verification failed with exit code $LASTEXITCODE"
           }
 
-          Write-Host "`n=== Windows E2E deployment, direct IPC, and GUI checks completed; browser-origin IPC UNVERIFIED ===" -ForegroundColor Yellow
+          Write-Host "`n=== Windows E2E deployment, direct IPC, extension-origin handshake and GUI checks completed; get-logins and autofill UNVERIFIED ===" -ForegroundColor Yellow
 
       - name: Upload E2E Test Artifacts and GUI Screenshot
         uses: actions/upload-artifact@v4
