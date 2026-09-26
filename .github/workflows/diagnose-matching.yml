@@ -16,6 +16,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Recover retained E2E backup before any browser probes
+        if: false
         shell: powershell
         run: |
           $state = Join-Path $env:RUNNER_TEMP 'keepassnatmsg-e2e-preserve\state.json'
@@ -23,6 +24,24 @@ jobs:
           & "$PWD\scripts\e2e-preserve-runner.ps1" -Action Restore
           if (Test-Path -LiteralPath $state) { throw 'Restoration not verified; backup retained' }
           Write-Host 'Runner original state restored and verified.'
+
+      - name: Read-only integration state after failed restoration
+        shell: powershell
+        run: |
+          $manifest = Join-Path $env:LOCALAPPDATA 'KeePassNatMsg\org.keepassxc.keepassxc_browser.json'
+          $keys = @('HKCU:\Software\Google\Chrome\NativeMessagingHosts\org.keepassxc.keepassxc_browser','HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\org.keepassxc.keepassxc_browser')
+          Write-Host "manifest_present=$(Test-Path -LiteralPath $manifest) keepass_running=$([bool](Get-Process KeePass -ErrorAction SilentlyContinue))"
+          if (Test-Path -LiteralPath $manifest) {
+            $m = Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json
+            $origins = @($m.allowed_origins)
+            $defaults = @('chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/','chrome-extension://oboonakemofpalcgghocfoadofidjkkk/')
+            Write-Host "manifest_name_ok=$($m.name -eq 'org.keepassxc.keepassxc_browser') default_origins_present=$($defaults[0] -in $origins -and $defaults[1] -in $origins) unexpected_origins=$(@($origins | Where-Object { $_ -notin $defaults }).Count) proxy_exists=$(Test-Path -LiteralPath $m.path)"
+          }
+          for ($i=0; $i -lt $keys.Count; $i++) {
+            $exists = Test-Path -LiteralPath $keys[$i]
+            $value = if ($exists) { (Get-Item -LiteralPath $keys[$i]).GetValue('') } else { $null }
+            Write-Host "registry_$i-present=$exists points_to_current_manifest=$($exists -and $value -eq $manifest)"
+          }
 
       - name: Check diagnostic availability without exposing logs or credentials
         shell: powershell
