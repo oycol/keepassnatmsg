@@ -97,7 +97,7 @@ function serve() {
   fs.mkdirSync(resultDir, {recursive:true});
   fs.writeFileSync(path.join(resultDir, 'browser-cidr-e2e.json'), JSON.stringify({version:'1.10.4', zipSha256:hash, associationUi:true, accessUi:true, encryptedGetLoginsViaOfficialExtension:true, cidrAutofill:true, profileIsolated:true},null,2));
   console.log('Official 1.10.4 extension association, access approval, CIDR credential retrieval and webpage autofill passed');
-})().catch(() => { console.error('Browser CIDR E2E failed closed; no credential or protocol payloads printed'); process.exitCode = 1; })
+})().catch(e => { console.error('Browser CIDR E2E failed: ' + String(e && e.message ? e.message.split('\n')[0] : e)); process.exitCode = 1; })
   .finally(async () => {
     if (approval) approval.kill();
     if (context) await context.close().catch(() => { process.exitCode=1; });
