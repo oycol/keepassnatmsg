@@ -97,7 +97,10 @@ function serve() {
     await options.waitForFunction(() => !document.querySelector('#tab-connected-databases').className.includes('d-none'), {timeout:10000});
     step('wait-connect-button');
     await options.locator('#tab-connected-databases #connect-button').waitFor({state:'visible', timeout:30000}).catch(async (e) => {
-      const diag = await options.evaluate(() => ({
+      const diag = await options.evaluate(() => {
+        const btn = document.querySelector('#tab-connected-databases #connect-button');
+        const r = btn ? btn.getBoundingClientRect() : null;
+        return {
         url: location.href,
         readyState: document.readyState,
         connectButtonCount: document.querySelectorAll('#connect-button').length,
@@ -105,7 +108,13 @@ function serve() {
         tabClasses: [].map.call(document.querySelectorAll('div.tab'), t => ({id: t.id, cls: t.className})),
         visibleModal: !!document.querySelector('.modal.show, .modal[style*="display: block"]'),
         bodyChildren: [].map.call(document.body.children, c => c.tagName + '.' + (c.className || '')).slice(0, 12),
-      }));
+        buttonRect: r ? {x: r.x, y: r.y, w: r.width, h: r.height} : null,
+        buttonOffsetParent: btn ? (btn.offsetParent ? btn.offsetParent.tagName + '.' + btn.offsetParent.className : null) : null,
+        buttonDisplay: btn ? getComputedStyle(btn).display : null,
+        buttonVisibility: btn ? getComputedStyle(btn).visibility : null,
+        viewport: {w: innerWidth, h: innerHeight},
+        };
+      });
       fs.mkdirSync(resultDir, {recursive:true});
       fs.writeFileSync(path.join(resultDir, 'options-diagnostic.json'), JSON.stringify(diag, null, 2));
       await options.screenshot({path: path.join(resultDir, 'options-diagnostic.png'), fullPage: true}).catch(() => {});
