@@ -66,10 +66,19 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Isolated Chromium install failed' }
       - name: Probe isolated official browser extension
         shell: powershell
-        continue-on-error: true
         run: |
-          & "$PWD\scripts\probe-browser-extension.ps1" -OutputDir "$PWD\e2e-artifacts"
-          if ($LASTEXITCODE -ne 0) { throw 'Isolated extension probe failed' }
+          $extension = Join-Path $env:TEMP 'keepass-probe-extension'
+          if (Test-Path $extension) { Remove-Item $extension -Recurse -Force }
+          New-Item -ItemType Directory -Force -Path $extension | Out-Null
+          try {
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            [System.IO.Compression.ZipFile]::ExtractToDirectory((Join-Path $env:TEMP 'kpxc-browser.zip'), $extension)
+            $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $env:TEMP 'keepass-playwright-browsers'
+            node "$PWD\scripts\probe-browser-extension.js" $extension "$PWD\e2e-artifacts"
+            if ($LASTEXITCODE -ne 0) { throw 'Official extension did not load in isolated Chromium' }
+          } finally {
+            Remove-Item $extension -Recurse -Force -ErrorAction SilentlyContinue
+          }
 
       - name: Upload sanitized probe result
         if: always()
