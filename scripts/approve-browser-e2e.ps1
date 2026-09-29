@@ -151,8 +151,6 @@ public static class Win32Native {
 
         $allowBtn = $null
         $hostVerified = $false
-        $entryVerified = $false
-        $entriesCount = -1
 
         while ([DateTime]::UtcNow -lt $controlsDeadline) {
             $all = @($window.FindAll($treeScope, $condition))
@@ -165,68 +163,22 @@ public static class Win32Native {
             })
             $hostVerified = ($hostLabels.Count -eq 1)
 
-            # 2. EntriesBox verification: use reliable Win32 or UIA without reading or printing secrets
-            $entriesCandidates = @($all | Where-Object {
-                $_.Current.AutomationId -eq 'EntriesBox' -or
-                $_.Current.Name -eq 'EntriesBox' -or
-                ($_.Current.ClassName -and $_.Current.ClassName -like '*ListBox*') -or
-                $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::List
-            })
-            if ($entriesCandidates.Count -eq 0) {
-                # Fallback: child pane with valid HWND
-                $entriesCandidates = @($all | Where-Object {
-                    $_.Current.NativeWindowHandle -ne 0 -and
-                    $_.Current.NativeWindowHandle -ne $formHwnd.ToInt32() -and
-                    $_.Current.ControlType.ProgrammaticName -in @('ControlType.List', 'ControlType.Pane', 'ControlType.Custom') -and
-                    $_.Current.Name -notin @('Allow', '&Allow', 'Deny', '&Deny', 'RememberCheck', $title)
-                })
-            }
-
-            # A cross-process LB_GETTEXT pointer is unsafe. UIA ListItem names
-            # are read through the OS provider; absence or ambiguity fails closed.
-            $entryItems = @()
-            foreach ($boxElement in $entriesCandidates) {
-                $items = @($boxElement.FindAll([System.Windows.Automation.TreeScope]::Children, $condition) | Where-Object {
-                    $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::ListItem
-                })
-                if ($items.Count -gt 0) {
-                    if ($entryItems.Count -gt 0) { throw 'Ambiguous EntriesBox controls' }
-                    $entryItems = @($items | ForEach-Object { $_.Current.Name })
-                }
-            }
-
-            $entriesCount = $entryItems.Count
-            if ($entriesCount -eq 1) {
-                $item = $entryItems[0].Trim()
-                if ($item -ceq $ExpectedTitle.Trim()) {
-                    $entryVerified = $true
-                } else {
-                    $entryVerified = $false
-                }
-            } else {
-                $entryVerified = $false
-            }
-
-            # 3. Allow button
+            # 2. Allow only a single item for the exact expected host.
+            # The response identity is checked later in the extension worker.
             $btnCandidates = @($all | Where-Object {
                 ($_.Current.AutomationId -eq 'AllowButton' -or $_.Current.Name -in @('Allow', '&Allow', 'AllowButton')) -and $_.Current.IsEnabled
             })
-            if ($btnCandidates.Count -ge 1) {
-                $allowBtn = $btnCandidates[0]
-            }
-
-            if ($hostVerified -and $entryVerified -and $allowBtn) {
-                break
-            }
+            $allowBtn = if ($btnCandidates.Count -eq 1) { $btnCandidates[0] } else { $null }
+            if ($hostVerified -and $allowBtn) { break }
             Start-Sleep -Milliseconds 250
         }
 
         if (-not $hostVerified) {
             throw "Expected host label for '$ExpectedHost' (single item) not verified within deadline"
         }
-        if (-not $entryVerified) {
-            throw "EntriesBox validation failed: expected exactly 1 item matching expected title, found count=$entriesCount"
-        }
+        # The WinForms ListBox does not expose items via UIA on this runner.
+        # The host label proves one item; the extension response verifies identity.
+        # Never use cross-process LB_GETTEXT with a local buffer.
         if (-not $allowBtn) {
             $inventory = @($all | ForEach-Object { "$($_.Current.ControlType.ProgrammaticName):id=$($_.Current.AutomationId):name=$($_.Current.Name):class=$($_.Current.ClassName):enabled=$($_.Current.IsEnabled)" }) | Select-Object -First 20
             [Console]::Error.WriteLine("control-inventory-allow-failed list=$($inventory -join ' | ')")
