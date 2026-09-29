@@ -76,8 +76,20 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          $scan = @(& ssh-keyscan.exe -T 5 -t ed25519 127.0.0.1 2>$null)
-          $keyLine = @($scan | Where-Object { $_ -match '^127\.0\.0\.1\s+ssh-ed25519\s+' }) | Select-Object -First 1
+          $scanProcess = New-Object System.Diagnostics.Process
+          $scanProcess.StartInfo.FileName = 'ssh-keyscan.exe'
+          $scanProcess.StartInfo.Arguments = '-T 5 -t ed25519 127.0.0.1'
+          $scanProcess.StartInfo.UseShellExecute = $false
+          $scanProcess.StartInfo.RedirectStandardOutput = $true
+          $scanProcess.StartInfo.RedirectStandardError = $true
+          try {
+            [void]$scanProcess.Start()
+            $scan = $scanProcess.StandardOutput.ReadToEnd()
+            [void]$scanProcess.StandardError.ReadToEnd()
+            if (-not $scanProcess.WaitForExit(10000)) { $scanProcess.Kill(); throw 'Local SSH host scan timed out' }
+            if ($scanProcess.ExitCode -ne 0) { throw 'Local SSH host scan failed' }
+          } finally { $scanProcess.Dispose() }
+          $keyLine = @($scan -split "`n" | Where-Object { $_ -match '^127\.0\.0\.1\s+ssh-ed25519\s+' }) | Select-Object -First 1
           if (-not $keyLine) { throw 'Local SSH service did not return an ED25519 public key' }
           $tempKey = Join-Path $env:RUNNER_TEMP 'runner-ssh-host-pub.txt'
           try {
