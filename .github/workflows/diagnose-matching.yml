@@ -2,13 +2,43 @@ name: Diagnose Matching
 
 on:
   workflow_dispatch:
+    inputs:
+      display_probe:
+        description: 'Run read-only display capability probe only'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
+  probe-display:
+    name: Probe Windows Display Capabilities (read-only)
+    if: ${{ inputs.display_probe == true || inputs.display_probe == 'true' }}
+    runs-on: [self-hosted, windows, keepass-e2e, interactive]
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run read-only display capability probe
+        shell: powershell
+        run: |
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\probe-display-capabilities.ps1 -OutputPath .\e2e-artifacts\display-capabilities.json
+
+      - name: Upload display capability probe artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: display-capabilities
+          path: e2e-artifacts/display-capabilities.json
+          retention-days: 7
+          if-no-files-found: warn
+
   diagnose:
     name: Diagnose KeePassNatMsg Matching (redacted)
+    if: ${{ !(inputs.display_probe == true || inputs.display_probe == 'true') }}
     runs-on: [self-hosted, windows, keepass-e2e, interactive]
     timeout-minutes: 10
 
