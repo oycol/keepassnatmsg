@@ -308,9 +308,17 @@ jobs:
             $entry.Strings.Set("Password", (New-Object KeePassLib.Security.ProtectedString($true, "SyntheticOnly2026!")))
             $entry.Strings.Set("URL", (New-Object KeePassLib.Security.ProtectedString($false, "CIDR:127.0.0.0/8")))
             $db.RootGroup.AddEntry($entry, $true)
+
+            $exactEntry = New-Object KeePassLib.PwEntry($true, $true)
+            $exactEntry.Strings.Set("Title", (New-Object KeePassLib.Security.ProtectedString($false, "Exact IP E2E")))
+            $exactEntry.Strings.Set("UserName", (New-Object KeePassLib.Security.ProtectedString($false, "exact_tester")))
+            $exactEntry.Strings.Set("Password", (New-Object KeePassLib.Security.ProtectedString($true, "SyntheticExact2026!")))
+            $exactEntry.Strings.Set("URL", (New-Object KeePassLib.Security.ProtectedString($false, "http://127.0.0.1")))
+            $db.RootGroup.AddEntry($exactEntry, $true)
+
             $db.Save($null)
             $db.Close()
-            Write-Host 'Fresh synthetic CIDR database created.'
+            Write-Host 'Fresh synthetic CIDR and Exact IP database created.'
           } else {
             Write-Host "Test database already exists at: $testDbPath" -ForegroundColor Green
           }
@@ -359,6 +367,9 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Extension-origin native messaging handshake failed' }
             $env:E2E_USER = 'cidr_tester'
             $env:E2E_PASSWORD = 'SyntheticOnly2026!'
+            $env:E2E_EXACT_USER = 'exact_tester'
+            $env:E2E_EXACT_PASSWORD = 'SyntheticExact2026!'
+            $env:E2E_EXACT_TITLE = 'Exact IP E2E'
             node "$PWD\scripts\browser-cidr-e2e.js" $probeExt $env:E2E_OUTPUT_DIR $testDbPath $kpProc.Id 'CIDR E2E'
             if ($LASTEXITCODE -ne 0) { throw 'Official extension association/CIDR/autofill E2E failed' }
             foreach ($mode in @(@(2560,1440,'2k'), @(3840,2160,'4k'))) {
@@ -376,10 +387,10 @@ jobs:
           } finally {
             Remove-Item $probeExt -Recurse -Force -ErrorAction SilentlyContinue
             Stop-Process -Id $kpProc.Id -Force -ErrorAction SilentlyContinue
-            Remove-Item Env:E2E_USER,Env:E2E_PASSWORD -ErrorAction SilentlyContinue
+            Remove-Item Env:E2E_USER,Env:E2E_PASSWORD,Env:E2E_EXACT_USER,Env:E2E_EXACT_PASSWORD,Env:E2E_EXACT_TITLE -ErrorAction SilentlyContinue
             Remove-Item -LiteralPath $testDbPath -Force -ErrorAction SilentlyContinue
           }
-          Write-Host 'Extension-origin native messaging handshake, UI association, access approval, CIDR retrieval, and webpage autofill all PASSED.' -ForegroundColor Green
+          Write-Host 'Extension-origin native messaging handshake, UI association, access approval, CIDR fallback, exact IP suppression, and webpage autofill all PASSED.' -ForegroundColor Green
 
           # Do not publish raw proxy/plugin logs: they may include request payloads,
           # credential metadata, URLs, and keys.

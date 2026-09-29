@@ -35,7 +35,7 @@ The plugin deploys its bundled proxy and registers the required HKCU Native Mess
 
 ## URL matching
 
-A KeePass entry can match multiple IPv4 subnets by setting its URL to `CIDR:10.125.1.0/24, CIDR:10.125.2.0/24`. Only numeric IPv4 hosts are matched; DNS names are not resolved. Invalid or non-canonical networks and `/0` fail closed. CIDR rules are independent of the HTTP/HTTPS scheme. Existing `Regex:` rules are no longer supported and are not migrated: replace them with CIDR or ordinary URLs before upgrading. Browser auto-fill is controlled by the extension settings.
+A KeePass entry can match multiple IPv4 subnets by setting its URL to `CIDR:10.125.1.0/24, CIDR:10.125.2.0/24`. Only numeric IPv4 hosts are matched; DNS names are not resolved. When an IPv4 request matches both exact IP entries and CIDR-only entries, valid exact IP entries take precedence and suppress CIDR-only entries; CIDR entries continue to match when no exact IP entry matches. Invalid or non-canonical networks and `/0` fail closed. CIDR rules are independent of the HTTP/HTTPS scheme. Existing `Regex:` rules are no longer supported and are not migrated: replace them with CIDR or ordinary URLs before upgrading. Browser auto-fill is controlled by the extension settings.
 
 ## Notes
 

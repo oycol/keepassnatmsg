@@ -37,6 +37,7 @@ KeePassNatMsg 是 KeePass 2.x 的 Native Messaging 插件，使 Chrome 和 Edge 
 ## URL 匹配
 
 - 同一条目的 URL 可写多个 IPv4 网段，例如 `CIDR:10.125.1.0/24, CIDR:10.125.2.0/24`；只匹配数字 IPv4 主机，不查询 DNS，也不匹配网段外地址。
+- 当请求的 IPv4 地址同时命中精确 IP 条目与仅 CIDR 条目时，优先返回有效精确 IP 条目并压制仅 CIDR 条目；未命中精确 IP 时沿用 CIDR 条目。
 - 为避免全网凭据泄漏，不接受 `/0`；网络地址须与掩码对齐，其他无效规则不匹配。
 - `Regex:` 已移除，不自动迁移；升级前请手动改为 CIDR 或普通 URL。
 - CIDR 不区分 HTTP/HTTPS；浏览器扩展是否自动填入仍取决于扩展设置。
