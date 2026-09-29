@@ -7,7 +7,7 @@ namespace KeePassNatMsg.Entry
     public static class UrlMatchingHelper
     {
         public static readonly string[] DefaultAllowedSchemes = new[] { "https", "http" };
-        private const string CidrPrefix = "CIDR:";
+        public const string CidrPrefix = "CIDR:";
         // Conservative built-in boundary list: never inherit credentials from a shared suffix.
         // This is not a complete Public Suffix List; see security regression notes.
         private static readonly HashSet<string> SharedSuffixes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -45,6 +45,32 @@ namespace KeePassNatMsg.Entry
                 address = (address << 8) | (uint)octet;
             }
             return true;
+        }
+
+        public static bool IsCanonicalIpv4(string host)
+        {
+            uint address;
+            return TryParseIpv4(host, out address);
+        }
+
+        public static bool IsCidrRule(string url)
+        {
+            return !string.IsNullOrWhiteSpace(url) &&
+                   url.Trim().StartsWith(CidrPrefix, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsExactIpMatch(string entryUrl, string requestHost, string requestScheme = null, bool matchSchemes = false)
+        {
+            if (string.IsNullOrWhiteSpace(entryUrl) || string.IsNullOrWhiteSpace(requestHost))
+                return false;
+
+            if (!IsCanonicalIpv4(requestHost))
+                return false;
+
+            if (IsCidrRule(entryUrl))
+                return false;
+
+            return MatchesUrl(entryUrl, requestHost, requestScheme, matchSchemes, exactHostOnly: true);
         }
 
         private static bool TryParseCidr(string value, out uint network, out uint mask)

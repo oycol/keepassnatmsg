@@ -222,5 +222,123 @@ namespace KeePassNatMsg.Tests
             var count = _search.CountMatchingEntries("https://10.125.1.8/", new[] { db1, db2 });
             Assert.AreEqual(1, count);
         }
+
+        [Test]
+        public void MatchSchemes_ExactSchemeMismatch_DoesNotSuppressCidr()
+        {
+            var db = CreateTestDatabase();
+            var httpExact = CreateEntry("HTTP Exact", "admin_http", "secret1", "http://10.125.1.8/");
+            var cidrEntry = CreateEntry("CIDR Subnet", "admin_cidr", "secret2", "CIDR:10.125.1.0/24");
+
+            db.RootGroup.AddEntry(httpExact, true);
+            db.RootGroup.AddEntry(cidrEntry, true);
+
+            var configOpt = new ConfigOpt(new AceCustomConfig());
+            configOpt.MatchSchemes = true;
+
+            var matches = _search.FindMatchingEntries(new Uri("https://10.125.1.8/"), null, new[] { db }, configOpt).ToList();
+            Assert.AreEqual(1, matches.Count);
+            Assert.AreEqual("CIDR Subnet", matches[0].entry.Strings.ReadSafe(PwDefs.TitleField));
+
+            var count = _search.CountMatchingEntries("https://10.125.1.8/", new[] { db }, configOpt);
+            Assert.AreEqual(1, count);
+        }
+
+        [Test]
+        public void MatchSchemes_ExactSchemeMatches_SuppressesCidr()
+        {
+            var db = CreateTestDatabase();
+            var httpsExact = CreateEntry("HTTPS Exact", "admin_https", "secret1", "https://10.125.1.8/");
+            var cidrEntry = CreateEntry("CIDR Subnet", "admin_cidr", "secret2", "CIDR:10.125.1.0/24");
+
+            db.RootGroup.AddEntry(httpsExact, true);
+            db.RootGroup.AddEntry(cidrEntry, true);
+
+            var configOpt = new ConfigOpt(new AceCustomConfig());
+            configOpt.MatchSchemes = true;
+
+            var matches = _search.FindMatchingEntries(new Uri("https://10.125.1.8/"), null, new[] { db }, configOpt).ToList();
+            Assert.AreEqual(1, matches.Count);
+            Assert.AreEqual("HTTPS Exact", matches[0].entry.Strings.ReadSafe(PwDefs.TitleField));
+
+            var count = _search.CountMatchingEntries("https://10.125.1.8/", new[] { db }, configOpt);
+            Assert.AreEqual(1, count);
+        }
+
+        [Test]
+        public void SearchingDisabled_ExactEntry_DoesNotSuppressCidr()
+        {
+            var db = CreateTestDatabase();
+            var disabledExact = CreateEntry("Disabled Exact", "admin_exact", "secret1", "https://10.125.1.8/");
+            disabledExact.SearchingEnabled = false;
+            var cidrEntry = CreateEntry("CIDR Subnet", "admin_cidr", "secret2", "CIDR:10.125.1.0/24");
+
+            db.RootGroup.AddEntry(disabledExact, true);
+            db.RootGroup.AddEntry(cidrEntry, true);
+
+            var matches = _search.FindMatchingEntries(new Uri("https://10.125.1.8/"), null, new[] { db }).ToList();
+            Assert.AreEqual(1, matches.Count);
+            Assert.AreEqual("CIDR Subnet", matches[0].entry.Strings.ReadSafe(PwDefs.TitleField));
+
+            var count = _search.CountMatchingEntries("https://10.125.1.8/", new[] { db });
+            Assert.AreEqual(1, count);
+        }
+
+        [Test]
+        public void CidrSlash32_IsNotExactIpUrl_DoesNotSuppressBroaderCidr()
+        {
+            var db = CreateTestDatabase();
+            var cidr32 = CreateEntry("CIDR /32", "admin_host", "secret1", "CIDR:10.125.1.8/32");
+            var cidr24 = CreateEntry("CIDR /24", "admin_subnet", "secret2", "CIDR:10.125.1.0/24");
+
+            db.RootGroup.AddEntry(cidr32, true);
+            db.RootGroup.AddEntry(cidr24, true);
+
+            var matches = _search.FindMatchingEntries(new Uri("https://10.125.1.8/"), null, new[] { db }).ToList();
+            Assert.AreEqual(2, matches.Count);
+
+            var count = _search.CountMatchingEntries("https://10.125.1.8/", new[] { db });
+            Assert.AreEqual(2, count);
+        }
+
+        [Test]
+        public void ExactIp_SuppressesCidrSlash32()
+        {
+            var db = CreateTestDatabase();
+            var exactEntry = CreateEntry("Exact Host", "admin_exact", "secret1", "https://10.125.1.8/");
+            var cidr32 = CreateEntry("CIDR /32", "admin_host", "secret2", "CIDR:10.125.1.8/32");
+
+            db.RootGroup.AddEntry(exactEntry, true);
+            db.RootGroup.AddEntry(cidr32, true);
+
+            var matches = _search.FindMatchingEntries(new Uri("https://10.125.1.8/"), null, new[] { db }).ToList();
+            Assert.AreEqual(1, matches.Count);
+            Assert.AreEqual("Exact Host", matches[0].entry.Strings.ReadSafe(PwDefs.TitleField));
+
+            var count = _search.CountMatchingEntries("https://10.125.1.8/", new[] { db });
+            Assert.AreEqual(1, count);
+        }
+
+        [Test]
+        public void SearchUrlsDisabled_ExactInAdditionalField_DoesNotSuppressCidr()
+        {
+            var db = CreateTestDatabase();
+            var exactInAdditional = CreateEntry("Exact In Additional", "admin_add", "secret1", "https://primary.example.com/");
+            exactInAdditional.Strings.Set("URL1", new ProtectedString(false, "https://10.125.1.8/"));
+            var cidrEntry = CreateEntry("CIDR Subnet", "admin_cidr", "secret2", "CIDR:10.125.1.0/24");
+
+            db.RootGroup.AddEntry(exactInAdditional, true);
+            db.RootGroup.AddEntry(cidrEntry, true);
+
+            var configOpt = new ConfigOpt(new AceCustomConfig());
+            configOpt.SearchUrls = false;
+
+            var matches = _search.FindMatchingEntries(new Uri("https://10.125.1.8/"), null, new[] { db }, configOpt).ToList();
+            Assert.AreEqual(1, matches.Count);
+            Assert.AreEqual("CIDR Subnet", matches[0].entry.Strings.ReadSafe(PwDefs.TitleField));
+
+            var count = _search.CountMatchingEntries("https://10.125.1.8/", new[] { db }, configOpt);
+            Assert.AreEqual(1, count);
+        }
     }
 }

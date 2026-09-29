@@ -428,6 +428,28 @@ namespace KeePassNatMsg.Entry
                 filtered = filtered.Where(x => !(x.entry.Expires && x.entry.ExpiryTime <= DateTime.UtcNow)).ToList();
             }
 
+            if (UrlMatchingHelper.IsCanonicalIpv4(formHost))
+            {
+                var hasExactIp = filtered.Any(item =>
+                    GetEntryUrls(item.entry, searchUrls).Any(url =>
+                        UrlMatchingHelper.IsExactIpMatch(url, formHost, requestScheme, matchSchemes)));
+
+                if (hasExactIp)
+                {
+                    filtered = filtered.Where(item =>
+                    {
+                        var matchedUrls = GetEntryUrls(item.entry, searchUrls)
+                            .Where(url => UrlMatchingHelper.MatchesUrl(url, formHost, requestScheme, matchSchemes, exactHostOnly))
+                            .ToList();
+
+                        bool isCidrOnly = matchedUrls.Count > 0 &&
+                            matchedUrls.All(u => UrlMatchingHelper.IsCidrRule(u));
+
+                        return !isCidrOnly;
+                    }).ToList();
+                }
+            }
+
             return filtered;
         }
 

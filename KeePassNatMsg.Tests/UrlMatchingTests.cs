@@ -276,5 +276,32 @@ namespace KeePassNatMsg.Tests
             Assert.IsNull(ComputeBaseUrl(""));
             Assert.IsNull(ComputeBaseUrl(null));
         }
+
+        [Test]
+        public void IsCanonicalIpv4_ValidatesDottedQuadOnly()
+        {
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.IsCanonicalIpv4("10.125.1.8"));
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.IsCanonicalIpv4("0.0.0.0"));
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.IsCanonicalIpv4("255.255.255.255"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsCanonicalIpv4("010.125.1.8"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsCanonicalIpv4("10.125.1.256"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsCanonicalIpv4("10.125.1"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsCanonicalIpv4("example.com"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsCanonicalIpv4("::1"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsCanonicalIpv4(null));
+        }
+
+        [Test]
+        public void IsExactIpMatch_DistinguishesExactIpFromCidrAndDomain()
+        {
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.IsExactIpMatch("https://10.125.1.8/", "10.125.1.8", "https"));
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.IsExactIpMatch("10.125.1.8", "10.125.1.8", "https"));
+            Assert.IsTrue(KeePassNatMsg.Entry.UrlMatchingHelper.IsExactIpMatch("http://10.125.1.8:8080/", "10.125.1.8", "https", false));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsExactIpMatch("http://10.125.1.8:8080/", "10.125.1.8", "https", true));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsExactIpMatch("CIDR:10.125.1.8/32", "10.125.1.8", "https"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsExactIpMatch("CIDR:10.125.1.0/24", "10.125.1.8", "https"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsExactIpMatch("https://10.125.1.9/", "10.125.1.8", "https"));
+            Assert.IsFalse(KeePassNatMsg.Entry.UrlMatchingHelper.IsExactIpMatch("https://example.com/", "example.com", "https"));
+        }
     }
 }
