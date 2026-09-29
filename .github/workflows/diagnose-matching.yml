@@ -76,6 +76,10 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
+          $hostKey = 'C:\ProgramData\ssh\ssh_host_ed25519_key.pub'
+          if (-not (Test-Path -LiteralPath $hostKey)) { throw 'SSH host public key unavailable' }
+          $fingerprint = (& ssh-keygen.exe -lf $hostKey | Select-Object -First 1) -split '\s+'
+          Write-Host "runner_ssh_ed25519_fingerprint=$($fingerprint[1])"
           $owner = [System.Security.Principal.WindowsIdentity]::GetCurrent()
           $sid = [System.Diagnostics.Process]::GetCurrentProcess().SessionId
           $sessions = @(Get-CimInstance Win32_LogonSession -ErrorAction Stop | Where-Object { $_.LogonType -eq 2 -or $_.LogonType -eq 10 })
