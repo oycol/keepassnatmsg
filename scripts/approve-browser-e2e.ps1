@@ -23,8 +23,6 @@ public static class Win32Native {
     [DllImport("user32.dll", SetLastError = true)]
     public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-    public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, System.Text.StringBuilder lParam);
-    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
     public static extern bool SetWindowText(IntPtr hWnd, string text);
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
@@ -184,41 +182,23 @@ public static class Win32Native {
                 })
             }
 
+            # A cross-process LB_GETTEXT pointer is unsafe. UIA ListItem names
+            # are read through the OS provider; absence or ambiguity fails closed.
             $entryItems = @()
-            if ($entriesCandidates.Count -ge 1) {
-                $boxElement = $entriesCandidates[0]
-                $boxHwnd = [IntPtr]$boxElement.Current.NativeWindowHandle
-                if ($boxHwnd -ne [IntPtr]::Zero) {
-                    # LB_GETCOUNT = 0x018B
-                    $count = [Win32Native]::SendMessage($boxHwnd, 0x018B, [IntPtr]::Zero, [IntPtr]::Zero).ToInt32()
-                    if ($count -ge 0) {
-                        for ($i = 0; $i -lt $count; $i++) {
-                            # LB_GETTEXTLEN = 0x018A
-                            $len = [Win32Native]::SendMessage($boxHwnd, 0x018A, [IntPtr]$i, [IntPtr]::Zero).ToInt32()
-                            if ($len -ge 0) {
-                                # LB_GETTEXT = 0x0189
-                                $sb = New-Object System.Text.StringBuilder ($len + 1)
-                                [Win32Native]::SendMessage($boxHwnd, 0x0189, [IntPtr]$i, $sb) | Out-Null
-                                $entryItems += $sb.ToString()
-                            }
-                        }
-                    }
-                }
-                if ($entryItems.Count -eq 0) {
-                    # Fallback to UIAutomation children if Win32 returned no items
-                    $childItems = @($boxElement.FindAll([System.Windows.Automation.TreeScope]::Children, $condition))
-                    foreach ($ci in $childItems) {
-                        if ($ci.Current.Name) {
-                            $entryItems += $ci.Current.Name
-                        }
-                    }
+            foreach ($boxElement in $entriesCandidates) {
+                $items = @($boxElement.FindAll([System.Windows.Automation.TreeScope]::Children, $condition) | Where-Object {
+                    $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::ListItem
+                })
+                if ($items.Count -gt 0) {
+                    if ($entryItems.Count -gt 0) { throw 'Ambiguous EntriesBox controls' }
+                    $entryItems = @($items | ForEach-Object { $_.Current.Name })
                 }
             }
 
             $entriesCount = $entryItems.Count
             if ($entriesCount -eq 1) {
                 $item = $entryItems[0].Trim()
-                if ($item -eq $ExpectedTitle.Trim() -or $item.StartsWith("$($ExpectedTitle.Trim()) - ")) {
+                if ($item -ceq $ExpectedTitle.Trim()) {
                     $entryVerified = $true
                 } else {
                     $entryVerified = $false
