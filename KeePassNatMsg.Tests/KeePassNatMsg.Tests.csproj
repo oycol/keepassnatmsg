@@ -31,9 +31,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="KeePass">
+      <HintPath>..\build\KeePass.exe</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\KeePassNatMsg\lib\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -49,6 +56,7 @@
     <Compile Include="UrlMatchingTests.cs" />
     <Compile Include="NativeMessagingFramingTests.cs" />
     <Compile Include="ChromeIntegrationTests.cs" />
+    <Compile Include="EntrySearchExactIpTests.cs" />
     <Compile Include="..\KeePassNatMsg\NativeMessaging\ChromeIntegrationService.cs">
       <Link>NativeMessaging\ChromeIntegrationService.cs</Link>
     </Compile>
@@ -76,6 +84,21 @@
     </Compile>
     <Compile Include="..\KeePassNatMsg\Entry\UrlMatchingHelper.cs">
       <Link>Entry\UrlMatchingHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\KeePassNatMsg\ConfigOpt.cs">
+      <Link>ConfigOpt.cs</Link>
+    </Compile>
+    <Compile Include="..\KeePassNatMsg\PwEntryDatabase.cs">
+      <Link>PwEntryDatabase.cs</Link>
+    </Compile>
+    <Compile Include="..\KeePassNatMsg\AccessControlForm.cs">
+      <Link>AccessControlForm.cs</Link>
+    </Compile>
+    <Compile Include="..\KeePassNatMsg\AccessControlForm.Designer.cs">
+      <Link>AccessControlForm.Designer.cs</Link>
+    </Compile>
+    <Compile Include="..\KeePassNatMsg\Entry\EntrySearch.cs">
+      <Link>Entry\EntrySearch.cs</Link>
     </Compile>
     <!-- Stub for KeePassNatMsgExt - provides static members needed by Request/Response -->
     <Compile Include="Stubs\KeePassNatMsgExtStub.cs">

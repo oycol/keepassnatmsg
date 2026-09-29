@@ -1,4 +1,5 @@
-﻿using KeePass.Plugins;
+﻿using KeePass.App.Configuration;
+using KeePass.Plugins;
 using KeePass.UI;
 using KeePass.Util.Spr;
 using KeePassNatMsg.Protocol;
@@ -24,10 +25,14 @@ namespace KeePassNatMsg.Entry
         private readonly IPluginHost _host;
         private readonly KeePassNatMsgExt _ext;
 
-        public EntrySearch()
+        public EntrySearch() : this(KeePassNatMsgExt.HostInstance, KeePassNatMsgExt.ExtInstance)
         {
-            _host = KeePassNatMsgExt.HostInstance;
-            _ext = KeePassNatMsgExt.ExtInstance;
+        }
+
+        internal EntrySearch(IPluginHost host, KeePassNatMsgExt ext)
+        {
+            _host = host;
+            _ext = ext;
         }
 
         internal Response GetLoginsHandler(Request req)
@@ -181,14 +186,14 @@ namespace KeePassNatMsg.Entry
             return resp;
         }
 
-        internal int CountMatchingEntries(string url)
+        internal int CountMatchingEntries(string url, IEnumerable<PwDatabase> databases = null, ConfigOpt configOpt = null)
         {
             if (string.IsNullOrEmpty(url)) return 0;
             Uri uri;
             if (!Uri.TryCreate(url, UriKind.Absolute, out uri)) return 0;
             if (!UrlMatchingHelper.DefaultAllowedSchemes.Contains(uri.Scheme.ToLowerInvariant())) return 0;
 
-            return FindMatchingEntries(uri, null).Count();
+            return FindMatchingEntries(uri, null, databases, configOpt).Count();
         }
 
         private void CheckTotp(PwEntryDatabase item, JObject obj)
@@ -307,30 +312,49 @@ namespace KeePassNatMsg.Entry
             return null;
         }
 
-        private IEnumerable<PwEntryDatabase> FindMatchingEntries(Uri hostUri, string realm)
+        internal IEnumerable<PwEntryDatabase> FindMatchingEntries(Uri hostUri, string realm, IEnumerable<PwDatabase> databases = null, ConfigOpt configOpt = null)
         {
             var formHost = hostUri.Host;
             var requestScheme = hostUri.Scheme;
 
             List<PwDatabase> listDatabases = new List<PwDatabase>();
-            var configOpt = new ConfigOpt(_host.CustomConfig);
-            if (configOpt.AllowSearchDatabase == (ulong)AllowSearchDatabase.SearchInAllOpenedDatabases)
+            if (configOpt == null)
             {
-                foreach (PwDocument doc in _host.MainWindow.DocumentManager.Documents)
+                configOpt = _host != null && _host.CustomConfig != null
+                    ? new ConfigOpt(_host.CustomConfig)
+                    : new ConfigOpt(new AceCustomConfig());
+            }
+
+            if (databases != null)
+            {
+                listDatabases.AddRange(databases);
+            }
+            else if (configOpt.AllowSearchDatabase == (ulong)AllowSearchDatabase.SearchInAllOpenedDatabases)
+            {
+                if (_host != null && _host.MainWindow != null && _host.MainWindow.DocumentManager != null)
                 {
-                    if (doc.Database != null && doc.Database.IsOpen && doc.Database.RootGroup != null)
+                    foreach (PwDocument doc in _host.MainWindow.DocumentManager.Documents)
                     {
-                        listDatabases.Add(doc.Database);
+                        if (doc.Database != null && doc.Database.IsOpen && doc.Database.RootGroup != null)
+                        {
+                            listDatabases.Add(doc.Database);
+                        }
                     }
                 }
             }
             else if (configOpt.AllowSearchDatabase == (ulong)AllowSearchDatabase.RestrictSearchInSpecificDatabase)
             {
-                listDatabases.Add(_ext.GetSearchDatabase());
+                if (_ext != null)
+                {
+                    listDatabases.Add(_ext.GetSearchDatabase());
+                }
             }
             else
             {
-                listDatabases.Add(_host.Database);
+                if (_host != null && _host.Database != null)
+                {
+                    listDatabases.Add(_host.Database);
+                }
             }
 
             var parms = MakeSearchParameters();
@@ -374,7 +398,7 @@ namespace KeePassNatMsg.Entry
             foreach (var item in candidates.Values)
             {
                 var e = item.entry;
-                var c = _ext.GetEntryConfig(e);
+                var c = _ext != null ? _ext.GetEntryConfig(e) : null;
                 if (c != null)
                 {
                     if (c.Deny.Contains(formAuthority) || c.Deny.Contains(formHost))
