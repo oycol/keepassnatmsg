@@ -42,8 +42,8 @@
 
 **Interfaces:** 同 Task 1 JSON；`tabs` 为每页选中并验证记录，不是仅数目。`passed` 只能在分辨率、DPI、四页内容与恢复均成功后为真。
 
-- [ ] **RED:** 写真实 UIA 检查，证明旧脚本只枚举页签但不逐页选中、只查 Save/Cancel 而未查四页控件标签及裁切；在 96 DPI 场景不得把此测试宣称通过。
-- [ ] **GREEN:** 由测试 KeePass PID 及唯一合成库路径绑定窗口；UIA 打开 Tools → KeePassNatMsg Options；逐页 Select/读取可见控件矩形、常驻帮助文字、底部 Save/Cancel/版本区且检查工作区和父容器裁切；只点 Cancel，失败时安全退出。
+- [x] **RED:** 写真实 UIA 检查，证明旧脚本只枚举页签但不逐页选中、只查 Save/Cancel 而未查四页控件标签及裁切；在 96 DPI 场景不得把此测试宣称通过。
+- [x] **GREEN:** 由测试 KeePass PID 及唯一合成库路径绑定窗口；UIA 打开 Tools → KeePassNatMsg Options；逐页 Select/读取可见控件矩形、常驻帮助文字、底部 Save/Cancel/版本区且检查工作区和父容器裁切；只点 Cancel，失败时安全退出。
 - [ ] **VERIFY:** 先完成 2K，再完成 4K；检查每档实际几何/DPI/恢复证据和 Runner 备份恢复；若 DPI 仍为 96 或 Runner 离线，记录“未验收”，不能回退成独立 GUI 检查冒充宿主实测。最终同一 SHA 的 CI/E2E 全绿后才给功能通过结论。
 - [ ] **REVIEW/COMMIT:** 独立代理审查无密码泄漏和恢复可靠性；仅功能分支提交，不打 tag 或发布。
 

@@ -375,13 +375,33 @@ jobs:
             foreach ($mode in @(@(2560,1440,'2k'), @(3840,2160,'4k'))) {
               $hostedJson = "$env:E2E_OUTPUT_DIR\options-hosted-$($mode[2]).json"
               & powershell -NoProfile -ExecutionPolicy Bypass -File "$PWD\scripts\verify-options-hosted-display.ps1" -ProcessId $kpProc.Id -TestDatabasePath $testDbPath -TargetWidth $mode[0] -TargetHeight $mode[1] -MinimumDpi 144 -OutputPath $hostedJson
-              if (Test-Path $hostedJson) {
-                $hRes = Get-Content $hostedJson -Raw | ConvertFrom-Json
-                if ($hRes.passed) {
-                  Write-Host "Hosted high-DPI Options validation PASSED for $($mode[2])!" -ForegroundColor Green
-                } else {
-                  Write-Host "Hosted high-DPI Options validation for $($mode[2]) reported prerequisite block: $($hRes.error)" -ForegroundColor Yellow
+              $runExit = $LASTEXITCODE
+              if (-not (Test-Path $hostedJson)) {
+                throw "Hosted display verification for $($mode[2]) did not generate JSON evidence (exit code $runExit)"
+              }
+              $hRes = Get-Content $hostedJson -Raw | ConvertFrom-Json
+              # Restoration check: display MUST be restored regardless of test outcome
+              if (-not $hRes.restored -or $hRes.restoreError) {
+                throw "Display restoration failed for $($mode[2]): $($hRes.restoreError)"
+              }
+              if ($hRes.passed) {
+                if ($runExit -ne 0) {
+                  throw "Hosted Options verification for $($mode[2]) marked passed but script returned non-zero exit code $runExit"
                 }
+                if ($hRes.actual.dpiX -lt 144 -or $hRes.actual.dpiY -lt 144) {
+                  throw "Hosted Options verification for $($mode[2]) marked passed but actual DPI is below 144"
+                }
+                if ($hRes.tabs.Count -ne 4) {
+                  throw "Hosted Options verification for $($mode[2]) passed but did not verify all 4 tabs (found $($hRes.tabs.Count))"
+                }
+                Write-Host "Hosted high-DPI Options validation PASSED for $($mode[2])! All 4 tabs and controls verified." -ForegroundColor Green
+              } elseif ($hRes.blocked) {
+                if ($runExit -ne 0) {
+                  throw "Hosted Options verification for $($mode[2]) marked blocked but script returned non-zero exit code $runExit"
+                }
+                Write-Host "Hosted high-DPI Options validation for $($mode[2]) reported prerequisite block: $($hRes.error)" -ForegroundColor Yellow
+              } else {
+                throw "Hosted Options verification failed for $($mode[2]): $($hRes.error) (exit code $runExit)"
               }
             }
           } finally {

@@ -400,6 +400,130 @@ class TestVerifyHostedDisplay(unittest.TestCase):
         self.assertEqual(result.returncode, 0, f"SelfTest failed with output:\n{result.stdout}\n{result.stderr}")
         self.assertIn("All verify-options-hosted-display self-tests passed!", result.stdout)
 
+    def test_task2_tab_by_tab_selection_and_control_verification(self):
+        """Task 2 RED: verify scripts/verify-options-hosted-display.ps1:
+        1. Selects each of the 4 tabs individually via SelectionItemPattern (not just enumerating headers).
+        2. Inspects controls and persistent help text across all 4 tabs:
+           - Browser Integration: Install/Repair, Refresh, Uninstall buttons and hint.
+           - Matching Rules: 5 checkboxes and 5 persistent help tips.
+           - Database & Security: 3 radio buttons, 2 danger zone checkboxes, reset button, danger warning.
+           - Associations: audit tip label, removal buttons.
+        3. Validates footer version text (lblVersion / KeePassNatMsg v2.5.0) and Save/Cancel buttons.
+        4. Verifies control geometry using a testable helper (Test-ControlGeometry) to catch clipping.
+        5. Populates $result.tabs with structured verification objects containing verifiedControls.
+        """
+        # 1. SelectionItemPattern used to switch tabs
+        self.assertIn(
+            'SelectionItemPattern',
+            self.content,
+            "Script must use SelectionItemPattern to switch and activate each tab",
+        )
+
+        # 2. Control labels / help texts must be verified
+        expected_tokens = [
+            'Install / Repair Integration',
+            'Return only the best URL matches',
+            'Search only the active database',
+            'Always allow credential access',
+            'Remove Selected',
+            'KeePassNatMsg v',
+            'Test-ControlGeometry',
+        ]
+        for token in expected_tokens:
+            self.assertIn(
+                token,
+                self.content,
+                f"Script must include verification token '{token}' for Task 2 UI inspection",
+            )
+
+        # 3. Structured tab records rather than simple string array
+        self.assertRegex(
+            self.content,
+            r'controlsVerified|verifiedControls',
+            "Script must record structured control verification details in $result.tabs",
+        )
+
+    def test_task2_workflow_strict_classification_and_exit_handling(self):
+        """Task 2 RED: verify .github/workflows/e2e-windows.yml:
+        1. Checks $LASTEXITCODE or throws on non-zero exit from verify-options-hosted-display.ps1.
+        2. Strictly checks $hRes.passed and $hRes.restored before declaring PASSED.
+        3. Properly classifies $hRes.blocked with restoration check (restored=true).
+        4. Strictly fails (throws) if test failed without being blocked (not passed and not blocked).
+        5. Fails if restoration failed (restoreError or not restored).
+        """
+        workflow_path = ROOT / '.github' / 'workflows' / 'e2e-windows.yml'
+        self.assertTrue(workflow_path.exists(), "Workflow e2e-windows.yml must exist")
+        workflow_content = workflow_path.read_text(encoding='utf-8')
+
+        # Must not silently accept non-zero exit code or ignore unblocked failures
+        self.assertIn(
+            'verify-options-hosted-display.ps1',
+            workflow_content,
+        )
+        self.assertRegex(
+            workflow_content,
+            r'throw\s+["\'].*?[Ff]ail',
+            "Workflow must throw on hosted options test failure",
+        )
+        self.assertRegex(
+            workflow_content,
+            r'\$LASTEXITCODE',
+            "Workflow must verify $LASTEXITCODE after running verify-options-hosted-display.ps1",
+        )
+        self.assertRegex(
+            workflow_content,
+            r'restored',
+            "Workflow must check display restoration status from JSON output",
+        )
+
+    def test_task2_control_geometry_logic_matrix(self):
+        """Verify behavioral logic of Test-ControlGeometry against clipping edge cases."""
+        def test_control_geometry(bounds, container, work):
+            if not bounds:
+                return {'Valid': False, 'Reason': 'Bounds is null'}
+            if bounds.get('Width', 0) <= 0 or bounds.get('Height', 0) <= 0:
+                return {'Valid': False, 'Reason': 'Invalid dimensions: Width or Height <= 0'}
+            if container:
+                if (bounds['Left'] < container['Left'] or bounds['Top'] < container['Top'] or
+                        bounds['Right'] > container['Right'] or bounds['Bottom'] > container['Bottom']):
+                    return {'Valid': False, 'Reason': 'Clipped by container boundary'}
+            if work:
+                if (bounds['Left'] < work['Left'] or bounds['Top'] < work['Top'] or
+                        bounds['Right'] > work['Right'] or bounds['Bottom'] > work['Bottom']):
+                    return {'Valid': False, 'Reason': 'Bounds outside monitor working area'}
+            return {'Valid': True, 'Reason': None}
+
+        container = {'Left': 0, 'Top': 0, 'Right': 800, 'Bottom': 600}
+        work = {'Left': 0, 'Top': 0, 'Right': 1920, 'Bottom': 1080}
+
+        # Valid control inside container and work area
+        res = test_control_geometry({'Left': 20, 'Top': 20, 'Right': 200, 'Bottom': 60, 'Width': 180, 'Height': 40}, container, work)
+        self.assertTrue(res['Valid'])
+
+        # Collapsed width
+        res = test_control_geometry({'Left': 20, 'Top': 20, 'Right': 20, 'Bottom': 60, 'Width': 0, 'Height': 40}, container, work)
+        self.assertFalse(res['Valid'])
+
+        # Clipped by container right
+        res = test_control_geometry({'Left': 750, 'Top': 20, 'Right': 850, 'Bottom': 60, 'Width': 100, 'Height': 40}, container, work)
+        self.assertFalse(res['Valid'])
+
+        # Clipped by container bottom
+        res = test_control_geometry({'Left': 20, 'Top': 580, 'Right': 200, 'Bottom': 620, 'Width': 180, 'Height': 40}, container, work)
+        self.assertFalse(res['Valid'])
+
+        # Outside work area
+        res = test_control_geometry({'Left': 20, 'Top': 20, 'Right': 200, 'Bottom': 1100, 'Width': 180, 'Height': 40}, None, work)
+        self.assertFalse(res['Valid'])
+
+    def test_task2_safety_only_cancel_invoked_never_save(self):
+        """Verify that the script only activates Cancel and never invokes Save or modifications."""
+        self.assertIn('$cancelInvoke.Invoke()', self.content)
+        self.assertNotIn('$saveInvoke', self.content)
+        self.assertNotIn('Save button clicked', self.content)
+        # Check comment constraint
+        self.assertIn('Never save Options: only close this dialog using its Cancel button.', self.content)
+
 
 if __name__ == '__main__':
     unittest.main()

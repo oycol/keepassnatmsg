@@ -15,6 +15,31 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+function Test-ControlGeometry {
+    param(
+        $Bounds,
+        $ContainerBounds,
+        $WorkArea
+    )
+    if (-not $Bounds) { return @{ Valid = $false; Reason = 'Bounds is null' } }
+    if ($Bounds.Width -le 0 -or $Bounds.Height -le 0) {
+        return @{ Valid = $false; Reason = 'Invalid dimensions: Width or Height <= 0' }
+    }
+    if ($ContainerBounds) {
+        if ($Bounds.Left -lt $ContainerBounds.Left -or $Bounds.Top -lt $ContainerBounds.Top -or
+            $Bounds.Right -gt $ContainerBounds.Right -or $Bounds.Bottom -gt $ContainerBounds.Bottom) {
+            return @{ Valid = $false; Reason = 'Clipped by container boundary' }
+        }
+    }
+    if ($WorkArea) {
+        if ($Bounds.Left -lt $WorkArea.Left -or $Bounds.Top -lt $WorkArea.Top -or
+            $Bounds.Right -gt $WorkArea.Right -or $Bounds.Bottom -gt $WorkArea.Bottom) {
+            return @{ Valid = $false; Reason = 'Bounds outside monitor working area' }
+        }
+    }
+    return @{ Valid = $true; Reason = $null }
+}
+
 function Test-IsBlockedError {
     param([string]$ErrorMessage)
     $blockedMessages = @(
@@ -114,6 +139,11 @@ function Invoke-SelfTest {
         'Display mode change failed',
         'Target display mode did not take effect',
         'KeePass-hosted Options window not visible',
+        'Options tab could not be selected via UIAutomation',
+        'Required Options control missing or unavailable',
+        'Options control clipped',
+        'Options version area missing or clipped',
+        'Options dialog failed to close after Cancel',
         'GUI verification failed (details suppressed)'
     )
     foreach ($msg in $nonBlockedMessages) {
@@ -136,6 +166,45 @@ function Invoke-SelfTest {
             Write-Error "FAIL: Resolve-HostedDisplayExitCode $($tc.Name) got $actual, expected $($tc.Expected)"
             $testsFailed++
         }
+    }
+
+    # Test-ControlGeometry unit verification
+    $mockContainer = [pscustomobject]@{ Left = 0; Top = 0; Right = 800; Bottom = 600 }
+    $mockWork = [pscustomobject]@{ Left = 0; Top = 0; Right = 1920; Bottom = 1080 }
+
+    $validCtrl = [pscustomobject]@{ Left = 20; Top = 20; Right = 200; Bottom = 60; Width = 180; Height = 40 }
+    $geoValid = Test-ControlGeometry -Bounds $validCtrl -ContainerBounds $mockContainer -WorkArea $mockWork
+    if (-not $geoValid.Valid) {
+        Write-Error 'FAIL: Valid control geometry incorrectly marked invalid'
+        $testsFailed++
+    }
+
+    $zeroWidthCtrl = [pscustomobject]@{ Left = 20; Top = 20; Right = 20; Bottom = 60; Width = 0; Height = 40 }
+    $geoZero = Test-ControlGeometry -Bounds $zeroWidthCtrl -ContainerBounds $mockContainer -WorkArea $mockWork
+    if ($geoZero.Valid) {
+        Write-Error 'FAIL: Zero-width control should fail geometry check'
+        $testsFailed++
+    }
+
+    $clippedRightCtrl = [pscustomobject]@{ Left = 750; Top = 20; Right = 850; Bottom = 60; Width = 100; Height = 40 }
+    $geoClippedRight = Test-ControlGeometry -Bounds $clippedRightCtrl -ContainerBounds $mockContainer -WorkArea $mockWork
+    if ($geoClippedRight.Valid) {
+        Write-Error 'FAIL: Control extending past container right boundary should fail geometry check'
+        $testsFailed++
+    }
+
+    $clippedBottomCtrl = [pscustomobject]@{ Left = 20; Top = 580; Right = 200; Bottom = 620; Width = 180; Height = 40 }
+    $geoClippedBottom = Test-ControlGeometry -Bounds $clippedBottomCtrl -ContainerBounds $mockContainer -WorkArea $mockWork
+    if ($geoClippedBottom.Valid) {
+        Write-Error 'FAIL: Control extending past container bottom boundary should fail geometry check'
+        $testsFailed++
+    }
+
+    $outsideWorkCtrl = [pscustomobject]@{ Left = 20; Top = 20; Right = 200; Bottom = 1100; Width = 180; Height = 40 }
+    $geoOutsideWork = Test-ControlGeometry -Bounds $outsideWorkCtrl -ContainerBounds $null -WorkArea $mockWork
+    if ($geoOutsideWork.Valid) {
+        Write-Error 'FAIL: Control extending past work area bottom should fail geometry check'
+        $testsFailed++
     }
 
     $mockOrigMode = [pscustomobject]@{ dmPelsWidth = 1920; dmPelsHeight = 1080; dmDisplayFrequency = 60; dmBitsPerPel = 32; dmDisplayOrientation = 0 }
@@ -193,7 +262,7 @@ if ($SelfTest) {
 }
 
 # Do not log element text outside the fixed UI labels below: KeePass contains secrets.
-$result = [ordered]@{ passed = $false; blocked = $false; processId = $ProcessId; target = "${TargetWidth}x${TargetHeight}"; minimumDpi = $MinimumDpi; original = $null; actual = $null; tabs = @(); buttons = @(); restored = $false; error = $null; restoreError = $null }
+$result = [ordered]@{ passed = $false; blocked = $false; processId = $ProcessId; target = "${TargetWidth}x${TargetHeight}"; minimumDpi = $MinimumDpi; original = $null; actual = $null; tabs = @(); buttons = @(); version = $null; restored = $false; error = $null; restoreError = $null }
 $originalMode = $null
 $displayDevice = $null
 $originalDpi = $null
@@ -355,26 +424,165 @@ public static class HostedDisplayNative {
     $tabCondition = [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::TabItem)
     $tabItems = $dialog.FindAll($tree, $tabCondition)
     if ($tabItems.Count -ne $tabs.Count) { throw 'Options tab count mismatch' }
-    foreach ($name in $tabs) {
-        $match = @($tabItems | Where-Object { $_.Current.Name -eq $name -and $_.Current.ProcessId -eq $ProcessId })
-        if ($match.Count -ne 1 -or $match[0].Current.IsOffscreen) { throw 'Required Options tab unavailable' }
-        $result.tabs += $name
+
+    [void][HostedDisplayNative]::SetForegroundWindow([IntPtr]$dialog.Current.NativeWindowHandle)
+
+    foreach ($tabName in $tabs) {
+        $tabMatch = @($tabItems | Where-Object { $_.Current.Name -eq $tabName -and $_.Current.ProcessId -eq $ProcessId })
+        if ($tabMatch.Count -ne 1 -or $tabMatch[0].Current.IsOffscreen) { throw 'Required Options tab unavailable' }
+        $tabItem = $tabMatch[0]
+
+        $selectPattern = $null
+        if ($tabItem.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref]$selectPattern)) {
+            $selectPattern.Select()
+        } else {
+            $invokePattern = $null
+            if ($tabItem.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$invokePattern)) {
+                $invokePattern.Invoke()
+            } else {
+                throw 'Options tab could not be selected via UIAutomation'
+            }
+        }
+        Start-Sleep -Milliseconds 150
+
+        $expectedControls = @()
+        if ($tabName -eq 'Browser Integration') {
+            $expectedControls = @(
+                @{ Name = 'Install / Repair Integration'; Type = 'Button'; Match = 'Exact' },
+                @{ Name = 'Refresh'; Type = 'Button'; Match = 'Exact' },
+                @{ Name = 'Uninstall'; Type = 'Button'; Match = 'Exact' },
+                @{ Name = 'Install / Repair deploys the bundled proxy'; Type = 'Text'; Match = 'Prefix' }
+            )
+        } elseif ($tabName -eq 'Matching Rules') {
+            $expectedControls = @(
+                @{ Name = 'Return only the best URL matches'; Type = 'CheckBox'; Match = 'Exact' },
+                @{ Name = 'Request database unlock when needed'; Type = 'CheckBox'; Match = 'Exact' },
+                @{ Name = 'Exclude expired entries'; Type = 'CheckBox'; Match = 'Exact' },
+                @{ Name = 'Require matching URL scheme'; Type = 'CheckBox'; Match = 'Exact' },
+                @{ Name = 'Search additional URL and KP2A_URL fields'; Type = 'CheckBox'; Match = 'Exact' },
+                @{ Name = 'Filters out broader domain entries'; Type = 'Text'; Match = 'Prefix' },
+                @{ Name = 'Prompts KeePass to request master password unlock'; Type = 'Text'; Match = 'Prefix' },
+                @{ Name = 'Do not return credentials that have reached their configured expiration date.'; Type = 'Text'; Match = 'Prefix' },
+                @{ Name = 'Separates HTTP and HTTPS logins.'; Type = 'Text'; Match = 'Prefix' },
+                @{ Name = 'Also checks custom string attributes'; Type = 'Text'; Match = 'Prefix' }
+            )
+        } elseif ($tabName -eq 'Database & Security') {
+            $expectedControls = @(
+                @{ Name = 'Search only the active database'; Type = 'RadioButton'; Match = 'Exact' },
+                @{ Name = 'Search all opened databases'; Type = 'RadioButton'; Match = 'Exact' },
+                @{ Name = 'Restrict search to target DB:'; Type = 'RadioButton'; Match = 'Exact' },
+                @{ Name = 'Always allow credential access'; Type = 'CheckBox'; Match = 'Exact' },
+                @{ Name = 'Always allow credential updates'; Type = 'CheckBox'; Match = 'Exact' },
+                @{ Name = 'Reset entry access permissions...'; Type = 'Button'; Match = 'Exact' },
+                @{ Name = 'Warning: Bypassing prompts allows any connected browser extension'; Type = 'Text'; Match = 'Prefix' },
+                @{ Name = 'Bypasses user confirmation when a browser extension queries stored credentials.'; Type = 'Text'; Match = 'Prefix' },
+                @{ Name = 'Bypasses user confirmation when a browser extension creates or updates stored credentials.'; Type = 'Text'; Match = 'Prefix' }
+            )
+        } elseif ($tabName -eq 'Associations') {
+            $expectedControls = @(
+                @{ Name = 'Below are the authorized browser clients for the active database'; Type = 'Text'; Match = 'Contains' },
+                @{ Name = 'Remove Selected'; Type = 'Button'; Match = 'Exact' },
+                @{ Name = 'Remove All Keys'; Type = 'Button'; Match = 'Exact' }
+            )
+        }
+
+        $allDescendants = $dialog.FindAll($tree, $trueCondition)
+        $tabVerifiedControls = @()
+
+        foreach ($exp in $expectedControls) {
+            $matchedEl = $null
+            foreach ($el in $allDescendants) {
+                if ($el.Current.ProcessId -ne $ProcessId -or $el.Current.IsOffscreen) { continue }
+                $typeMatch = $false
+                if ($exp.Type -eq 'Button' -and $el.Current.ControlType -eq [System.Windows.Automation.ControlType]::Button) { $typeMatch = $true }
+                elseif ($exp.Type -eq 'CheckBox' -and $el.Current.ControlType -eq [System.Windows.Automation.ControlType]::CheckBox) { $typeMatch = $true }
+                elseif ($exp.Type -eq 'RadioButton' -and $el.Current.ControlType -eq [System.Windows.Automation.ControlType]::RadioButton) { $typeMatch = $true }
+                elseif ($exp.Type -eq 'Text' -and $el.Current.ControlType -eq [System.Windows.Automation.ControlType]::Text) { $typeMatch = $true }
+
+                if (-not $typeMatch) { continue }
+
+                $nameMatch = $false
+                if ($exp.Match -eq 'Exact' -and $el.Current.Name -eq $exp.Name) { $nameMatch = $true }
+                elseif ($exp.Match -eq 'Prefix' -and $el.Current.Name -and $el.Current.Name.StartsWith($exp.Name)) { $nameMatch = $true }
+                elseif ($exp.Match -eq 'Contains' -and $el.Current.Name -and $el.Current.Name.Contains($exp.Name)) { $nameMatch = $true }
+
+                if ($nameMatch) {
+                    $matchedEl = $el
+                    break
+                }
+            }
+
+            if (-not $matchedEl) { throw 'Required Options control missing or unavailable' }
+
+            $b = $matchedEl.Current.BoundingRectangle
+            $geo = Test-ControlGeometry -Bounds $b -ContainerBounds $bounds -WorkArea $work
+            if (-not $geo.Valid) { throw 'Options control clipped' }
+
+            $tabVerifiedControls += [ordered]@{
+                name = $exp.Name
+                type = $exp.Type
+                width = [int]$b.Width
+                height = [int]$b.Height
+            }
+        }
+
+        $result.tabs += [ordered]@{
+            name = $tabName
+            selected = $true
+            controlsVerified = $tabVerifiedControls
+        }
     }
+
+    # Version label in footer
+    $versionMatches = @($dialog.FindAll($tree, [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text)) | Where-Object {
+        $_.Current.ProcessId -eq $ProcessId -and
+        $_.Current.Name -and $_.Current.Name.StartsWith('KeePassNatMsg v') -and
+        -not $_.Current.IsOffscreen
+    })
+    if ($versionMatches.Count -lt 1) { throw 'Options version area missing or clipped' }
+    $verBounds = $versionMatches[0].Current.BoundingRectangle
+    $verGeo = Test-ControlGeometry -Bounds $verBounds -ContainerBounds $bounds -WorkArea $work
+    if (-not $verGeo.Valid) { throw 'Options version area missing or clipped' }
+    $result.version = [ordered]@{
+        name = 'KeePassNatMsg v'
+        width = [int]$verBounds.Width
+        height = [int]$verBounds.Height
+    }
+
+    # Footer Save and Cancel buttons
+    $cancel = $null
     $buttonCondition = [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
     foreach ($name in @('Save', 'Cancel')) {
         $matches = @($dialog.FindAll($tree, $buttonCondition) | Where-Object { $_.Current.Name -eq $name -and $_.Current.ProcessId -eq $ProcessId -and -not $_.Current.IsOffscreen })
         if ($matches.Count -ne 1) { throw 'Required Options dialog button unavailable' }
         $b = $matches[0].Current.BoundingRectangle
-        if ($b.Width -le 0 -or $b.Height -le 0 -or $b.Left -lt $bounds.Left -or $b.Top -lt $bounds.Top -or $b.Right -gt $bounds.Right -or $b.Bottom -gt $bounds.Bottom -or
-            $b.Left -lt $work.Left -or $b.Top -lt $work.Top -or $b.Right -gt $work.Right -or $b.Bottom -gt $work.Bottom) { throw 'Options dialog button clipped' }
-        $result.buttons += $name
+        $geo = Test-ControlGeometry -Bounds $b -ContainerBounds $bounds -WorkArea $work
+        if (-not $geo.Valid) { throw 'Options dialog button clipped' }
+        $result.buttons += [ordered]@{
+            name = $name
+            width = [int]$b.Width
+            height = [int]$b.Height
+        }
         if ($name -eq 'Cancel') { $cancel = $matches[0] }
     }
+
     # Never save Options: only close this dialog using its Cancel button.
     $cancelInvoke = $null
     if (-not $cancel.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$cancelInvoke)) { throw 'Cancel button cannot be invoked' }
     $cancelInvoke.Invoke()
+
+    $closed = $false
+    for ($attempt = 0; $attempt -lt 30; $attempt++) {
+        Start-Sleep -Milliseconds 100
+        try {
+            if ($dialog.Current.IsOffscreen) { $closed = $true; break }
+        } catch {
+            $closed = $true
+            break
+        }
+    }
     $dialog = $null
+    if (-not $closed) { throw 'Options dialog failed to close after Cancel' }
     $result.passed = $true
 } catch {
     # No exception text: COM/UIA messages may contain a window title or user data.
@@ -403,9 +611,14 @@ public static class HostedDisplayNative {
         'Options window outside monitor working area',
         'Options tab count mismatch',
         'Required Options tab unavailable',
+        'Options tab could not be selected via UIAutomation',
+        'Required Options control missing or unavailable',
+        'Options control clipped',
+        'Options version area missing or clipped',
         'Required Options dialog button unavailable',
         'Options dialog button clipped',
-        'Cancel button cannot be invoked'
+        'Cancel button cannot be invoked',
+        'Options dialog failed to close after Cancel'
     )
     $result.error = if ($msg -in $allowedMessages) { $msg } else { 'GUI verification failed (details suppressed)' }
     if (Test-IsBlockedError $result.error) {
