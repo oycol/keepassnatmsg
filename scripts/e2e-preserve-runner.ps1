@@ -66,9 +66,16 @@ if (Test-Path -LiteralPath $fixtureMarker) {
 foreach ($file in $state.files) {
   try {
     if ($file.exists) {
-      New-Item -ItemType Directory -Path (Split-Path $file.path) -Force | Out-Null
-      Copy-Item -LiteralPath (Join-Path $StateDir $file.copy) -Destination $file.path -Force -ErrorAction Stop
-      if ((Get-FileHash -LiteralPath $file.path -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath (Join-Path $StateDir $file.copy) -Algorithm SHA256).Hash) { throw 'Restored hash mismatch' }
+      $backupFile = Join-Path $StateDir $file.copy
+      if (-not (Test-Path -LiteralPath $backupFile -PathType Leaf)) { throw 'Backup file missing' }
+      $expectedHash = (Get-FileHash -LiteralPath $backupFile -Algorithm SHA256).Hash
+      $sameHash = (Test-Path -LiteralPath $file.path -PathType Leaf) -and
+        ((Get-FileHash -LiteralPath $file.path -Algorithm SHA256).Hash -eq $expectedHash)
+      if (-not $sameHash) {
+        New-Item -ItemType Directory -Path (Split-Path $file.path) -Force | Out-Null
+        Copy-Item -LiteralPath $backupFile -Destination $file.path -Force -ErrorAction Stop
+      }
+      if ((Get-FileHash -LiteralPath $file.path -Algorithm SHA256).Hash -ne $expectedHash) { throw 'Restored hash mismatch' }
     } else {
       Remove-Item -LiteralPath $file.path -Force -ErrorAction Stop
       if (Test-Path -LiteralPath $file.path) { throw 'Newly created file still exists' }
