@@ -269,11 +269,14 @@ namespace KeePassNatMsg.Tests
         public void SearchingDisabled_ExactEntry_DoesNotSuppressCidr()
         {
             var db = CreateTestDatabase();
-            var disabledExact = CreateEntry("Disabled Exact", "admin_exact", "secret1", "https://10.125.1.8/");
-            disabledExact.SearchingEnabled = false;
-            var cidrEntry = CreateEntry("CIDR Subnet", "admin_cidr", "secret2", "CIDR:10.125.1.0/24");
+            var disabledGroup = new PwGroup(true, true, "Disabled Group", PwIcon.Folder);
+            disabledGroup.EnableSearching = false;
+            db.RootGroup.AddGroup(disabledGroup, true);
 
-            db.RootGroup.AddEntry(disabledExact, true);
+            var disabledExact = CreateEntry("Disabled Exact", "admin_exact", "secret1", "https://10.125.1.8/");
+            disabledGroup.AddEntry(disabledExact, true);
+
+            var cidrEntry = CreateEntry("CIDR Subnet", "admin_cidr", "secret2", "CIDR:10.125.1.0/24");
             db.RootGroup.AddEntry(cidrEntry, true);
 
             var matches = _search.FindMatchingEntries(new Uri("https://10.125.1.8/"), null, new[] { db }).ToList();
