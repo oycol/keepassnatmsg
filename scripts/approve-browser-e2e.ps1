@@ -23,6 +23,8 @@ public static class Win32Native {
     [DllImport("user32.dll", SetLastError = true)]
     public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+    public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, System.Text.StringBuilder lParam);
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
     public static extern bool SetWindowText(IntPtr hWnd, string text);
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
@@ -141,23 +143,110 @@ public static class Win32Native {
             [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
         }
     } else {
-        # access phase
+        # access phase: fail closed by verifying exact expected host and exactly one displayed entry item with expected title
+        if ([string]::IsNullOrWhiteSpace($ExpectedHost)) {
+            throw 'ExpectedHost must be specified for access phase'
+        }
+        if ([string]::IsNullOrWhiteSpace($ExpectedTitle)) {
+            throw 'ExpectedTitle must be specified for access phase'
+        }
+
         $allowBtn = $null
+        $hostVerified = $false
+        $entryVerified = $false
+        $entriesCount = -1
+
         while ([DateTime]::UtcNow -lt $controlsDeadline) {
             $all = @($window.FindAll($treeScope, $condition))
-            $labels = @($all | Where-Object { $_.Current.Name -and $_.Current.Name -match 'has requested access to passwords' -and $_.Current.Name.Contains($ExpectedHost) })
+
+            # 1. Exact expected host label verification (singular "above item." for exactly 1 item)
+            $hostLabels = @($all | Where-Object {
+                $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::Text -and
+                $_.Current.Name -and
+                $_.Current.Name -like "$ExpectedHost has requested access to passwords for the above item.*"
+            })
+            $hostVerified = ($hostLabels.Count -eq 1)
+
+            # 2. EntriesBox verification: use reliable Win32 or UIA without reading or printing secrets
+            $entriesCandidates = @($all | Where-Object {
+                $_.Current.AutomationId -eq 'EntriesBox' -or
+                $_.Current.Name -eq 'EntriesBox' -or
+                ($_.Current.ClassName -and $_.Current.ClassName -like '*ListBox*') -or
+                $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::List
+            })
+            if ($entriesCandidates.Count -eq 0) {
+                # Fallback: child pane with valid HWND
+                $entriesCandidates = @($all | Where-Object {
+                    $_.Current.NativeWindowHandle -ne 0 -and
+                    $_.Current.NativeWindowHandle -ne $formHwnd.ToInt32() -and
+                    $_.Current.ControlType.ProgrammaticName -in @('ControlType.List', 'ControlType.Pane', 'ControlType.Custom') -and
+                    $_.Current.Name -notin @('Allow', '&Allow', 'Deny', '&Deny', 'RememberCheck', $title)
+                })
+            }
+
+            $entryItems = @()
+            if ($entriesCandidates.Count -ge 1) {
+                $boxElement = $entriesCandidates[0]
+                $boxHwnd = [IntPtr]$boxElement.Current.NativeWindowHandle
+                if ($boxHwnd -ne [IntPtr]::Zero) {
+                    # LB_GETCOUNT = 0x018B
+                    $count = [Win32Native]::SendMessage($boxHwnd, 0x018B, [IntPtr]::Zero, [IntPtr]::Zero).ToInt32()
+                    if ($count -ge 0) {
+                        for ($i = 0; $i -lt $count; $i++) {
+                            # LB_GETTEXTLEN = 0x018A
+                            $len = [Win32Native]::SendMessage($boxHwnd, 0x018A, [IntPtr]$i, [IntPtr]::Zero).ToInt32()
+                            if ($len -ge 0) {
+                                # LB_GETTEXT = 0x0189
+                                $sb = New-Object System.Text.StringBuilder ($len + 1)
+                                [Win32Native]::SendMessage($boxHwnd, 0x0189, [IntPtr]$i, $sb) | Out-Null
+                                $entryItems += $sb.ToString()
+                            }
+                        }
+                    }
+                }
+                if ($entryItems.Count -eq 0) {
+                    # Fallback to UIAutomation children if Win32 returned no items
+                    $childItems = @($boxElement.FindAll([System.Windows.Automation.TreeScope]::Children, $condition))
+                    foreach ($ci in $childItems) {
+                        if ($ci.Current.Name) {
+                            $entryItems += $ci.Current.Name
+                        }
+                    }
+                }
+            }
+
+            $entriesCount = $entryItems.Count
+            if ($entriesCount -eq 1) {
+                $item = $entryItems[0].Trim()
+                if ($item -eq $ExpectedTitle.Trim() -or $item.StartsWith("$($ExpectedTitle.Trim()) - ")) {
+                    $entryVerified = $true
+                } else {
+                    $entryVerified = $false
+                }
+            } else {
+                $entryVerified = $false
+            }
+
+            # 3. Allow button
             $btnCandidates = @($all | Where-Object {
                 ($_.Current.AutomationId -eq 'AllowButton' -or $_.Current.Name -in @('Allow', '&Allow', 'AllowButton')) -and $_.Current.IsEnabled
             })
             if ($btnCandidates.Count -ge 1) {
                 $allowBtn = $btnCandidates[0]
             }
-            if ($allowBtn) {
+
+            if ($hostVerified -and $entryVerified -and $allowBtn) {
                 break
             }
             Start-Sleep -Milliseconds 250
         }
 
+        if (-not $hostVerified) {
+            throw "Expected host label for '$ExpectedHost' (single item) not verified within deadline"
+        }
+        if (-not $entryVerified) {
+            throw "EntriesBox validation failed: expected exactly 1 item matching expected title, found count=$entriesCount"
+        }
         if (-not $allowBtn) {
             $inventory = @($all | ForEach-Object { "$($_.Current.ControlType.ProgrammaticName):id=$($_.Current.AutomationId):name=$($_.Current.Name):class=$($_.Current.ClassName):enabled=$($_.Current.IsEnabled)" }) | Select-Object -First 20
             [Console]::Error.WriteLine("control-inventory-allow-failed list=$($inventory -join ' | ')")

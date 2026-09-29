@@ -29,9 +29,9 @@ const hostPath = path.join(process.env.LOCALAPPDATA || '', 'KeePassNatMsg', 'org
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'keepass-cidr-profile-'));
 const association = 'E2E-' + crypto.randomBytes(12).toString('hex');
 const pageHtml = '<!doctype html><html><body><form action="/login" method="post"><input id="user" name="username" autocomplete="username"><input id="pass" name="password" type="password" autocomplete="current-password"><button type="button">Sign in</button></form></body></html>';
-let context, server, approval, original;
+let context, serverExact, serverCidr, exactPort, cidrPort, approval, original;
 function approve(phase, expectedHost, expectedTitle) {
-  const hostVal = expectedHost || `127.0.0.1:${server.address().port}`;
+  const hostVal = expectedHost || `127.0.0.1:${exactPort || 0}`;
   const titleVal = expectedTitle || `${title} - ${user}`;
   const args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'approve-browser-e2e.ps1'),
     '-Phase', phase, '-KeePassPid', pidArg, '-DatabasePath', dbPath, '-ExpectedHost', hostVal,
@@ -58,15 +58,36 @@ async function withApproval(phase, action, expectedHost, expectedTitle) {
   } finally { if (!gate.isDone()) approval.kill(); approval = null; }
 }
 
-function serve() {
-  return new Promise((resolve, reject) => {
-    server = http.createServer((req, res) => {
-      res.writeHead(200, {'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-store'});
-      res.end(pageHtml);
-    });
-    server.once('error', reject);
-    server.listen(0, '0.0.0.0', resolve);
+function createServer() {
+  return http.createServer((req, res) => {
+    res.writeHead(200, {'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-store'});
+    res.end(pageHtml);
   });
+}
+
+function listen(srv, host, port = 0) {
+  return new Promise((resolve, reject) => {
+    srv.once('error', reject);
+    srv.listen(port, host, () => {
+      srv.removeListener('error', reject);
+      resolve(srv.address().port);
+    });
+  });
+}
+
+async function serve() {
+  serverExact = createServer();
+  exactPort = await listen(serverExact, '127.0.0.1', 0);
+
+  serverCidr = createServer();
+  try {
+    // Attempt binding to the same port on 127.0.0.2 first
+    cidrPort = await listen(serverCidr, '127.0.0.2', exactPort);
+  } catch (_) {
+    // Fall back to distinct loopback port if same port is unavailable
+    serverCidr = createServer();
+    cidrPort = await listen(serverCidr, '127.0.0.2', 0);
+  }
 }
 
 let currentStep = 'initializing';
@@ -84,17 +105,25 @@ overallTimer.unref?.();
 
 (async () => {
   await serve();
-  const port = server.address().port;
   await new Promise((resolve, reject) => {
-    const req = http.get(`http://127.0.0.2:${port}/login`, (res) => { res.resume(); resolve(); });
-    req.on('error', (err) => reject(new Error(`Failed to reach server on 127.0.0.2:${port}: ${err.message}`)));
+    const req = http.get(`http://127.0.0.2:${cidrPort}/login`, (res) => { res.resume(); resolve(); });
+    req.on('error', (err) => reject(new Error(`Failed to reach server on 127.0.0.2:${cidrPort}: ${err.message}`)));
   });
   await new Promise((resolve, reject) => {
-    const req = http.get(`http://127.0.0.1:${port}/login`, (res) => { res.resume(); resolve(); });
-    req.on('error', (err) => reject(new Error(`Failed to reach server on 127.0.0.1:${port}: ${err.message}`)));
+    const req = http.get(`http://127.0.0.1:${exactPort}/login`, (res) => { res.resume(); resolve(); });
+    req.on('error', (err) => reject(new Error(`Failed to reach server on 127.0.0.1:${exactPort}: ${err.message}`)));
   });
 
-  context = await chromium.launchPersistentContext(profile, {headless:false, args:[`--disable-extensions-except=${ext}`, `--load-extension=${ext}`], timeout:20000});
+  context = await chromium.launchPersistentContext(profile, {
+    headless: false,
+    args: [
+      `--disable-extensions-except=${ext}`,
+      `--load-extension=${ext}`,
+      '--proxy-server=direct://',
+      '--proxy-bypass-list=127.0.0.1;127.0.0.2;localhost'
+    ],
+    timeout: 20000
+  });
   let workers = context.serviceWorkers();
   if (!workers.length) { await context.waitForEvent('serviceworker', {timeout:15000}); workers = context.serviceWorkers(); }
   const ids = workers.map(w => /^chrome-extension:\/\/([a-p]{32})\//.exec(w.url())).filter(Boolean);
@@ -215,30 +244,37 @@ overallTimer.unref?.();
 
     step('instrument-sw-getlogins');
     await workers[0].evaluate(() => {
-      globalThis.__e2eGetLoginsCalls = [];
-      if (typeof keepassClient !== 'undefined' && keepassClient.sendMessage) {
-        const orig = keepassClient.sendMessage;
-        keepassClient.sendMessage = async function(action, tab, data, nonce, enableTimeout, triggerUnlock) {
-          const resp = await orig.apply(this, arguments);
-          if (action === 'get-logins') {
-            let reqHost = '';
-            try { reqHost = new URL(data && data.url).host; } catch (_) {}
-            globalThis.__e2eGetLoginsCalls.push({
-              action: action,
-              host: reqHost,
-              hasEntries: Array.isArray(resp && resp.entries),
-              entryCount: Array.isArray(resp && resp.entries) ? resp.entries.length : 0
-            });
-          }
-          return resp;
-        };
+      if (typeof keepassClient === 'undefined' || typeof keepassClient.sendMessage !== 'function') {
+        throw new Error('keepassClient.sendMessage is unavailable in ServiceWorker for instrumentation');
       }
+      globalThis.__e2eGetLoginsCalls = [];
+      const orig = keepassClient.sendMessage;
+      keepassClient.sendMessage = async function(action, tab, data, nonce, enableTimeout, triggerUnlock) {
+        const resp = await orig.apply(this, arguments);
+        if (action === 'get-logins') {
+          let reqHost = '';
+          try { reqHost = new URL(data && data.url).host; } catch (_) {}
+          const rawEntries = Array.isArray(resp && resp.entries) ? resp.entries : [];
+          // Capture only synthetic username and title identity in memory; never store passwords or secrets
+          const syntheticLogins = rawEntries.map(e => ({
+            name: typeof e.name === 'string' ? e.name : '',
+            login: typeof e.login === 'string' ? e.login : ''
+          }));
+          globalThis.__e2eGetLoginsCalls.push({
+            action: action,
+            host: reqHost,
+            entryCount: rawEntries.length,
+            logins: syntheticLogins
+          });
+        }
+        return resp;
+      };
     });
 
     step('open-cidr-page');
     const page = await context.newPage();
-    const cidrUrl = `http://127.0.0.2:${port}/login`;
-    const cidrHost = `127.0.0.2:${port}`;
+    const cidrUrl = `http://127.0.0.2:${cidrPort}/login`;
+    const cidrHost = `127.0.0.2:${cidrPort}`;
     // Without approval, the extension must not fill the page; DB fixture on 127.0.0.2 is a CIDR-only match.
     const cidrGate = approve('access', cidrHost, `${title} - ${user}`);
     try {
@@ -254,8 +290,8 @@ overallTimer.unref?.();
 
     step('open-exact-page');
     const exactPage = await context.newPage();
-    const exactUrl = `http://127.0.0.1:${port}/login`;
-    const exactHost = `127.0.0.1:${port}`;
+    const exactUrl = `http://127.0.0.1:${exactPort}/login`;
+    const exactHost = `127.0.0.1:${exactPort}`;
     // On 127.0.0.1, both CIDR and Exact IP match, but Exact IP must suppress CIDR.
     const exactGate = approve('access', exactHost, `${exactTitle} - ${exactUser}`);
     try {
@@ -275,10 +311,14 @@ overallTimer.unref?.();
     step('verify-get-logins-evidence');
     calls = await workers[0].evaluate(() => globalThis.__e2eGetLoginsCalls || []);
     assert(Array.isArray(calls) && calls.length >= 2, 'Official extension did not call get-logins for both requests');
-    const cidrCall = calls.find(c => c.host && c.host.startsWith('127.0.0.2:'));
-    const exactCall = calls.find(c => c.host && c.host.startsWith('127.0.0.1:'));
+    const cidrCall = calls.find(c => c.host && c.host.startsWith(`127.0.0.2:${cidrPort}`));
+    const exactCall = calls.find(c => c.host && c.host.startsWith(`127.0.0.1:${exactPort}`));
     assert(cidrCall && cidrCall.entryCount === 1, 'CIDR get-logins call missing or returned unexpected entry count');
     assert(exactCall && exactCall.entryCount === 1, 'Exact IP get-logins call missing or returned unexpected entry count (CIDR not suppressed)');
+    assert(cidrCall.logins && cidrCall.logins.length === 1 && cidrCall.logins[0].login === user,
+      'CIDR get-logins call did not return expected synthetic user identity');
+    assert(exactCall.logins && exactCall.logins.length === 1 && exactCall.logins[0].login === exactUser,
+      'Exact IP get-logins call did not return expected synthetic exactUser identity');
 
     step('write-evidence');
   } catch (e) { throw new Error(`step=${currentStep}: ${e && e.message ? e.message.split('\n')[0] : e}`); }
@@ -302,6 +342,7 @@ overallTimer.unref?.();
     if (approval) approval.kill();
     if (context) await context.close().catch(() => { process.exitCode=1; });
     if (original) { try { fs.writeFileSync(hostPath, original); } catch (_) { process.exitCode=1; console.error('Native host manifest restoration failed'); } }
-    if (server) await new Promise(resolve => server.close(resolve));
+    if (serverExact) await new Promise(resolve => serverExact.close(resolve)).catch(() => {});
+    if (serverCidr) await new Promise(resolve => serverCidr.close(resolve)).catch(() => {});
     fs.rmSync(profile, {recursive:true,force:true});
   });
