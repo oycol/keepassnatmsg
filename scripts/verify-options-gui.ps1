@@ -56,8 +56,16 @@ try {
         $failures.Add("Options client area smaller than baseline 720x590: ${w}x${h}") | Out-Null
     }
 
-    # Verify the dialog itself fits the active monitor, not just its 100% layout.
+    # CreateControl does not display or position the form via KeePass. Normalize
+    # its synthetic position inside the actual work area before checking bounds;
+    # this does not claim that a KeePass-hosted dialog was opened.
     $working = [System.Windows.Forms.Screen]::FromControl($form).WorkingArea
+    if ($form.Width -le $working.Width -and $form.Height -le $working.Height) {
+        $form.Location = New-Object System.Drawing.Point(
+            ($working.Left + [int][Math]::Floor(($working.Width - $form.Width) / 2)),
+            ($working.Top + [int][Math]::Floor(($working.Height - $form.Height) / 2)))
+    }
+    # Verify the dialog itself fits the active monitor, not just its 100% layout.
     if ($form.Bounds.Left -lt $working.Left -or $form.Bounds.Top -lt $working.Top -or
         $form.Bounds.Right -gt $working.Right -or $form.Bounds.Bottom -gt $working.Bottom) {
         $failures.Add("Options dialog outside working area: form=$($form.Bounds) work=$working") | Out-Null
