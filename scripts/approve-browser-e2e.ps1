@@ -141,7 +141,8 @@ public static class Win32Native {
             [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
         }
     } else {
-        # access phase: fail closed by verifying exact expected host and exactly one displayed entry item with expected title
+        # access phase: verify the expected host and single-item prompt; the
+        # extension response and page fill verify the synthetic entry identity.
         if ([string]::IsNullOrWhiteSpace($ExpectedHost)) {
             throw 'ExpectedHost must be specified for access phase'
         }
