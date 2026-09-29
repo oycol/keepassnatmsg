@@ -28,6 +28,24 @@ jobs:
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-options-hosted-display.ps1 -SelfTest
           if ($LASTEXITCODE -ne 0) { throw 'Hosted display verifier self-test failed' }
 
+      - name: Inspect retained PLGX backup without changing state
+        shell: powershell
+        run: |
+          $stateDir = Join-Path $env:LOCALAPPDATA 'keepassnatmsg-e2e-preserve'
+          $statePath = Join-Path $stateDir 'state.json'
+          if (-not (Test-Path -LiteralPath $statePath)) { Write-Host 'backup_state_present=False'; return }
+          $state = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
+          $item = @($state.files)[0]
+          $backup = Join-Path $stateDir $item.copy
+          $target = $item.path
+          $backupExists = Test-Path -LiteralPath $backup -PathType Leaf
+          $targetExists = Test-Path -LiteralPath $target -PathType Leaf
+          $sameHash = $false
+          if ($backupExists -and $targetExists) { $sameHash = (Get-FileHash -LiteralPath $backup -Algorithm SHA256).Hash -eq (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash }
+          $readOnly = if ($targetExists) { [bool]((Get-Item -LiteralPath $target).Attributes -band [IO.FileAttributes]::ReadOnly) } else { $false }
+          $kp = @(Get-Process KeePass -ErrorAction SilentlyContinue)
+          Write-Host "backup_state_present=True backup_complete=$($state.completed) file0_originally_present=$($item.exists) backup_present=$backupExists target_present=$targetExists hashes_equal=$sameHash target_readonly=$readOnly keepass_process_count=$($kp.Count)"
+
       - name: Run read-only display capability probe
         shell: powershell
         run: |
