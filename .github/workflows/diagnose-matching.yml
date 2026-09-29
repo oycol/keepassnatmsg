@@ -76,10 +76,16 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          $hostKey = 'C:\ProgramData\ssh\ssh_host_ed25519_key.pub'
-          if (-not (Test-Path -LiteralPath $hostKey)) { throw 'SSH host public key unavailable' }
-          $fingerprint = (& ssh-keygen.exe -lf $hostKey | Select-Object -First 1) -split '\s+'
-          Write-Host "runner_ssh_ed25519_fingerprint=$($fingerprint[1])"
+          $scan = @(& ssh-keyscan.exe -T 5 -t ed25519 127.0.0.1 2>$null)
+          $keyLine = @($scan | Where-Object { $_ -match '^127\.0\.0\.1\s+ssh-ed25519\s+' }) | Select-Object -First 1
+          if (-not $keyLine) { throw 'Local SSH service did not return an ED25519 public key' }
+          $tempKey = Join-Path $env:RUNNER_TEMP 'runner-ssh-host-pub.txt'
+          try {
+            [IO.File]::WriteAllText($tempKey, [string]$keyLine)
+            $fingerprint = (& ssh-keygen.exe -lf $tempKey | Select-Object -First 1) -split '\s+'
+            if ($fingerprint.Count -lt 2 -or $fingerprint[1] -notmatch '^SHA256:') { throw 'Cannot validate SSH fingerprint' }
+            Write-Host "runner_ssh_ed25519_fingerprint=$($fingerprint[1])"
+          } finally { Remove-Item -LiteralPath $tempKey -Force -ErrorAction SilentlyContinue }
           $owner = [System.Security.Principal.WindowsIdentity]::GetCurrent()
           $sid = [System.Diagnostics.Process]::GetCurrentProcess().SessionId
           $sessions = @(Get-CimInstance Win32_LogonSession -ErrorAction Stop | Where-Object { $_.LogonType -eq 2 -or $_.LogonType -eq 10 })
