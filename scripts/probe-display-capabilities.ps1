@@ -42,7 +42,7 @@ public static class DisplayProbeNative {
         public int y;
     }
 
-    [DllImport("user32.dll", CharSet=CharSet.Unicode)]
+    [DllImport("user32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
     public static extern bool EnumDisplaySettings(string device, int modeNum, ref DEVMODE mode);
 
     [DllImport("user32.dll")]
@@ -177,13 +177,15 @@ $primaryScreen = try {
 } catch {
     $null
 }
+$displayDevice = if ($primaryScreen) { [string]$primaryScreen.DeviceName } else { $null }
 
 $currentMode = [DisplayProbeNative]::NewDevMode()
 $enumCurrentSuccess = try {
-    [DisplayProbeNative]::EnumDisplaySettings($null, -1, [ref]$currentMode)
+    [DisplayProbeNative]::EnumDisplaySettings($displayDevice, -1, [ref]$currentMode)
 } catch {
     $false
 }
+$currentModeWin32Error = if ($enumCurrentSuccess) { 0 } else { [Runtime.InteropServices.Marshal]::GetLastWin32Error() }
 
 $primaryDisplay = [ordered]@{
     deviceName                 = if ($primaryScreen) { $primaryScreen.DeviceName } elseif ($enumCurrentSuccess) { $currentMode.dmDeviceName } else { $null }
@@ -203,6 +205,7 @@ $primaryDisplay = [ordered]@{
         $null
     }
     enumCurrentSettingsSuccess = $enumCurrentSuccess
+    enumWin32Error             = $currentModeWin32Error
 }
 
 $monitorDpi = try { [DisplayProbeNative]::GetPrimaryMonitorDpi() } catch { $null }
@@ -238,7 +241,7 @@ $totalModesEnumerated = 0
 
 for ($i = 0; $i -lt 4096; $i++) {
     $candidate = [DisplayProbeNative]::NewDevMode()
-    $ok = try { [DisplayProbeNative]::EnumDisplaySettings($null, $i, [ref]$candidate) } catch { $false }
+    $ok = try { [DisplayProbeNative]::EnumDisplaySettings($displayDevice, $i, [ref]$candidate) } catch { $false }
     if (-not $ok) { break }
     $totalModesEnumerated++
 
