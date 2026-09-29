@@ -13,9 +13,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 # Do not log element text outside the fixed UI labels below: KeePass contains secrets.
-$result = [ordered]@{ passed = $false; processId = $ProcessId; target = "${TargetWidth}x${TargetHeight}"; minimumDpi = $MinimumDpi; original = $null; actual = $null; tabs = @(); buttons = @(); restored = $false; error = $null; restoreError = $null }
+$result = [ordered]@{ passed = $false; blocked = $false; processId = $ProcessId; target = "${TargetWidth}x${TargetHeight}"; minimumDpi = $MinimumDpi; original = $null; actual = $null; tabs = @(); buttons = @(); restored = $false; error = $null; restoreError = $null }
 $originalMode = $null
+$displayDevice = $null
 $modeChanged = $false
+$isPreflight = $true
 $dialog = $null
 try {
     if (($TargetWidth -eq 2560 -and $TargetHeight -ne 1440) -or ($TargetWidth -eq 3840 -and $TargetHeight -ne 2160)) { throw 'Unsupported target resolution pair' }
@@ -38,7 +40,7 @@ public static class HostedDisplayNative {
         public short dmLogPixels;
         public int dmBitsPerPel, dmPelsWidth, dmPelsHeight, dmDisplayFlags, dmDisplayFrequency, dmICMMethod, dmICMIntent, dmMediaType, dmDitherType, dmReserved1, dmReserved2, dmPanningWidth, dmPanningHeight;
     }
-    [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern bool EnumDisplaySettings(string device, int modeNum, ref DEVMODE mode);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern bool EnumDisplaySettings(string device, int modeNum, ref DEVMODE mode);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int ChangeDisplaySettingsEx(string device, ref DEVMODE mode, IntPtr hwnd, int flags, IntPtr lparam);
     [DllImport("user32.dll")] public static extern IntPtr MonitorFromWindow(IntPtr hwnd, int flags);
     [DllImport("shcore.dll")] public static extern int GetDpiForMonitor(IntPtr monitor, int dpiType, out uint x, out uint y);
@@ -63,7 +65,10 @@ public static class HostedDisplayNative {
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($mainHandle)
     if (-not $root -or $root.Current.ProcessId -ne $ProcessId) { throw 'KeePass window PID mismatch' }
     $primary = [System.Windows.Forms.Screen]::PrimaryScreen
-    if (-not $primary -or [System.Windows.Forms.Screen]::FromHandle($mainHandle).DeviceName -ne $primary.DeviceName) { throw 'KeePass test window must be on the primary monitor' }
+    if (-not $primary -or [string]::IsNullOrWhiteSpace($primary.DeviceName)) { throw 'Primary display device unavailable' }
+    $displayDevice = [string]$primary.DeviceName
+    $windowScreen = [System.Windows.Forms.Screen]::FromHandle($mainHandle)
+    if (-not $windowScreen -or $windowScreen.DeviceName -ne $displayDevice) { throw 'KeePass test window must be on the primary monitor' }
     # Never close a pre-existing Options dialog: it may belong to a real user.
     $desktop = [System.Windows.Automation.AutomationElement]::RootElement
     foreach ($window in $desktop.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
@@ -71,7 +76,7 @@ public static class HostedDisplayNative {
     }
 
     $originalMode = [HostedDisplayNative]::NewMode()
-    if (-not [HostedDisplayNative]::EnumDisplaySettings($null, -1, [ref]$originalMode)) { throw 'Cannot read original primary display mode' }
+    if (-not [HostedDisplayNative]::EnumDisplaySettings($displayDevice, -1, [ref]$originalMode)) { throw 'Cannot read original primary display mode' }
     $originalDpi = [HostedDisplayNative]::Dpi($mainHandle)
     $result.original = [ordered]@{ width = $originalMode.dmPelsWidth; height = $originalMode.dmPelsHeight; dpiX = $originalDpi[0]; dpiY = $originalDpi[1] }
     # Windows has no supported immediate per-monitor user-scale setter. Never edit
@@ -82,21 +87,22 @@ public static class HostedDisplayNative {
     $targetMode = $null
     for ($i = 0; $i -lt 4096; $i++) {
         $candidate = [HostedDisplayNative]::NewMode()
-        if (-not [HostedDisplayNative]::EnumDisplaySettings($null, $i, [ref]$candidate)) { break }
+        if (-not [HostedDisplayNative]::EnumDisplaySettings($displayDevice, $i, [ref]$candidate)) { break }
         if ($candidate.dmPelsWidth -eq $TargetWidth -and $candidate.dmPelsHeight -eq $TargetHeight -and
             $candidate.dmBitsPerPel -eq $originalMode.dmBitsPerPel -and $candidate.dmDisplayFrequency -eq $originalMode.dmDisplayFrequency -and
             $candidate.dmDisplayOrientation -eq $originalMode.dmDisplayOrientation) { $targetMode = $candidate; break }
     }
     if (-not $targetMode) { throw 'Target mode unsupported at current color depth, frequency and orientation' }
-    if ([HostedDisplayNative]::ChangeDisplaySettingsEx($null, [ref]$targetMode, [IntPtr]::Zero, 2, [IntPtr]::Zero) -ne 0) { throw 'Target display mode rejected by CDS_TEST' }
+    if ([HostedDisplayNative]::ChangeDisplaySettingsEx($displayDevice, [ref]$targetMode, [IntPtr]::Zero, 2, [IntPtr]::Zero) -ne 0) { throw 'Target display mode rejected by CDS_TEST' }
+    $isPreflight = $false
     if ($originalMode.dmPelsWidth -ne $TargetWidth -or $originalMode.dmPelsHeight -ne $TargetHeight) {
         # Mark before calling: a driver can apply a mode despite returning an error.
         $modeChanged = $true
-        if ([HostedDisplayNative]::ChangeDisplaySettingsEx($null, [ref]$targetMode, [IntPtr]::Zero, 0, [IntPtr]::Zero) -ne 0) { throw 'Display mode change failed' }
+        if ([HostedDisplayNative]::ChangeDisplaySettingsEx($displayDevice, [ref]$targetMode, [IntPtr]::Zero, 0, [IntPtr]::Zero) -ne 0) { throw 'Display mode change failed' }
     }
     Start-Sleep -Milliseconds 800
     $actualMode = [HostedDisplayNative]::NewMode()
-    if (-not [HostedDisplayNative]::EnumDisplaySettings($null, -1, [ref]$actualMode) -or $actualMode.dmPelsWidth -ne $TargetWidth -or $actualMode.dmPelsHeight -ne $TargetHeight) { throw 'Target display mode did not take effect' }
+    if (-not [HostedDisplayNative]::EnumDisplaySettings($displayDevice, -1, [ref]$actualMode) -or $actualMode.dmPelsWidth -ne $TargetWidth -or $actualMode.dmPelsHeight -ne $TargetHeight) { throw 'Target display mode did not take effect' }
     $actualDpi = [HostedDisplayNative]::Dpi($mainHandle)
     $result.actual = [ordered]@{ width = $actualMode.dmPelsWidth; height = $actualMode.dmPelsHeight; dpiX = $actualDpi[0]; dpiY = $actualDpi[1] }
     if ($actualDpi[0] -lt $MinimumDpi -or $actualDpi[1] -lt $MinimumDpi) { throw 'Effective DPI below required high-DPI threshold after mode change' }
@@ -169,7 +175,39 @@ public static class HostedDisplayNative {
     $result.passed = $true
 } catch {
     # No exception text: COM/UIA messages may contain a window title or user data.
-    $result.error = if ($_.Exception.Message -in @('Unsupported target resolution pair', 'An interactive Windows desktop is required', 'Cannot read original primary display mode', 'High-DPI prerequisite unmet: configure Windows display scale in the interactive session before running', 'Target mode unsupported at current color depth, frequency and orientation', 'Target display mode rejected by CDS_TEST', 'Display mode change failed', 'Target display mode did not take effect', 'Effective DPI below required high-DPI threshold after mode change', 'KeePass Tools menu not found', 'KeePassNatMsg Options menu item not found in the specified process', 'KeePass-hosted Options window not visible', 'Options window outside monitor working area', 'Options tab count mismatch', 'Required Options tab unavailable', 'Required Options dialog button unavailable', 'Options dialog button clipped')) { $_.Exception.Message } else { 'GUI verification failed (details suppressed)' }
+    $msg = $_.Exception.Message
+    $allowedMessages = @(
+        'Unsupported target resolution pair',
+        'An interactive Windows desktop is required',
+        'PID must belong to a running, interactive KeePass main window',
+        'KeePass process command line does not contain the dedicated test database path',
+        'KeePass window PID mismatch',
+        'Primary display device unavailable',
+        'KeePass test window must be on the primary monitor',
+        'Options dialog already open; refusing to touch it',
+        'Cannot read original primary display mode',
+        'High-DPI prerequisite unmet: configure Windows display scale in the interactive session before running',
+        'Target mode unsupported at current color depth, frequency and orientation',
+        'Target display mode rejected by CDS_TEST',
+        'Display mode change failed',
+        'Target display mode did not take effect',
+        'Effective DPI below required high-DPI threshold after mode change',
+        'KeePass Tools menu not found',
+        'Tools menu has no UIAutomation activation pattern',
+        'KeePassNatMsg Options menu item not found in the specified process',
+        'Options menu item cannot be invoked via UIAutomation',
+        'KeePass-hosted Options window not visible',
+        'Options window outside monitor working area',
+        'Options tab count mismatch',
+        'Required Options tab unavailable',
+        'Required Options dialog button unavailable',
+        'Options dialog button clipped',
+        'Cancel button cannot be invoked'
+    )
+    $result.error = if ($msg -in $allowedMessages) { $msg } else { 'GUI verification failed (details suppressed)' }
+    if ($isPreflight) {
+        $result.blocked = $true
+    }
 } finally {
     if ($dialog) {
         try {
@@ -180,16 +218,16 @@ public static class HostedDisplayNative {
     }
     try {
         if ($modeChanged) {
-            if ([HostedDisplayNative]::ChangeDisplaySettingsEx($null, [ref]$originalMode, [IntPtr]::Zero, 0, [IntPtr]::Zero) -ne 0) { throw 'Original display mode restore rejected' }
-        }
-        if ($originalMode) {
+            if ([HostedDisplayNative]::ChangeDisplaySettingsEx($displayDevice, [ref]$originalMode, [IntPtr]::Zero, 0, [IntPtr]::Zero) -ne 0) { throw 'Original display mode restore rejected' }
             $restoredMode = [HostedDisplayNative]::NewMode()
-            if (-not [HostedDisplayNative]::EnumDisplaySettings($null, -1, [ref]$restoredMode) -or
+            if (-not [HostedDisplayNative]::EnumDisplaySettings($displayDevice, -1, [ref]$restoredMode) -or
                 $restoredMode.dmPelsWidth -ne $originalMode.dmPelsWidth -or $restoredMode.dmPelsHeight -ne $originalMode.dmPelsHeight -or
                 $restoredMode.dmDisplayFrequency -ne $originalMode.dmDisplayFrequency -or $restoredMode.dmBitsPerPel -ne $originalMode.dmBitsPerPel -or
                 $restoredMode.dmDisplayOrientation -ne $originalMode.dmDisplayOrientation) { throw 'Original display mode not restored' }
             $restoredDpi = [HostedDisplayNative]::Dpi($mainHandle)
             if ($restoredDpi[0] -ne $originalDpi[0] -or $restoredDpi[1] -ne $originalDpi[1]) { throw 'Original effective display scale changed' }
+            $result.restored = $true
+        } elseif ($result.passed -and $originalMode) {
             $result.restored = $true
         }
     } catch {
@@ -209,4 +247,5 @@ public static class HostedDisplayNative {
     }
 }
 if ($result.restoreError) { exit 1 }
+if (-not $result.passed -and -not $result.blocked) { exit 1 }
 exit 0
