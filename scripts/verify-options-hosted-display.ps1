@@ -2,23 +2,204 @@
 # Example (after configuring Windows display scale >=150% and starting the dedicated
 # test DB KeePass instance):
 # powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-options-hosted-display.ps1 -ProcessId $kpProc.Id -TestDatabasePath C:\KeePassNatMsg-E2E\test.kdbx -TargetWidth 2560 -TargetHeight 1440 -MinimumDpi 144 -OutputPath .\e2e-artifacts\options-hosted-2k.json
+[CmdletBinding(DefaultParameterSetName = 'Verify')]
 param(
-    [Parameter(Mandatory = $true)][ValidateRange(1, 2147483647)][int]$ProcessId,
-    [Parameter(Mandatory = $true)][ValidateSet(2560, 3840)][int]$TargetWidth,
-    [Parameter(Mandatory = $true)][ValidateSet(1440, 2160)][int]$TargetHeight,
-    [ValidateRange(120, 768)][int]$MinimumDpi = 144,
-    [Parameter(Mandatory = $true)][string]$TestDatabasePath,
-    [string]$OutputPath = 'options-hosted-display.json'
+    [Parameter(ParameterSetName = 'Verify', Mandatory = $true)][ValidateRange(1, 2147483647)][int]$ProcessId,
+    [Parameter(ParameterSetName = 'Verify', Mandatory = $true)][ValidateSet(2560, 3840)][int]$TargetWidth,
+    [Parameter(ParameterSetName = 'Verify', Mandatory = $true)][ValidateSet(1440, 2160)][int]$TargetHeight,
+    [Parameter(ParameterSetName = 'Verify')][ValidateRange(120, 768)][int]$MinimumDpi = 144,
+    [Parameter(ParameterSetName = 'Verify', Mandatory = $true)][string]$TestDatabasePath,
+    [Parameter(ParameterSetName = 'Verify')][string]$OutputPath = 'options-hosted-display.json',
+    [Parameter(ParameterSetName = 'SelfTest', Mandatory = $true)][switch]$SelfTest
 )
 
 $ErrorActionPreference = 'Stop'
+
+function Test-IsBlockedError {
+    param([string]$ErrorMessage)
+    $blockedMessages = @(
+        'High-DPI prerequisite unmet: configure Windows display scale in the interactive session before running',
+        'Target mode unsupported at current color depth, frequency and orientation',
+        'Target display mode rejected by CDS_TEST'
+    )
+    return ($ErrorMessage -in $blockedMessages)
+}
+
+function Resolve-HostedDisplayExitCode {
+    param(
+        [bool]$Passed,
+        [bool]$Blocked,
+        [string]$RestoreError
+    )
+    if (-not [string]::IsNullOrEmpty($RestoreError)) { return 1 }
+    if (-not $Passed -and -not $Blocked) { return 1 }
+    return 0
+}
+
+function Test-HostedDisplayRestoration {
+    param(
+        [string]$DisplayDevice,
+        $OriginalMode,
+        $OriginalDpi,
+        [bool]$ModeChanged,
+        [scriptblock]$ChangeDisplaySettingsFn = $null,
+        [scriptblock]$EnumDisplaySettingsFn = $null,
+        [scriptblock]$GetPrimaryDpiFn = $null
+    )
+    if (-not $OriginalMode -or -not $DisplayDevice) {
+        return @{ Restored = $false; RestoreError = $null }
+    }
+    try {
+        if ($ModeChanged) {
+            if ($ChangeDisplaySettingsFn) {
+                $ret = & $ChangeDisplaySettingsFn $DisplayDevice $OriginalMode 0
+                if ($ret -ne 0) { throw 'Original display mode restore rejected' }
+            } else {
+                if ([HostedDisplayNative]::ChangeDisplaySettingsEx($DisplayDevice, [ref]$OriginalMode, [IntPtr]::Zero, 0, [IntPtr]::Zero) -ne 0) {
+                    throw 'Original display mode restore rejected'
+                }
+            }
+        }
+        $currentMode = $null
+        if ($EnumDisplaySettingsFn) {
+            $currentMode = & $EnumDisplaySettingsFn $DisplayDevice -1
+            if (-not $currentMode) { throw 'Original display mode not restored' }
+        } else {
+            $currentMode = [HostedDisplayNative]::NewMode()
+            if (-not [HostedDisplayNative]::EnumDisplaySettings($DisplayDevice, -1, [ref]$currentMode)) {
+                throw 'Original display mode not restored'
+            }
+        }
+        if ($currentMode.dmPelsWidth -ne $OriginalMode.dmPelsWidth -or $currentMode.dmPelsHeight -ne $OriginalMode.dmPelsHeight -or
+            $currentMode.dmDisplayFrequency -ne $OriginalMode.dmDisplayFrequency -or $currentMode.dmBitsPerPel -ne $OriginalMode.dmBitsPerPel -or
+            $currentMode.dmDisplayOrientation -ne $OriginalMode.dmDisplayOrientation) {
+            throw 'Original display mode not restored'
+        }
+        $currentDpi = if ($GetPrimaryDpiFn) { & $GetPrimaryDpiFn } else { [HostedDisplayNative]::GetPrimaryDpi() }
+        if ($currentDpi[0] -ne $OriginalDpi[0] -or $currentDpi[1] -ne $OriginalDpi[1]) {
+            throw 'Original effective display scale changed'
+        }
+        return @{ Restored = $true; RestoreError = $null }
+    } catch {
+        return @{
+            Restored = $false
+            RestoreError = 'Original display mode/scale restoration could not be verified; inspect Windows display settings immediately'
+        }
+    }
+}
+
+function Invoke-SelfTest {
+    $testsFailed = 0
+    Write-Host 'Running verify-options-hosted-display mock-safe self-tests...' -ForegroundColor Cyan
+
+    $blockedExpected = @(
+        'High-DPI prerequisite unmet: configure Windows display scale in the interactive session before running',
+        'Target mode unsupported at current color depth, frequency and orientation',
+        'Target display mode rejected by CDS_TEST'
+    )
+    foreach ($msg in $blockedExpected) {
+        if (-not (Test-IsBlockedError $msg)) {
+            Write-Error "FAIL: Expected '$msg' to be classified as blocked"
+            $testsFailed++
+        }
+    }
+
+    $nonBlockedMessages = @(
+        'PID must belong to a running, interactive KeePass main window',
+        'KeePass process command line does not contain the dedicated test database path',
+        'KeePass window PID mismatch',
+        'Primary display device unavailable',
+        'KeePass test window must be on the primary monitor',
+        'Cannot read original primary display mode',
+        'Display mode change failed',
+        'Target display mode did not take effect',
+        'KeePass-hosted Options window not visible',
+        'GUI verification failed (details suppressed)'
+    )
+    foreach ($msg in $nonBlockedMessages) {
+        if (Test-IsBlockedError $msg) {
+            Write-Error "FAIL: Expected '$msg' NOT to be classified as blocked (false green!)"
+            $testsFailed++
+        }
+    }
+
+    $cases = @(
+        @{ Passed = $true; Blocked = $false; RestoreError = $null; Expected = 0; Name = 'Pass' },
+        @{ Passed = $false; Blocked = $true; RestoreError = $null; Expected = 0; Name = 'Blocked' },
+        @{ Passed = $false; Blocked = $false; RestoreError = $null; Expected = 1; Name = 'TestFailure' },
+        @{ Passed = $true; Blocked = $false; RestoreError = 'restore failed'; Expected = 1; Name = 'RestoreErrorWithPass' },
+        @{ Passed = $false; Blocked = $true; RestoreError = 'restore failed'; Expected = 1; Name = 'RestoreErrorWithBlocked' }
+    )
+    foreach ($tc in $cases) {
+        $actual = Resolve-HostedDisplayExitCode -Passed $tc.Passed -Blocked $tc.Blocked -RestoreError $tc.RestoreError
+        if ($actual -ne $tc.Expected) {
+            Write-Error "FAIL: Resolve-HostedDisplayExitCode $($tc.Name) got $actual, expected $($tc.Expected)"
+            $testsFailed++
+        }
+    }
+
+    $mockOrigMode = [pscustomobject]@{ dmPelsWidth = 1920; dmPelsHeight = 1080; dmDisplayFrequency = 60; dmBitsPerPel = 32; dmDisplayOrientation = 0 }
+    $mockOrigDpi = @(144, 144)
+
+    # Mode unchanged, readback matches original -> restored should be true without touching display
+    $resUnchanged = Test-HostedDisplayRestoration -DisplayDevice '\\.\DISPLAY1' -OriginalMode $mockOrigMode -OriginalDpi $mockOrigDpi -ModeChanged $false `
+        -EnumDisplaySettingsFn { param($dev, $mode) $mockOrigMode } `
+        -GetPrimaryDpiFn { $mockOrigDpi }
+    if (-not $resUnchanged.Restored -or $resUnchanged.RestoreError) {
+        Write-Error 'FAIL: Mode unchanged restoration should verify unmutated state via readback'
+        $testsFailed++
+    }
+
+    # Mode unchanged, readback DPI mutated -> restored should be false and restoreError set
+    $resDpiMutated = Test-HostedDisplayRestoration -DisplayDevice '\\.\DISPLAY1' -OriginalMode $mockOrigMode -OriginalDpi $mockOrigDpi -ModeChanged $false `
+        -EnumDisplaySettingsFn { param($dev, $mode) $mockOrigMode } `
+        -GetPrimaryDpiFn { @(96, 96) }
+    if ($resDpiMutated.Restored -or -not $resDpiMutated.RestoreError) {
+        Write-Error 'FAIL: Mode unchanged with DPI mutation should fail restoration'
+        $testsFailed++
+    }
+
+    # Mode changed, restore change fails -> restoreError set
+    $resRestoreFailed = Test-HostedDisplayRestoration -DisplayDevice '\\.\DISPLAY1' -OriginalMode $mockOrigMode -OriginalDpi $mockOrigDpi -ModeChanged $true `
+        -ChangeDisplaySettingsFn { param($dev, $mode, $flags) 1 } `
+        -EnumDisplaySettingsFn { param($dev, $mode) $mockOrigMode } `
+        -GetPrimaryDpiFn { $mockOrigDpi }
+    if ($resRestoreFailed.Restored -or -not $resRestoreFailed.RestoreError) {
+        Write-Error 'FAIL: Mode changed with rejected restore should fail restoration'
+        $testsFailed++
+    }
+
+    # Mode changed, restore succeeds and readback matches -> restored true
+    $resRestoreSuccess = Test-HostedDisplayRestoration -DisplayDevice '\\.\DISPLAY1' -OriginalMode $mockOrigMode -OriginalDpi $mockOrigDpi -ModeChanged $true `
+        -ChangeDisplaySettingsFn { param($dev, $mode, $flags) 0 } `
+        -EnumDisplaySettingsFn { param($dev, $mode) $mockOrigMode } `
+        -GetPrimaryDpiFn { $mockOrigDpi }
+    if (-not $resRestoreSuccess.Restored -or $resRestoreSuccess.RestoreError) {
+        Write-Error 'FAIL: Mode changed with successful restore should succeed'
+        $testsFailed++
+    }
+
+    if ($testsFailed -eq 0) {
+        Write-Host 'All verify-options-hosted-display self-tests passed!' -ForegroundColor Green
+        exit 0
+    } else {
+        Write-Error "$testsFailed self-tests failed!"
+        exit 1
+    }
+}
+
+if ($SelfTest) {
+    Invoke-SelfTest
+}
+
 # Do not log element text outside the fixed UI labels below: KeePass contains secrets.
 $result = [ordered]@{ passed = $false; blocked = $false; processId = $ProcessId; target = "${TargetWidth}x${TargetHeight}"; minimumDpi = $MinimumDpi; original = $null; actual = $null; tabs = @(); buttons = @(); restored = $false; error = $null; restoreError = $null }
 $originalMode = $null
 $displayDevice = $null
+$originalDpi = $null
 $modeChanged = $false
-$isPreflight = $true
 $dialog = $null
+
 try {
     if (($TargetWidth -eq 2560 -and $TargetHeight -ne 1440) -or ($TargetWidth -eq 3840 -and $TargetHeight -ne 2160)) { throw 'Unsupported target resolution pair' }
     if (-not [Environment]::UserInteractive) { throw 'An interactive Windows desktop is required' }
@@ -26,7 +207,8 @@ try {
     Add-Type -AssemblyName UIAutomationTypes
     Add-Type -AssemblyName System.Windows.Forms
     # The DEVMODE layout is required by EnumDisplaySettings/ChangeDisplaySettingsEx.
-    Add-Type -TypeDefinition @'
+    if (-not ([System.Management.Automation.PSTypeName]'HostedDisplayNative').Type) {
+        Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
 public static class HostedDisplayNative {
@@ -40,22 +222,44 @@ public static class HostedDisplayNative {
         public short dmLogPixels;
         public int dmBitsPerPel, dmPelsWidth, dmPelsHeight, dmDisplayFlags, dmDisplayFrequency, dmICMMethod, dmICMIntent, dmMediaType, dmDitherType, dmReserved1, dmReserved2, dmPanningWidth, dmPanningHeight;
     }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct POINT {
+        public int X;
+        public int Y;
+    }
     [DllImport("user32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern bool EnumDisplaySettings(string device, int modeNum, ref DEVMODE mode);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int ChangeDisplaySettingsEx(string device, ref DEVMODE mode, IntPtr hwnd, int flags, IntPtr lparam);
     [DllImport("user32.dll")] public static extern IntPtr MonitorFromWindow(IntPtr hwnd, int flags);
+    [DllImport("user32.dll")] public static extern IntPtr MonitorFromPoint(POINT pt, int flags);
     [DllImport("shcore.dll")] public static extern int GetDpiForMonitor(IntPtr monitor, int dpiType, out uint x, out uint y);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);
     public static DEVMODE NewMode() { DEVMODE m = new DEVMODE(); m.dmSize = (short)Marshal.SizeOf(typeof(DEVMODE)); return m; }
-    public static uint[] Dpi(IntPtr hwnd) {
-        IntPtr monitor = MonitorFromWindow(hwnd, 2);
+    public static IntPtr GetPrimaryMonitorHandle() {
+        IntPtr monitor = MonitorFromWindow(IntPtr.Zero, 1); // MONITOR_DEFAULTTOPRIMARY = 1
+        if (monitor == IntPtr.Zero) {
+            POINT pt = new POINT { X = 0, Y = 0 };
+            monitor = MonitorFromPoint(pt, 1);
+        }
+        return monitor;
+    }
+    public static uint[] DpiForMonitor(IntPtr monitor) {
         if (monitor == IntPtr.Zero) throw new InvalidOperationException("Monitor unavailable");
         uint x, y;
         int code = GetDpiForMonitor(monitor, 0, out x, out y); // MDT_EFFECTIVE_DPI
         if (code != 0 || x == 0 || y == 0) throw new InvalidOperationException("Effective DPI unavailable");
         return new uint[] { x, y };
     }
+    public static uint[] GetPrimaryDpi() {
+        return DpiForMonitor(GetPrimaryMonitorHandle());
+    }
+    public static uint[] Dpi(IntPtr hwnd) {
+        IntPtr monitor = (hwnd != IntPtr.Zero) ? MonitorFromWindow(hwnd, 2) : GetPrimaryMonitorHandle();
+        if (monitor == IntPtr.Zero) monitor = GetPrimaryMonitorHandle();
+        return DpiForMonitor(monitor);
+    }
 }
 '@
+    }
     $process = Get-Process -Id $ProcessId -ErrorAction Stop
     if ($process.ProcessName -ne 'KeePass' -or $process.HasExited -or $process.MainWindowHandle -eq [IntPtr]::Zero) { throw 'PID must belong to a running, interactive KeePass main window' }
     $commandLine = (Get-CimInstance Win32_Process -Filter "ProcessId = $ProcessId" -ErrorAction Stop).CommandLine
@@ -77,7 +281,7 @@ public static class HostedDisplayNative {
 
     $originalMode = [HostedDisplayNative]::NewMode()
     if (-not [HostedDisplayNative]::EnumDisplaySettings($displayDevice, -1, [ref]$originalMode)) { throw 'Cannot read original primary display mode' }
-    $originalDpi = [HostedDisplayNative]::Dpi($mainHandle)
+    $originalDpi = [HostedDisplayNative]::GetPrimaryDpi()
     $result.original = [ordered]@{ width = $originalMode.dmPelsWidth; height = $originalMode.dmPelsHeight; dpiX = $originalDpi[0]; dpiY = $originalDpi[1] }
     # Windows has no supported immediate per-monitor user-scale setter. Never edit
     # HKCU DPI registry values: they may require logoff and could affect the user.
@@ -94,7 +298,6 @@ public static class HostedDisplayNative {
     }
     if (-not $targetMode) { throw 'Target mode unsupported at current color depth, frequency and orientation' }
     if ([HostedDisplayNative]::ChangeDisplaySettingsEx($displayDevice, [ref]$targetMode, [IntPtr]::Zero, 2, [IntPtr]::Zero) -ne 0) { throw 'Target display mode rejected by CDS_TEST' }
-    $isPreflight = $false
     if ($originalMode.dmPelsWidth -ne $TargetWidth -or $originalMode.dmPelsHeight -ne $TargetHeight) {
         # Mark before calling: a driver can apply a mode despite returning an error.
         $modeChanged = $true
@@ -103,7 +306,7 @@ public static class HostedDisplayNative {
     Start-Sleep -Milliseconds 800
     $actualMode = [HostedDisplayNative]::NewMode()
     if (-not [HostedDisplayNative]::EnumDisplaySettings($displayDevice, -1, [ref]$actualMode) -or $actualMode.dmPelsWidth -ne $TargetWidth -or $actualMode.dmPelsHeight -ne $TargetHeight) { throw 'Target display mode did not take effect' }
-    $actualDpi = [HostedDisplayNative]::Dpi($mainHandle)
+    $actualDpi = [HostedDisplayNative]::GetPrimaryDpi()
     $result.actual = [ordered]@{ width = $actualMode.dmPelsWidth; height = $actualMode.dmPelsHeight; dpiX = $actualDpi[0]; dpiY = $actualDpi[1] }
     if ($actualDpi[0] -lt $MinimumDpi -or $actualDpi[1] -lt $MinimumDpi) { throw 'Effective DPI below required high-DPI threshold after mode change' }
 
@@ -205,7 +408,7 @@ public static class HostedDisplayNative {
         'Cancel button cannot be invoked'
     )
     $result.error = if ($msg -in $allowedMessages) { $msg } else { 'GUI verification failed (details suppressed)' }
-    if ($isPreflight) {
+    if (Test-IsBlockedError $result.error) {
         $result.blocked = $true
     }
 } finally {
@@ -216,22 +419,10 @@ public static class HostedDisplayNative {
             [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
         } catch { }
     }
-    try {
-        if ($modeChanged) {
-            if ([HostedDisplayNative]::ChangeDisplaySettingsEx($displayDevice, [ref]$originalMode, [IntPtr]::Zero, 0, [IntPtr]::Zero) -ne 0) { throw 'Original display mode restore rejected' }
-            $restoredMode = [HostedDisplayNative]::NewMode()
-            if (-not [HostedDisplayNative]::EnumDisplaySettings($displayDevice, -1, [ref]$restoredMode) -or
-                $restoredMode.dmPelsWidth -ne $originalMode.dmPelsWidth -or $restoredMode.dmPelsHeight -ne $originalMode.dmPelsHeight -or
-                $restoredMode.dmDisplayFrequency -ne $originalMode.dmDisplayFrequency -or $restoredMode.dmBitsPerPel -ne $originalMode.dmBitsPerPel -or
-                $restoredMode.dmDisplayOrientation -ne $originalMode.dmDisplayOrientation) { throw 'Original display mode not restored' }
-            $restoredDpi = [HostedDisplayNative]::Dpi($mainHandle)
-            if ($restoredDpi[0] -ne $originalDpi[0] -or $restoredDpi[1] -ne $originalDpi[1]) { throw 'Original effective display scale changed' }
-            $result.restored = $true
-        } elseif ($result.passed -and $originalMode) {
-            $result.restored = $true
-        }
-    } catch {
-        $result.restoreError = 'Original display mode/scale restoration could not be verified; inspect Windows display settings immediately'
+    $restoreResult = Test-HostedDisplayRestoration -DisplayDevice $displayDevice -OriginalMode $originalMode -OriginalDpi $originalDpi -ModeChanged $modeChanged
+    $result.restored = $restoreResult.Restored
+    if ($restoreResult.RestoreError) {
+        $result.restoreError = $restoreResult.RestoreError
         $result.passed = $false
     }
     try {
@@ -246,6 +437,5 @@ public static class HostedDisplayNative {
         $result.passed = $false
     }
 }
-if ($result.restoreError) { exit 1 }
-if (-not $result.passed -and -not $result.blocked) { exit 1 }
-exit 0
+$exitCode = Resolve-HostedDisplayExitCode -Passed $result.passed -Blocked $result.blocked -RestoreError $result.restoreError
+exit $exitCode
