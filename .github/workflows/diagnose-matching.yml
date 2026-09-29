@@ -8,6 +8,11 @@ on:
         required: false
         type: boolean
         default: false
+      session_probe:
+        description: 'Run read-only dedicated-user and runner session probe only'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -60,9 +65,28 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
+  session-probe:
+    name: Probe Windows E2E Session (read-only)
+    if: ${{ inputs.session_probe == true || inputs.session_probe == 'true' }}
+    runs-on: [self-hosted, windows, keepass-e2e, interactive]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe active sessions without exporting identities
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $owner = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+          $sid = [System.Diagnostics.Process]::GetCurrentProcess().SessionId
+          $sessions = @(Get-CimInstance Win32_LogonSession -ErrorAction Stop | Where-Object { $_.LogonType -eq 2 -or $_.LogonType -eq 10 })
+          $accounts = @(Get-LocalUser -ErrorAction SilentlyContinue | Where-Object { $_.Enabled -and $_.Name -match '^keepass.*(test|e2e)|^(test|e2e).*keepass' })
+          $runnerProcs = @(Get-CimInstance Win32_Process -Filter "name='Runner.Listener.exe' or name='Runner.Worker.exe'" -ErrorAction SilentlyContinue)
+          Write-Host "runner_session_id=$sid interactive=$([Environment]::UserInteractive) session_name_type=$(if ($env:SESSIONNAME -match '^(Console|RDP-Tcp)') {'desktop'} else {'other'}) runner_is_admin=$(([System.Security.Principal.WindowsPrincipal]$owner).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)) enabled_dedicated_account_candidates=$($accounts.Count) interactive_logon_session_count=$($sessions.Count) runner_process_count=$($runnerProcs.Count)"
+          Write-Host 'No usernames, SIDs, passwords, command lines, or profile paths exported.'
+
   diagnose:
     name: Diagnose KeePassNatMsg Matching (redacted)
-    if: ${{ !(inputs.display_probe == true || inputs.display_probe == 'true') }}
+    if: ${{ !(inputs.display_probe == true || inputs.display_probe == 'true' || inputs.session_probe == true || inputs.session_probe == 'true') }}
     runs-on: [self-hosted, windows, keepass-e2e, interactive]
     timeout-minutes: 10
 
