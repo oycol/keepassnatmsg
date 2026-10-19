@@ -212,7 +212,8 @@ namespace KeePassNatMsg.Protocol
                 resp.Message.Add("count", JValue.CreateNull());
                 resp.Message.Add("entries", JValue.CreateNull());
                 resp.Message.Add("error", result ? "success" : "error");
-                resp.Message.Add("success", result ? "true" : "false");
+                // Response already initializes success; replace it instead of adding a duplicate.
+                resp.Message["success"] = result ? "true" : "false";
 
                 return resp;
             }

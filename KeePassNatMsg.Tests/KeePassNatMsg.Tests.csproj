@@ -31,6 +31,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -44,6 +45,7 @@
   <!-- Directly compile the source files we need from the main project,
        instead of referencing the project (which requires KeePass.exe) -->
   <ItemGroup>
+    <Compile Include="SetLoginResponseTests.cs" />
     <Compile Include="ProtocolTests.cs" />
     <Compile Include="CryptoTests.cs" />
     <Compile Include="UrlMatchingTests.cs" />
@@ -97,6 +99,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="..\KeePassNatMsg\Protocol\Handlers.cs">
+      <Link>Handlers.cs</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <EmbeddedResource Include="..\KeePassNatMsg\Resources\keepassnatmsg-proxy.exe">
       <LogicalName>KeePassNatMsg.Tests.keepassnatmsg-proxy.exe</LogicalName>
     </EmbeddedResource>
